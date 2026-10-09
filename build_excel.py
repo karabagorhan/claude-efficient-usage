@@ -252,11 +252,152 @@ def load_finance():
         })
     return rows
 
+def load_birim_fiyat():
+    """Load all unit prices from 4 contracts — header at row index 3."""
+    xf = os.path.join(SOURCE_DIR, '557bb911-2026-10-07_birim_fiyat_havuzu.xlsx')
+    rows = []
+    sheets = [
+        ('Özgül Teknik Metal İnş.', '2026/1013', 'Özgül Teknik'),
+        ('Dönmez Kumlama Boya',     '2026/1015', 'Dönmez Kumlama'),
+        ('NOT İnşaat',              '2026/1023', 'NOT İnşaat'),
+        ('Manrel Mühendislik',      '2026/1043', 'Manrel'),
+    ]
+    for firma, sno, sname in sheets:
+        try:
+            df = pd.read_excel(xf, sheet_name=sname, header=3)
+            df.columns = [str(c).strip() for c in df.columns]
+            # Normalize column names
+            col_map = {}
+            for c in df.columns:
+                cu = c.upper()
+                if 'POZ' in cu:         col_map[c] = 'Poz_No'
+                elif 'KATEGORİ' in cu or 'KATEGORI' in cu or 'TIP' in cu: col_map[c] = 'Kategori'
+                elif 'AÇIKLAMA' in cu or 'ACIKLAMA' in cu: col_map[c] = 'Aciklama'
+                elif 'BİRİM' in cu and 'FİYAT' not in cu and 'FIYAT' not in cu: col_map[c] = 'Birim'
+                elif 'FİYAT' in cu or 'FIYAT' in cu: col_map[c] = 'Birim_Fiyat_TL'
+                elif 'NOT' in cu or 'KAYNAK' in cu: col_map[c] = 'Not_Kaynak'
+            df = df.rename(columns=col_map)
+            for need in ['Poz_No','Kategori','Aciklama','Birim','Birim_Fiyat_TL']:
+                if need not in df.columns:
+                    df[need] = ''
+            df = df.dropna(subset=['Poz_No'])
+            df = df[df['Poz_No'].astype(str).str.len() > 3]
+            df = df[~df['Poz_No'].astype(str).str.upper().str.contains('POZ')]
+            for _, r in df.iterrows():
+                fiyat = r.get('Birim_Fiyat_TL', None)
+                try: fiyat = float(fiyat)
+                except: fiyat = None
+                rows.append([
+                    firma, sno,
+                    clean(r.get('Poz_No','')),
+                    clean(r.get('Kategori','')),
+                    clean(r.get('Aciklama','')),
+                    clean(r.get('Birim','')),
+                    fiyat,
+                    clean(r.get('Not_Kaynak','')),
+                ])
+        except Exception as e:
+            print(f'Warn birim_fiyat {sname}: {e}')
+    return rows
+
+
+def load_pv_valf():
+    """Load 22 PV/RV valve inspection records from ADR PV Valf file."""
+    xf = os.path.join(SOURCE_DIR, 'e9713ca4-Polisan_Kimya_ADR_PV_Valf.xlsx')
+    try:
+        df = pd.read_excel(xf, sheet_name='PV VALF', header=1)
+        df.columns = [str(c).strip() for c in df.columns]
+        # Row 0 is headers
+        header_row = df.iloc[0]
+        df.columns = [str(v).strip() if str(v) != 'nan' else f'C{i}' for i, v in enumerate(header_row)]
+        df = df.iloc[1:].reset_index(drop=True)
+        df = df.dropna(how='all')
+        rows = []
+        for i, r in df.iterrows():
+            rows.append([
+                int(r.iloc[0]) if str(r.iloc[0]).replace('.','').isdigit() else i+1,
+                clean(r.iloc[1]),   # Tank No
+                clean(r.iloc[2]),   # PV-RV Valf No
+                clean(r.iloc[3]),   # Üretici
+                clean(r.iloc[4]) if len(r) > 4 else '',   # Tank Ref No
+                clean(r.iloc[5]) if len(r) > 5 else '',   # Ölçü
+                r.iloc[6] if len(r) > 6 else None,        # İlk Kontrol
+                r.iloc[7] if len(r) > 7 else None,        # Sonraki Kontrol
+                clean(r.iloc[8]) if len(r) > 8 else '',   # Kontrol Eden
+                clean(r.iloc[9]) if len(r) > 9 else '',   # Pressure Port mBar
+                clean(r.iloc[10]) if len(r) > 10 else '',  # Pressure Port Leak
+                clean(r.iloc[11]) if len(r) > 11 else '',  # Vacuum Port mBar
+                clean(r.iloc[12]) if len(r) > 12 else '',  # VacuumPort Leak
+                clean(r.iloc[13]) if len(r) > 13 else '',  # Değerlendirme
+                clean(r.iloc[14]) if len(r) > 14 else '',  # Notlar
+            ])
+        return rows
+    except Exception as e:
+        print(f'Warn pv_valf: {e}')
+        return []
+
+
+def load_bakim_planlama():
+    """Load maintenance planning tasks from Bakım Planlama (024aa436)."""
+    xf = os.path.join(SOURCE_DIR, '024aa436-Bak_m_Planlama.xlsx')
+    rows = []
+    for tesis in ['REÇİNE', 'OKSİT']:
+        try:
+            df = pd.read_excel(xf, sheet_name=tesis, header=2)
+            df.columns = ['ID','Gorev','Notlar'] + [f'C{i}' for i in range(len(df.columns)-3)]
+            df = df.dropna(subset=['Gorev'])
+            df = df[df['Gorev'].astype(str).str.strip().str.len() > 1]
+            for _, r in df.iterrows():
+                gorev = clean(r.get('Gorev',''))
+                not_  = clean(r.get('Notlar',''))
+                # Derive status from notes
+                n_up = not_.upper()
+                if 'TAMAMLANDI' in n_up:
+                    durum = 'Tamamlandı'
+                elif 'DURUŞ' in n_up:
+                    durum = 'Beklemede'
+                elif 'EKSİK KALDI' in n_up or 'BEKLENİYOR' in n_up:
+                    durum = 'Beklemede'
+                else:
+                    durum = 'Devam Ediyor'
+                rows.append([tesis, gorev, not_, durum])
+        except Exception as e:
+            print(f'Warn bakim_planlama {tesis}: {e}')
+    return rows
+
+
+def load_ariza_log():
+    """Load breakdown/fault records from Bakım Takip Formen (615132e7) ana dosya."""
+    xf = os.path.join(SOURCE_DIR, '615132e7-06.08.26_-Bak_m_Takip_formen.xlsx')
+    try:
+        df = pd.read_excel(xf, sheet_name='ana dosya', header=0)
+        df = df.dropna(subset=[df.columns[1]])  # Arıza Tanımı column
+        rows = []
+        for _, r in df.iterrows():
+            rows.append([
+                clean(r.iloc[1]),  # Arıza Tanımı
+                clean(r.iloc[2]),  # Tesis/Kısım
+                clean(r.iloc[3]),  # Bildirim No
+                r.iloc[4] if not pd.isna(r.iloc[4]) else None,  # Bildirim Tarihi
+                clean(r.iloc[5]),  # Bildiren
+            ])
+        return rows[:100]  # limit to first 100 for manageability
+    except Exception as e:
+        print(f'Warn ariza_log: {e}')
+        return []
+
+
 print("Loading source data...")
-tanks    = load_tanks()
-hazop    = load_hazop()
-finance  = load_finance()
-print(f"  Tanks: {len(tanks)}, HAZOP actions: {len(hazop)}, Finance records: {len(finance)}")
+tanks         = load_tanks()
+hazop         = load_hazop()
+finance       = load_finance()
+birim_fiyat   = load_birim_fiyat()
+pv_valf       = load_pv_valf()
+bakim_plan    = load_bakim_planlama()
+ariza_log     = load_ariza_log()
+print(f"  Tanks: {len(tanks)}, HAZOP: {len(hazop)}, Finance: {len(finance)}")
+print(f"  Birim Fiyat: {len(birim_fiyat)} poz, PV Valf: {len(pv_valf)}, "
+      f"Bakım Plan: {len(bakim_plan)}, Arıza Log: {len(ariza_log)}")
 
 # ============================================================
 # BUILD WORKBOOK
@@ -310,6 +451,43 @@ source_data = [
      'Senaryo A (Yerüstü 50m³) önerilen: ~40,3 M TL CAPEX. '
      'Doküman: POL-MBO-ADS-2026-002 Rev.02.',
      'AACE Class 4 tahmin (-%20/+%30). Hiçbir kalem alınmış teklif değil.'],
+    # New sources (Batch 2)
+    ['KYN-006','2026-10-07_birim_fiyat_havuzu.xlsx',
+     'Birim Fiyat Havuzu','Birim Fiyat & Satın Alma',
+     'ÖZET / Özgül Teknik / Dönmez Kumlama / NOT İnşaat / Manrel',
+     f'{len(birim_fiyat)} poz',
+     'Polisan Kimya 2026 yılı sözleşme birim fiyat havuzu. 4 firma, 4 sözleşme. '
+     'KDV hariç. Turuncu satırlar piyasa tahmini.',
+     'Dönmez/NOT/Manrel sayfalarında piyasa tahminleri doğrulanmayı bekliyor.'],
+    ['KYN-007','06.08.26_-Bakim_Takip_formen.xlsx',
+     'Arıza & Bakım Log','Bakım Geçmişi',
+     'ana dosya (arıza kayıt defteri)',
+     f'{len(ariza_log)} arıza kaydı',
+     '2023-2026 dönemi arıza bildirim ve bakım log kaydı. '
+     'Tesis, bildirim no, tarih ve bildiren kişi ile arıza tanımı.',
+     'Bildirim numarası bazı satırlarda eksik; SAP iş emri bağlantısı yok.'],
+    ['KYN-008','Bakim_Planlama.xlsx',
+     'Bakım Görev Listesi','Günlük İş Takibi',
+     'REÇİNE (43 görev) / OKSİT (8 görev)',
+     f'{len(bakim_plan)} görev',
+     'Bakım formen görev takip listesi. Reçine ve Oksit tesisleri. '
+     'Durum notları DEVAM EDİYOR/TAMAMLANDI/BEKLENİYOR şeklinde.',
+     'Sorumlu, termin ve öncelik verisi yok; durum notlardan çıkarıldı.'],
+    ['KYN-009','Polisan_Kimya_ADR_PV_Valf.xlsx',
+     'PV/RV Valf Muayene Kaydı','Ekipman & Periyodik Kontrol',
+     'PV VALF (22 kayıt) / PATLAMA DİSKİ (şablon) / KRİTİK EKİPMAN (şablon)',
+     f'{len(pv_valf)} valf kaydı',
+     'ADR sahası PV/RV valf periyodik kontrol kayıtları. Manrel tarafından yapıldı. '
+     'Pressure Port ve Vacuum Port basınç/sızıntı sonuçları mevcut.',
+     '22 valfın çoğunluğu (17/22) "Uygun Değil" — acil yenileme gerekiyor. '
+     'Bir sonraki kontrol 2025\'te — 2026\'ya geçilmiş, hepsi gecikmiş.'],
+    ['KYN-010','Patlama_Diski_Kontrol_Formu.docx',
+     'Form Şablonu','Ekipman & Periyodik Kontrol',
+     'Tek sayfa kontrol formu (MBY-CL-005 Rev.00)',
+     'Şablon (veri yok)',
+     'Patlama diski (rupture disk) periyodik kontrol formu. R-101 ila R-104 reaktörleri. '
+     'Kontrol kriterleri, reaktör bilgileri ve test protokolü tanımlı.',
+     'Form Rev.00 — ilk versiyon. Henüz hiçbir satır doldurulmamış.'],
 ]
 for i, row in enumerate(source_data):
     r = 3 + i
@@ -604,61 +782,55 @@ g_headers = [
 ]
 write_headers(ws_g, 2, g_headers)
 
-g_sample = [
+# Build g_data from real Bakım Planlama data + 6 pre-loaded critical items
+g_preload = [
     ['IS-001','Tank havuzu sızdırmazlık ve statik yük raporu alınacak (T-303 çevresi)',
-     'PRJ-2026-002','T-303','Teknik İnceleme / Rapor','HAZOP Ekibi','Orhan KARABA',
-     '23.09.2026','30.10.2026','1-Acil','Açık',
-     'HAZOP A-003 aksiyonundan kaynaklanıyor',
-     '','Muayene firmasına talep gönderilecek','',''],
-    ['IS-002','LS-02 SIL sertifikalı seviye transmitteri T-303\'e kurulumu',
-     'PRJ-2026-002','T-303 / LS-02','Enstrüman Montajı','HAZOP Ekibi','Orhan KARABA',
-     '23.09.2026','31.12.2026','1-Acil','Açık',
-     'Cihaz temin ve montaj programı bekleniyor',
-     '','Teknik şartname hazırlanacak; tedarikçi araştırması','',''],
-    ['IS-003','Metanol tankı (T-303) kumlamalı boya bakımı',
-     '','T-303 / Metanol Tankı','Mekanik Bakım','Bakım Mühendisi','Orhan KARABA',
-     '01.10.2026','31.03.2027','2-Yüksek','Açık',
-     'Bütçe onayı bekleniyor',
-     'Tank muayene raporunda "korozyon çok şiddetli" notu var',
-     'Bütçe talebini hazırla; iş izni planla','',''],
-    ['IS-004','UFC+FA Geçiş Tankı tavan korkulukları revizyonu',
-     '','UFC+FA Geçiş Tankı (602)','Mekanik Bakım','Bakım Mühendisi','Orhan KARABA',
-     '01.10.2026','31.12.2026','3-Orta','Açık',
-     '',
-     'Kontrol raporunda "tavan korkulukları revizyon gerekli" notu var',
-     'Ölçüm ve çizim hazırlanacak; iş izni','',''],
-    ['IS-005','Formaldehit tankları (201-502) Out-of-service muayene raporu eksikliği',
-     '','FORMALDEHİT TANKI 201/301/302/501/502/101/300',
-     'Muayene / Uygunluk','Teknik Güvenlik','Orhan KARABA',
-     '01.10.2026','31.12.2026','1-Acil','Açık',
-     'Akredite muayene firması program bekleniyor',
-     '7 tank uygun değil; sadece in-service raporu mevcut',
-     'Muayene firmasına yazı gönderilecek; out-of-service takvim belirlenecek','',''],
-    ['IS-006','ADS projesi senaryo A/B final karar ve onay',
+     'PRJ-2026-002','T-303','Teknik İnceleme','HAZOP Ekibi','Orhan KARABA',
+     '','','1-Acil','Açık',
+     'HAZOP A-003 aksiyonundan kaynaklanıyor','','','',''],
+    ['IS-002','LS-02 SIL sertifikalı seviye transmitteri T-303 kurulumu',
+     'PRJ-2026-002','T-303/LS-02','Enstrüman Montajı','HAZOP Ekibi','Orhan KARABA',
+     '','','1-Acil','Açık','Cihaz temin ve montaj programı bekleniyor','','','',''],
+    ['IS-003','Formaldehit tankları Out-of-service muayene raporu',
+     '','FMD TANKI 201/301/302/501/502','Muayene/Uygunluk','Teknik','Orhan KARABA',
+     '','','1-Acil','Açık','7 tank uygun değil; muayene firması bekleniyor','','','',''],
+    ['IS-004','PV/RV Valf yenileme — 17 adet Uygun Değil',
+     '','ADR Sahası PV Valfler','Periyodik Kontrol','Bakım','Orhan KARABA',
+     '','','1-Acil','Açık','Bkz. PV_Valf_Takip sayfası — 17/22 uygun değil','','','',''],
+    ['IS-005','ADS projesi senaryo A/B final karar ve onay',
      'PRJ-2026-002','','Proje Kararı','Yönetim','Orhan KARABA',
-     '01.10.2026','15.11.2026','1-Acil','Açık',
-     'Kot etüdü sonucu bekleniyor (PA-005)',
-     '',
-     'Kot etüdü tamamlanınca yönetime sunum yapılacak','',''],
+     '','','1-Acil','Açık','Kot etüdü sonucu bekleniyor (PA-005)','','','',''],
+    ['IS-006','Elektrik bağlantısı pilot reaktör taşıma kapsamı netleştirme',
+     'PRJ-2026-001','','Mühendislik/Kapsam','Teknik','Orhan KARABA',
+     '','','1-Acil','Açık','Bkz. PA-001','','','',''],
 ]
-for i, row in enumerate(g_sample):
+# Add tasks from Bakım Planlama (real data)
+g_from_plan = []
+for idx, (tesis, gorev, notlar, durum) in enumerate(bakim_plan, start=len(g_preload)+1):
+    g_from_plan.append([
+        f'IS-{idx:03d}', gorev, '', '', 'Mekanik Bakım', tesis, 'Orhan KARABA',
+        '', '', '3-Orta', durum, notlar, '', '', '', '',
+    ])
+g_all = g_preload + g_from_plan
+
+for i, row in enumerate(g_all):
     r = 3 + i
     for j, val in enumerate(row):
         bg = C_XLITE_BLUE if i%2==0 else None
-        style_data(ws_g, r, j+1, value=val, bg=bg)
-# leave empty rows for data entry
-for r in range(3+len(g_sample), 3+len(g_sample)+20):
-    for j in range(1,17):
-        style_data(ws_g, r, j, bg=C_INPUT if j in (8,9) else None)
-        if j in (10,11):
-            pass
+        if isinstance(val, date):
+            c = ws_g.cell(row=r, column=j+1, value=val)
+            c.number_format = 'DD.MM.YYYY'
+            c.border = border_thin(); c.font = fnt(); c.alignment = align()
+            if bg: c.fill = fill(bg)
+        else:
+            style_data(ws_g, r, j+1, value=val, bg=bg)
 
 freeze(ws_g, 'B3')
 set_col_widths(ws_g, {
-    'A':12,'B':55,'C':14,'D':20,'E':22,'F':20,'G':20,
-    'H':14,'I':14,'J':14,'K':16,'L':40,'M':40,'N':40,'O':14,'P':40
+    'A':12,'B':60,'C':14,'D':22,'E':22,'F':20,'G':20,
+    'H':14,'I':14,'J':14,'K':16,'L':50,'M':40,'N':40,'O':14,'P':40
 })
-nrow = 3 + len(g_sample) + 20
+nrow = 3 + len(g_all)
 make_table(ws_g, 'tbl_GunlukIs', f'A2:P{nrow}')
 ws_g.conditional_formatting.add(
     f'K3:K{nrow}',
@@ -877,15 +1049,41 @@ bk_headers = [
     'Maliyet_TL','İş_Emri_No','Notlar'
 ]
 write_headers(ws_bk, 2, bk_headers)
-for r in range(3, 3+30):
-    for j in range(1, 13):
-        style_data(ws_bk, r, j)
+for i, (ariza, tesis, bil_no, bil_tarih, bildiren) in enumerate(ariza_log):
+    r = 3 + i
+    vals = [
+        f'LOG-{i+1:03d}', '',   # BAK_ID, EKP_ID
+        '',                      # Ekipman_Adı
+        '',                      # TANK_ID
+        tesis,                   # Tank_Adı / Tesis
+        bil_tarih,               # Bakım_Tarihi
+        'Arıza',                 # Bakım_Türü
+        bildiren,                # Yapan/Firma
+        ariza,                   # Açıklama
+        None,                    # Maliyet_TL
+        bil_no if bil_no else '', # İş_Emri_No
+        '',                      # Notlar
+    ]
+    bg = C_XLITE_BLUE if i%2==0 else None
+    for j, val in enumerate(vals):
+        if isinstance(val, (datetime, date)) or (hasattr(pd, 'Timestamp') and isinstance(val, pd.Timestamp)):
+            try:
+                v2 = val.date() if hasattr(val, 'date') else val
+                c = ws_bk.cell(row=r, column=j+1, value=v2)
+                c.number_format = 'DD.MM.YYYY'
+            except:
+                c = ws_bk.cell(row=r, column=j+1, value=str(val)[:10])
+            c.border = border_thin(); c.font = fnt(); c.alignment = align()
+            if bg: c.fill = fill(bg)
+        else:
+            style_data(ws_bk, r, j+1, value=val, bg=bg)
+nrow_bk = 3 + max(len(ariza_log), 1)
 freeze(ws_bk, 'C3')
 set_col_widths(ws_bk, {
-    'A':12,'B':12,'C':35,'D':10,'E':35,
-    'F':14,'G':22,'H':25,'I':55,'J':18,'K':18,'L':40
+    'A':12,'B':12,'C':35,'D':10,'E':25,
+    'F':14,'G':16,'H':20,'I':60,'J':18,'K':18,'L':40
 })
-make_table(ws_bk, 'tbl_BakimGecmisi', f'A2:L{2+30}')
+make_table(ws_bk, 'tbl_BakimGecmisi', f'A2:L{nrow_bk}')
 
 # ============================================================
 # SHEET 11: Butce_Maliyet  (585 SAP records)
@@ -1442,47 +1640,186 @@ dash_kpi_box(ws_d, 17, 18, 10, 'DİĞER MASRAF YERLERİ',
              span=3, val_fmt='#,##0.00 ₺')
 ws_d.row_dimensions[19].height = 8
 
-# ---- Section 5: VERİ EKSİKLİKLERİ (row 20-23) ----
+# ---- Section 5b: PV VALF DURUMU (row 20-22) ----
 ws_d.merge_cells('A20:N20')
 c = ws_d['A20']
+c.value = '▶  PV/RV VALF VE EKİPMAN GÜVENLİK DURUMU'
+c.font  = fnt(bold=True, size=11, color=C_WHITE)
+c.fill  = fill('FF7F00')
+c.alignment = align(h='left')
+c.border = border_thin()
+ws_d.row_dimensions[20].height = 22
+
+n_pv_total     = len(pv_valf)
+n_pv_uygunsuz  = sum(1 for r in pv_valf if 'değil' in str(r[13]).lower())
+n_pv_gecikme   = sum(1 for r in pv_valf if hasattr(r[7], 'year') and getattr(r[7], 'date', lambda: r[7])() < TODAY_DATE)
+dash_kpi_box(ws_d, 21, 22, 1,  'TOPLAM PV/RV VALF', n_pv_total, span=2)
+dash_kpi_box(ws_d, 21, 22, 3,  'UYGUN DEĞİL',
+             n_pv_uygunsuz, title_bg='9C0006', val_bg=C_RED_LIGHT, span=2)
+dash_kpi_box(ws_d, 21, 22, 5,  'KONTROL GECİKMİŞ',
+             f'=COUNTIF(PV_Valf_Takip!O:O,"GECİKMİŞ")',
+             title_bg='9C6500', val_bg=C_AMBER_LIGHT, span=2)
+dash_kpi_box(ws_d, 21, 22, 7,  'BİRİM FİYAT (Sözleşme)',
+             len(birim_fiyat), span=2, title_bg='2E75B6')
+dash_kpi_box(ws_d, 21, 22, 9,  'BAKIM GÖREV (Reçine+Oksit)',
+             len(bakim_plan), span=2)
+dash_kpi_box(ws_d, 21, 22, 11, 'ARIZA KAYIT (Log)',
+             len(ariza_log), span=2, title_bg='2E75B6')
+ws_d.row_dimensions[23].height = 8
+
+# ---- Section 6: VERİ EKSİKLİKLERİ (row 24-26) ----
+ws_d.merge_cells('A24:N24')
+c = ws_d['A24']
 c.value = '▶  VERİ KALİTESİ VE EKSİKLİKLER'
 c.font  = fnt(bold=True, size=11, color=C_WHITE)
 c.fill  = fill(C_DARK_BLUE)
 c.alignment = align(h='left')
 c.border = border_thin()
-ws_d.row_dimensions[20].height = 22
+ws_d.row_dimensions[24].height = 22
 
-dash_kpi_box(ws_d, 21, 22, 1, 'AÇIK VERİ KALİTESİ SORUNU',
+dash_kpi_box(ws_d, 25, 26, 1, 'AÇIK VERİ KALİTESİ SORUNU',
              f'=COUNTIF(Veri_Kalitesi!G:G,"Açık")',
              title_bg='9C0006', val_bg=C_RED_LIGHT, span=2)
-dash_kpi_box(ws_d, 21, 22, 3, 'HAZOP SORUMLU EKSİK',
+dash_kpi_box(ws_d, 25, 26, 3, 'HAZOP SORUMLU EKSİK',
              n_hazop,
              title_bg='9C6500', val_bg=C_AMBER_LIGHT, span=2)
-dash_kpi_box(ws_d, 21, 22, 5, 'MALİYET DÖNEMİ KAYNAK SAYISI',
+dash_kpi_box(ws_d, 25, 26, 5, 'MALİYET DÖNEMİ KAYNAK SAYISI',
              f'=COUNTA(Butce_Maliyet!A:A)-3',
              span=2)
-dash_kpi_box(ws_d, 21, 22, 7, 'DOKÜMAN KAYDI',
+dash_kpi_box(ws_d, 25, 26, 7, 'DOKÜMAN KAYDI',
              f'=COUNTA(Dokuman_Yonetimi!A:A)-2',
              span=3, title_bg='2E75B6')
-dash_kpi_box(ws_d, 21, 22, 10, 'KAYNAK DOSYA SAYISI',
+dash_kpi_box(ws_d, 25, 26, 10, 'KAYNAK DOSYA SAYISI',
              len(source_data), span=2)
-dash_kpi_box(ws_d, 21, 22, 12, 'SON GÜNCELLEME',
+dash_kpi_box(ws_d, 25, 26, 12, 'SON GÜNCELLEME',
              TODAY_STR, span=2, val_fmt='@')
-ws_d.row_dimensions[23].height = 8
+ws_d.row_dimensions[27].height = 8
 
 # Navigation / quick links row
-ws_d.merge_cells('A24:N24')
-c = ws_d['A24']
+ws_d.merge_cells('A28:N28')
+c = ws_d['A28']
 c.value = ('Sayfalar: Projeler | Proje_Aksiyonlar | Gunluk_Is_Takibi | Tank_Envanteri | '
            'Tank_Muayene_Log | Dolum_Hortumlari | Ekipman_Envanteri | Bakim_Gecmisi | '
-           'Butce_Maliyet | Satin_Alma | Risk_Uygunsuzluk | Dokuman_Yonetimi | '
-           'Tanimlar | Veri_Kalitesi | Kaynak_Dosyalar')
+           'Butce_Maliyet | Satin_Alma | Risk_Uygunsuzluk | Birim_Fiyat_Havuzu | '
+           'PV_Valf_Takip | Dokuman_Yonetimi | Tanimlar | Veri_Kalitesi | Kaynak_Dosyalar')
 c.font = Font(name='Arial', size=9, color='4472C4', italic=True)
 c.alignment = Alignment(horizontal='center', vertical='center')
 c.fill = fill('EEF3F9')
-ws_d.row_dimensions[24].height = 22
+ws_d.row_dimensions[28].height = 22
 
 ws_d.freeze_panes = 'A3'
+
+# ============================================================
+# SHEET NEW-A: Birim_Fiyat_Havuzu
+# ============================================================
+ws_bf = wb.create_sheet('Birim_Fiyat_Havuzu')
+add_title_row(ws_bf, 'BİRİM FİYAT HAVUZU — SÖZLEŞME FİYATLARI 2026', colspan=8)
+bf_headers = [
+    'Firma','Sözleşme_No','Poz_No','Kategori','Açıklama','Birim',
+    'Birim_Fiyat_TL','Not_Kaynak'
+]
+write_headers(ws_bf, 2, bf_headers)
+
+ORANGE_FILL = 'FDEBD0'  # light orange for estimated prices
+for i, row in enumerate(birim_fiyat):
+    r = 3 + i
+    # row = [firma, sno, poz_no, kat, aciklama, birim, fiyat, not]
+    not_val = row[7] if row[7] else ''
+    is_estimate = '~' in not_val or 'Piyasa' in not_val or 'piyasa' in not_val or 'tahmin' in not_val.lower()
+    bg = ORANGE_FILL if is_estimate else (C_XLITE_BLUE if i%2==0 else None)
+    for j, val in enumerate(row):
+        if j == 6:  # Birim_Fiyat_TL
+            c = ws_bf.cell(row=r, column=j+1, value=val)
+            c.border = border_thin(); c.font = fnt(); c.alignment = align(h='right')
+            c.number_format = '#,##0.00'
+            if bg: c.fill = fill(bg)
+        else:
+            style_data(ws_bf, r, j+1, value=val, bg=bg)
+
+# legend note below table
+note_row = 3 + len(birim_fiyat) + 2
+ws_bf.cell(row=note_row, column=1,
+    value='🟠 Turuncu satırlar piyasa araştırmasına dayalı tahmindir — '
+          'fatura geldiğinde sözleşme orijinalinden teyit edin.')
+ws_bf.cell(row=note_row, column=1).font = Font(name='Arial', size=9, italic=True, color='9C6500')
+ws_bf.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=8)
+
+nrow_bf = 2 + len(birim_fiyat)
+make_table(ws_bf, 'tbl_BirimFiyat', f'A2:H{nrow_bf}', style='TableStyleMedium9')
+freeze(ws_bf, 'C3')
+set_col_widths(ws_bf, {
+    'A':28,'B':14,'C':16,'D':18,'E':60,'F':10,'G':18,'H':35
+})
+
+# ============================================================
+# SHEET NEW-B: PV_Valf_Takip
+# ============================================================
+ws_pv = wb.create_sheet('PV_Valf_Takip')
+add_title_row(ws_pv, 'PV / RV VALF PERİYODİK KONTROL TAKİBİ — ADR SAHASI', colspan=15)
+
+pv_headers = [
+    'Sıra_No','Tank_No','Valf_No','Üretici','Tank_Ref_No','Ölçü',
+    'İlk_Kontrol','Sonraki_Kontrol','Kontrol_Eden',
+    'Pressure_Port_mBar','Pressure_Leak','Vacuum_Port_mBar','Vacuum_Leak',
+    'Değerlendirme','Uyarı_Durumu'
+]
+write_headers(ws_pv, 2, pv_headers)
+
+for i, row in enumerate(pv_valf):
+    r = 3 + i
+    # Compute Uyarı_Durumu based on Sonraki_Kontrol (row[7]) and Değerlendirme (row[13])
+    row14 = ''  # will be formula
+    for j, val in enumerate(row):
+        if j in (6, 7):  # date columns
+            if isinstance(val, (datetime, date)):
+                try:
+                    v2 = val.date() if hasattr(val, 'date') else val
+                except:
+                    v2 = None
+                c = ws_pv.cell(row=r, column=j+1, value=v2)
+                c.number_format = 'DD.MM.YYYY'
+            elif isinstance(val, str) and val.strip():
+                c = ws_pv.cell(row=r, column=j+1, value=val)
+            else:
+                c = ws_pv.cell(row=r, column=j+1, value=None)
+            c.border = border_thin(); c.font = fnt(); c.alignment = align()
+        else:
+            bg = C_XLITE_BLUE if i%2==0 else None
+            style_data(ws_pv, r, j+1, value=val, bg=bg)
+    # Column 15: Uyarı_Durumu formula — check if next inspection date is past
+    h_col = 'H'  # Sonraki_Kontrol
+    uyari_formula = (
+        f'=IFERROR(IF({h_col}{r}="","Tarih Yok",'
+        f'IF({h_col}{r}<TODAY(),"GECİKMİŞ",'
+        f'IF({h_col}{r}-TODAY()<=30,"30 GÜN İÇİNDE","Takvimdeyiz"))),"?")'
+    )
+    c15 = ws_pv.cell(row=r, column=15, value=uyari_formula)
+    c15.border = border_thin(); c15.font = fnt(); c15.alignment = align()
+
+nrow_pv = 2 + max(len(pv_valf), 1)
+make_table(ws_pv, 'tbl_PVValf', f'A2:O{nrow_pv}', style='TableStyleMedium2')
+freeze(ws_pv, 'D3')
+set_col_widths(ws_pv, {
+    'A':8,'B':10,'C':16,'D':30,'E':14,'F':8,
+    'G':14,'H':14,'I':20,'J':18,'K':18,'L':18,'M':18,'N':18,'O':18
+})
+
+# Conditional formatting for Uyarı_Durumu (col O) and Değerlendirme (col N)
+ws_pv.conditional_formatting.add(
+    f'O3:O{nrow_pv}',
+    FormulaRule(formula=['=$O3="GECİKMİŞ"'],
+                fill=fill(C_RED_LIGHT), font=fnt(color=C_RED_TEXT, bold=True)))
+ws_pv.conditional_formatting.add(
+    f'O3:O{nrow_pv}',
+    FormulaRule(formula=['=$O3="30 GÜN İÇİNDE"'],
+                fill=fill(C_AMBER_LIGHT), font=fnt(color=C_AMBER_TEXT)))
+ws_pv.conditional_formatting.add(
+    f'N3:N{nrow_pv}',
+    FormulaRule(formula=['=ISNUMBER(SEARCH("Değil",$N3))'],
+                fill=fill(C_RED_LIGHT), font=fnt(color=C_RED_TEXT)))
+
+# Update dashboard to include PV Valf KPI
+# (will be done via formula in dashboard section below)
 
 # ============================================================
 # TAB COLORS
@@ -1500,6 +1837,8 @@ tab_colors = {
     'Butce_Maliyet'     : 'C00000',
     'Satin_Alma'        : 'FF0000',
     'Risk_Uygunsuzluk'  : '7030A0',
+    'Birim_Fiyat_Havuzu': 'F4B942',
+    'PV_Valf_Takip'     : 'FF7F00',
     'Dokuman_Yonetimi'  : '00B0F0',
     'Tanimlar'          : '92D050',
     'Veri_Kalitesi'     : 'FFFF00',
