@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { exportBackup, exportExcel, pickBackup } from './src/files';
 import {
@@ -26,6 +26,9 @@ type ExpenseSheetState = { key: number; initial: Expense | null; prefill?: { amo
 type SubSheetState = { key: number; initial: Sub | null } | null;
 
 // Kestirmeler / bağlantı: .../ekle?tutar=125,50&kategori=market
+// "ekle" kanalına yayınlanan sürüm açılışta doğrudan Yeni harcama formunu gösterir (kestirme bağlantısı için).
+const OPEN_ADD_ON_LAUNCH = process.env.EXPO_PUBLIC_OPEN_ADD === '1';
+
 const SLUG: Record<string, string> = {
   market: 'Market', yeme: 'Yeme-İçme', ulasim: 'Ulaşım', fatura: 'Fatura',
   saglik: 'Sağlık', eglence: 'Eğlence', giyim: 'Giyim', diger: 'Diğer',
@@ -62,6 +65,23 @@ function Main() {
     const cat = SLUG[String(queryParams?.kategori ?? '').toLowerCase()];
     setExpSheet({ key: Date.now(), initial: null, prefill: { amount: amount || undefined, cat } });
   }, [url]);
+
+  // Kestirme sürümü: açılışta ve arka plandan her dönüşte formu aç (zaten açık bir form varsa dokunma)
+  const anySheetOpen = useRef(false);
+  anySheetOpen.current = !!expSheet || !!subSheet || settingsOpen;
+  useEffect(() => {
+    if (!OPEN_ADD_ON_LAUNCH) return;
+    setExpSheet({ key: Date.now(), initial: null });
+    let wasBackground = false;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background') wasBackground = true;
+      if (state === 'active' && wasBackground) {
+        wasBackground = false;
+        if (!anySheetOpen.current) setExpSheet({ key: Date.now(), initial: null });
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   // Bildirimleri veri değiştikçe yeniden kur (art arda değişikliklerde bir kez)
   useEffect(() => {
