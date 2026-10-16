@@ -8,7 +8,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.karabag.harcamadefteri"
+      "bundleIdentifier": "com.karabag.harcamadefteri",
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +30,14 @@
       "expo-sharing"
     ],
     "scheme": "harcama",
-    "owner": "karabagorhan"
+    "owner": "karabagorhans-team",
+    "extra": {
+      "eas": {
+        "projectId": "24b23d12-c615-4047-b61a-624003ad0003"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/24b23d12-c615-4047-b61a-624003ad0003"
+    }
   }
 }
