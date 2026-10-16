@@ -2,11 +2,12 @@ import { PlayfairDisplay_600SemiBold } from '@expo-google-fonts/playfair-display
 import { PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display/700Bold';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts } from 'expo-font';
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { exportBackup, exportExcel, pickBackup } from './src/files';
 import {
@@ -46,10 +47,19 @@ const MENU: MenuItem[] = [
   { key: 'ayarlar', label: 'Ayarlar', icon: 'settings-outline', hint: 'Bütçe, bildirim, yedek' },
 ];
 
-// "ekle" kanalına yayınlanan sürüm açılışta doğrudan Yeni harcama formunu gösterir (kestirme bağlantısı için).
-const OPEN_ADD_ON_LAUNCH = process.env.EXPO_PUBLIC_OPEN_ADD === '1';
-// "butce" kanalına yayınlanan sürüm açılışta Ayarlar'daki bütçe alanını açar, klavye hazır gelir.
-const OPEN_BUDGET_ON_LAUNCH = process.env.EXPO_PUBLIC_OPEN_SCREEN === 'butce';
+/**
+ * Kestirme bağlantıları aynı uygulamayı açar; ne gösterileceğine açılış bağlantısına bakılarak karar verilir:
+ *   ...&channel-name=ekle  → Yeni harcama formu
+ *   ...&channel-name=butce → Ayarlar'daki bütçe alanı (klavye açık)
+ *   ...&channel-name=main  → normal açılış (Özet)
+ * Uygulama arka plandan döndüğünde hiçbir şey kendiliğinden açılmaz.
+ */
+function launchMode(u: string | null | undefined): 'ekle' | 'butce' | null {
+  if (!u) return null;
+  if (/[?&]channel-name=ekle\b/.test(u) || /\/--\/ekle\b/.test(u)) return 'ekle';
+  if (/[?&]channel-name=butce\b/.test(u) || /\/--\/butce\b/.test(u)) return 'butce';
+  return null;
+}
 
 // Kestirmeler / bağlantı: .../ekle?tutar=125,50&kategori=market
 const SLUG: Record<string, string> = {
@@ -62,8 +72,8 @@ function Main() {
   const { data, update } = useAppData();
   const t = useTheme(data?.settings.theme);
   const st = useMemo(() => makeStyles(t), [t]);
-  const [screen, setScreen] = useState<Screen>(OPEN_BUDGET_ON_LAUNCH ? 'ayarlar' : 'ozet');
-  const [budgetFocusKey, setBudgetFocusKey] = useState(OPEN_BUDGET_ON_LAUNCH ? 1 : 0);
+  const [screen, setScreen] = useState<Screen>('ozet');
+  const [budgetFocusKey, setBudgetFocusKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [ym, setYm] = useState(todayIso().slice(0, 7));
   const [filterCat, setFilterCat] = useState<string | null>(null);
@@ -75,7 +85,6 @@ function Main() {
   const [query, setQuery] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
-  const url = Linking.useLinkingURL();
 
   const toast = (m: string, action?: { label: string; run: () => void }) => {
     setToastMsg(m);
@@ -91,47 +100,31 @@ function Main() {
   };
   const openAdd = () => setExpSheet({ key: Date.now(), initial: null });
 
-  // Bağlantıyla açılınca formu doldur
+  // Açılış bağlantısına ve sonradan gelen her bağlantıya göre formu ya da bütçe alanını aç
   useEffect(() => {
-    if (!url) return;
-    const { path, queryParams } = Linking.parse(url);
-    if (!path || !path.replace(/^\/+/, '').startsWith('ekle')) return;
-    const amount = parseAmount(String(queryParams?.tutar ?? ''));
-    const cat = SLUG[String(queryParams?.kategori ?? '').toLowerCase()];
-    setExpSheet({ key: Date.now(), initial: null, prefill: { amount: amount || undefined, cat } });
-  }, [url]);
-
-  // Kestirme sürümü: açılışta ve arka plandan her dönüşte formu aç (zaten açık bir form varsa dokunma)
-  const anySheetOpen = useRef(false);
-  anySheetOpen.current = !!expSheet || !!subSheet;
-  useEffect(() => {
-    if (!OPEN_ADD_ON_LAUNCH) return;
-    openAdd();
-    let wasBackground = false;
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'background') wasBackground = true;
-      if (state === 'active' && wasBackground) {
-        wasBackground = false;
-        if (!anySheetOpen.current) openAdd();
-      }
-    });
-    return () => sub.remove();
-  }, []);
-
-  // Bütçe bağlantısı: arka plandan dönüşte de bütçe alanına git
-  useEffect(() => {
-    if (!OPEN_BUDGET_ON_LAUNCH) return;
-    let wasBackground = false;
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'background') wasBackground = true;
-      if (state === 'active' && wasBackground) {
-        wasBackground = false;
-        if (anySheetOpen.current) return;
+    const handle = (u: string | null) => {
+      const mode = launchMode(u);
+      if (mode === 'ekle') {
+        let prefill: { amount?: number; cat?: string } | undefined;
+        try {
+          const q = Linking.parse(u!).queryParams ?? {};
+          const amount = parseAmount(String(q.tutar ?? ''));
+          prefill = { amount: amount || undefined, cat: SLUG[String(q.kategori ?? '').toLowerCase()] };
+        } catch {}
         setMenuOpen(false);
+        setExpSheet({ key: Date.now(), initial: null, prefill });
+      } else if (mode === 'butce') {
+        setMenuOpen(false);
+        setExpSheet(null);
+        setSubSheet(null);
         setScreen('ayarlar');
         setBudgetFocusKey(Date.now());
       }
-    });
+    };
+    Linking.getInitialURL()
+      .then((u) => handle(u || Constants.experienceUrl || null))
+      .catch(() => handle(Constants.experienceUrl || null));
+    const sub = Linking.addEventListener('url', (e) => handle(e.url));
     return () => sub.remove();
   }, []);
 

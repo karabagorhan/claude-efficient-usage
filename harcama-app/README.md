@@ -65,5 +65,5 @@ Kod yapısı: `App.tsx` ana ekran; `src/lib.ts` hesaplar; `src/store.ts` kayıt;
 | `exp://u.expo.dev/24b23d12-c615-4047-b61a-624003ad0003?runtime-version=1.0.0&channel-name=ekle` | Yeni harcama formu |
 | `exp://u.expo.dev/24b23d12-c615-4047-b61a-624003ad0003?runtime-version=1.0.0&channel-name=butce` | Ayarlar → bütçe alanı |
 
-Üç kanal aynı projedir, aynı verileri görür. Yayınlarken: `ekle` için `EXPO_PUBLIC_OPEN_ADD=1`,
-`butce` için `EXPO_PUBLIC_OPEN_SCREEN=butce` ortam değişkeniyle `eas update --branch <kanal>`.
+Üç kanala aynı paket yayınlanır (`eas update --branch main|ekle|butce`); uygulama açılış bağlantısındaki
+`channel-name` değerine bakarak formu ya da bütçe alanını açar. Arka plandan dönüşte hiçbir şey kendiliğinden açılmaz.
