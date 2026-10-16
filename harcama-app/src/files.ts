@@ -2,7 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as XLSX from 'xlsx';
-import { Expense, MONTHS, Sub, iso, monthLabel, sum } from './lib';
+import { Expense, MONTHS, Sub, iso, monthLabel, subType, sum } from './lib';
 import { Data, normalize } from './store';
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -72,12 +72,12 @@ export async function exportExcel(items: Expense[], subs: Sub[], ym: string | nu
   }
 
   if (subs.length) {
-    const d4: unknown[][] = [['Ad', 'Tutar', 'Sıklık', 'Ödeme günü', 'Kategori', 'Aylık karşılığı']];
+    const d4: unknown[][] = [['Ad', 'Tür', 'Tutar', 'Sıklık', 'Ödeme günü', 'Kategori', 'Aylık karşılığı']];
     subs.forEach((s) => {
       const yearly = s.freq === 'yearly';
-      d4.push([s.name, s.amount, yearly ? 'Yıllık' : 'Aylık', yearly ? `${s.day} ${MONTHS[s.month - 1]}` : `Her ay ${s.day}`, s.cat, yearly ? s.amount / 12 : s.amount]);
+      d4.push([s.name, subType(s.type).label, s.amount, yearly ? 'Yıllık' : 'Aylık', yearly ? `${s.day} ${MONTHS[s.month - 1]}` : `Her ay ${s.day}`, s.cat, yearly ? s.amount / 12 : s.amount]);
     });
-    XLSX.utils.book_append_sheet(wb, sheet(d4, [22, 14, 8, 14, 14, 16], { B: TL_FMT, F: TL_FMT }), 'Abonelikler');
+    XLSX.utils.book_append_sheet(wb, sheet(d4, [22, 18, 14, 8, 14, 14, 16], { C: TL_FMT, G: TL_FMT }), 'Abonelikler');
   }
 
   const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;

@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { ComponentProps, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
-import { Analysis, Insight, catIndex, compact, pad } from './lib';
+import { Analysis, Insight, catIndex, compact, pad, subType, subTypeIndex } from './lib';
 import { FONTS, Theme } from './theme';
 
 export function Chip({ label, active, color, icon, onPress, t }: { label: string; active: boolean; color?: string; icon?: IconName; onPress: () => void; t: Theme }) {
@@ -240,6 +240,17 @@ export function CatIcon({ cat, t, size = 36 }: { cat: string; t: Theme; size?: n
     </View>
   );
 }
+
+/** Abonelik türü simgesi (kategori simgesiyle aynı görünüm). */
+export function SubTypeIcon({ type, t, size = 36 }: { type: string | undefined; t: Theme; size?: number }) {
+  const color = t.cats[subTypeIndex(type) % t.cats.length];
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 1, borderColor: color + '66', backgroundColor: color + '14', alignItems: 'center', justifyContent: 'center' }}>
+      <Ionicons name={subType(type).icon as IconName} size={size * 0.46} color={color} />
+    </View>
+  );
+}
+export const subTypeColor = (type: string | undefined, t: Theme) => t.cats[subTypeIndex(type) % t.cats.length];
 
 /** Otomatik yorumlar listesi. */
 export function InsightList({ list, t }: { list: Insight[]; t: Theme }) {

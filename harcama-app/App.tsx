@@ -11,14 +11,14 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { exportBackup, exportExcel, pickBackup } from './src/files';
 import {
-  Analysis, Expense, MONTHS, Settings, Sub, addMonths, analyse, catIndex, categoryCompare, dayLabel, fmtTL, fmtTL0, frequentEntries,
+  Analysis, Expense, MONTHS, SUB_TYPES, Settings, Sub, addMonths, analyse, catIndex, categoryCompare, dayLabel, fmtTL, fmtTL0, frequentEntries,
   insights, iso, monthLabel, monthlyCost, parseAmount, shortDay, subStatus, sum, todayIso, uid, weekdayAverages,
 } from './src/lib';
 import { ensurePermission, reschedule } from './src/notify';
 import { ExpenseSheet, SettingsPanel, SubSheet } from './src/sheets';
 import { merge, useAppData } from './src/store';
 import { FONTS, Theme, useTheme } from './src/theme';
-import { Amount, Bars, Button, CatIcon, DailyChart, InsightList, Ionicons, Label, MenuItem, Pill, Progress, SideMenu } from './src/ui';
+import { Amount, Bars, Button, CatIcon, SubTypeIcon, subTypeColor, DailyChart, InsightList, Ionicons, Label, MenuItem, Pill, Progress, SideMenu } from './src/ui';
 
 export default function App() {
   // Yazı tipi yüklenemezse sistem yazı tipiyle devam edilir
@@ -43,7 +43,7 @@ const MENU: MenuItem[] = [
   { key: 'ekle', label: 'Harcama ekle', icon: 'add-circle-outline', hint: 'Yeni harcama gir' },
   { key: 'harcamalar', label: 'Harcamalar', icon: 'list-outline', hint: 'Liste, düzenleme, silme' },
   { key: 'raporlar', label: 'Raporlar', icon: 'bar-chart-outline', hint: 'Grafikler, kategoriler, Excel' },
-  { key: 'abonelikler', label: 'Abonelikler', icon: 'repeat-outline', hint: 'Düzenli ödemeler' },
+  { key: 'abonelikler', label: 'Abonelikler', icon: 'repeat-outline', hint: 'Düzenli ödemeler, türlere göre' },
   { key: 'ayarlar', label: 'Ayarlar', icon: 'settings-outline', hint: 'Bütçe, bildirim, yedek' },
 ];
 
@@ -156,6 +156,7 @@ function Main() {
       return;
     }
     setScreen(key as Screen);
+    setBudgetFocusKey(0); // menüden Ayarlar'a girince klavye kendiliğinden açılmasın
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   };
   const changeMonth = (n: number) => {
@@ -279,7 +280,7 @@ function Main() {
     body = (
       <>
         {monthSwitcher}
-        <Hero ctx={ctx} onBudget={() => go('ayarlar')} />
+        <Hero ctx={ctx} onBudget={() => { go('ayarlar'); setBudgetFocusKey(Date.now()); }} />
         <Tiles ctx={ctx} />
         {notes.length ? (
           <View style={st.card}>
@@ -392,10 +393,17 @@ function Main() {
     );
   } else if (screen === 'abonelikler') {
     const rank = { pending: 0, upcoming: 1, paid: 2, skipped: 2 };
+    const when = (x: ReturnType<typeof subStatus>) => ('next' in x ? x.next : x.due).getTime();
     const rows = subs
       .map((s) => ({ s, x: subStatus(s, items) }))
-      .sort((p, q) => rank[p.x.state] - rank[q.x.state] || ('next' in p.x ? p.x.next : p.x.due).getTime() - ('next' in q.x ? q.x.next : q.x.due).getTime());
+      .sort((p, q) => rank[p.x.state] - rank[q.x.state] || when(p.x) - when(q.x));
     const monthly = subs.reduce((s, x) => s + monthlyCost(x), 0);
+    // Türlere göre grupla; en pahalı tür üstte
+    const groups = SUB_TYPES.map((tp) => {
+      const list = rows.filter((r) => r.s.type === tp.key);
+      return { tp, list, total: list.reduce((m, r) => m + monthlyCost(r.s), 0) };
+    }).filter((g) => g.list.length).sort((p, q) => q.total - p.total);
+    const pendingCount = rows.filter((r) => r.x.state === 'pending').length;
     body = (
       <>
         {subs.length ? (
@@ -405,15 +413,46 @@ function Main() {
             {budget ? <View><Text style={st.subSumVal}>%{Math.round((monthly / budget) * 100)}</Text><Text style={st.tileSub}>bütçenin</Text></View> : null}
           </View>
         ) : null}
-        <View style={st.card}>
-          {rows.length ? (
-            rows.map(({ s }, i) => (
-              <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: s })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
-            ))
-          ) : (
-            <Text style={st.meta}>Netflix, Spotify, telefon, spor salonu gibi düzenli ödemelerini ekle. Ödeme günü gelince burada onayını bekler.</Text>
-          )}
-        </View>
+        {groups.length > 1 ? (
+          <View style={st.card}>
+            <View style={st.cardHead}>
+              <Label t={t}>Türlere göre (aylık)</Label>
+              {pendingCount ? <Pill kind="up" label={`${pendingCount} onay bekliyor`} t={t} /> : null}
+            </View>
+            <View style={st.stack}>
+              {groups.map((g) => <View key={g.tp.key} style={{ flex: g.total, backgroundColor: subTypeColor(g.tp.key, t) }} />)}
+            </View>
+            {groups.map((g, i) => (
+              <View key={g.tp.key} style={[st.catRow, i > 0 && st.topLine]}>
+                <SubTypeIcon type={g.tp.key} t={t} size={30} />
+                <View style={{ flex: 1 }}>
+                  <Text style={st.itemCat}>{g.tp.label}</Text>
+                  <Text style={st.meta}>{g.list.length} abonelik · %{Math.round((g.total / monthly) * 100)}</Text>
+                </View>
+                <Text style={st.itemAmt}>{fmtTL(g.total)}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        {groups.length ? (
+          groups.map((g) => (
+            <View key={g.tp.key} style={{ gap: 6 }}>
+              <View style={st.dayHead}>
+                <Label t={t}>{g.tp.label}</Label>
+                <Label t={t}>{`${fmtTL(g.total)} / ay`}</Label>
+              </View>
+              <View style={[st.card, { paddingVertical: 6 }]}>
+                {g.list.map(({ s }, i) => (
+                  <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: s })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
+                ))}
+              </View>
+            </View>
+          ))
+        ) : (
+          <View style={st.card}>
+            <Text style={st.meta}>Netflix, Spotify, telefon, spor salonu gibi düzenli ödemelerini ekle. Türlerine göre gruplanır, ödeme günü gelince burada onayını bekler.</Text>
+          </View>
+        )}
         <Button label="+ Abonelik ekle" kind="ghost" onPress={() => setSubSheet({ key: Date.now(), initial: null })} t={t} />
       </>
     );
@@ -572,7 +611,7 @@ function SubRow({ s, ctx, first, onEdit, onPay, onSkip }: { s: Sub; ctx: Ctx; fi
   return (
     <View style={[st.subWrap, !first && st.topLine]}>
       <Pressable onPress={onEdit} style={st.subRow} accessibilityLabel={`${s.name}, düzenle`}>
-        <CatIcon cat={s.cat} t={t} />
+        <SubTypeIcon type={s.type} t={t} />
         <View style={{ flex: 1, gap: 3 }}>
           <Text style={st.itemCat}>{s.name}</Text>
           <View style={st.metaRow}>

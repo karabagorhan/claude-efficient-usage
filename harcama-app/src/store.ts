@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
-import { CATS, Expense, Settings, Sub } from './lib';
+import { CATS, Expense, SUB_TYPES, Settings, Sub, guessSubType } from './lib';
 
 // Tüm veriler telefonda tek bir kayıt olarak tutulur (internet gerekmez).
 const KEY = 'harcama-defteri:v1';
@@ -41,6 +41,7 @@ export function normalize(raw: any): Data {
       month: Math.min(12, Math.max(1, num(s.month, 1))),
       cat: CATS.includes(s.cat) ? s.cat : 'Diğer',
       skip: str(s.skip),
+      type: SUB_TYPES.some((x) => x.key === s.type) ? s.type : guessSubType(str(s.name)) ?? 'diger',
     }));
   const st = raw?.settings ?? {};
   const settings: Settings = {

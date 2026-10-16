@@ -19,8 +19,9 @@ export type Sub = {
   day: number;
   freq: 'monthly' | 'yearly';
   month: number; // yıllık aboneliklerde 1-12
-  cat: string;
+  cat: string; // ödendiğinde harcamaya yazılacak kategori
   skip: string; // atlanan son dönem
+  type: string; // abonelik türü (SUB_TYPES anahtarı)
 };
 
 export type Settings = {
@@ -277,4 +278,50 @@ export function insights(items: Expense[], ym: string, settings: Settings): Insi
   if (free >= 3) out.push({ kind: 'good', text: `Bu ay ${free} gün hiç harcama yapmadın.` });
 
   return out;
+}
+
+/* ---------- Abonelik türleri ---------- */
+export type SubType = { key: string; label: string; icon: string; cat: string; words: string[] };
+
+/** Abonelik türleri; her biri ödendiğinde harcamalara yazılacak varsayılan kategoriyi ve ad tahmini için anahtar kelimeleri taşır. */
+export const SUB_TYPES: SubType[] = [
+  { key: 'yayin', label: 'Dijital yayın', icon: 'tv-outline', cat: 'Eğlence',
+    words: ['netflix', 'spotify', 'youtube', 'disney', 'exxen', 'blutv', 'blu tv', 'prime video', 'apple music', 'apple tv', 'tabii', 'gain', 'mubi', 'deezer', 'tidal', 'tod', 'hbo', 'max', 'twitch'] },
+  { key: 'iletisim', label: 'Telefon & İnternet', icon: 'wifi-outline', cat: 'Fatura',
+    words: ['turkcell', 'vodafone', 'türk telekom', 'turk telekom', 'superonline', 'türknet', 'turknet', 'internet', 'telefon', 'hat', 'fiber', 'mobil', 'gsm'] },
+  { key: 'ev', label: 'Ev faturaları', icon: 'flash-outline', cat: 'Fatura',
+    words: ['elektrik', 'su', 'doğalgaz', 'dogalgaz', 'doğal gaz', 'igdaş', 'igdas', 'enerjisa', 'ck enerji', 'iski', 'aski', 'başkentgaz', 'isınma'] },
+  { key: 'kira', label: 'Kira & Aidat', icon: 'home-outline', cat: 'Fatura', words: ['kira', 'aidat', 'site', 'yönetim'] },
+  { key: 'spor', label: 'Spor & Sağlık', icon: 'barbell-outline', cat: 'Sağlık',
+    words: ['spor', 'gym', 'fitness', 'macfit', 'mac fit', 'pilates', 'yoga', 'salon', 'diyetisyen', 'eczane'] },
+  { key: 'yazilim', label: 'Yazılım & Bulut', icon: 'cloud-outline', cat: 'Diğer',
+    words: ['icloud', 'google one', 'chatgpt', 'claude', 'openai', 'office', 'microsoft', 'adobe', 'dropbox', 'canva', 'notion', 'apple one', 'github', 'vpn'] },
+  { key: 'sigorta', label: 'Sigorta', icon: 'shield-checkmark-outline', cat: 'Diğer', words: ['sigorta', 'kasko', 'dask', 'trafik sigortası'] },
+  { key: 'egitim', label: 'Eğitim', icon: 'school-outline', cat: 'Diğer', words: ['kurs', 'okul', 'udemy', 'duolingo', 'eğitim', 'egitim', 'dershane', 'babbel', 'kitap'] },
+  { key: 'ulasim', label: 'Ulaşım', icon: 'car-outline', cat: 'Ulaşım', words: ['otopark', 'istanbulkart', 'hgs', 'ogs', 'araç', 'leasing', 'kiralık araç', 'akbil'] },
+  { key: 'uyelik', label: 'Alışveriş üyeliği', icon: 'pricetag-outline', cat: 'Market',
+    words: ['amazon prime', 'amazon', 'migros', 'trendyol', 'hepsiburada', 'getir', 'yemeksepeti', 'prime', 'premium'] },
+  { key: 'diger', label: 'Diğer', icon: 'ellipsis-horizontal', cat: 'Diğer', words: [] },
+];
+
+export function subType(key: string | undefined) {
+  return SUB_TYPES.find((x) => x.key === key) ?? SUB_TYPES[SUB_TYPES.length - 1];
+}
+export const subTypeIndex = (key: string | undefined) => Math.max(0, SUB_TYPES.findIndex((x) => x.key === key));
+
+/** Abonelik adından tür tahmini ("Netflix" → Dijital yayın). */
+export function guessSubType(name: string): string | null {
+  const n = name.toLocaleLowerCase('tr-TR');
+  const tokens = n.split(/[^a-zçğıöşü0-9]+/i).filter(Boolean);
+  for (const tp of SUB_TYPES) {
+    for (const w of tp.words) {
+      // Türkçe ekler için kısa kelimelerde kelime başı aranır ("kursu", "hattı", "kirası"); iki harfliler tam eşleşmeli ("su" ≠ "susam")
+      const hit = w.includes(' ') ? n.includes(w)
+        : w.length <= 2 ? tokens.includes(w)
+        : w.length <= 4 ? tokens.some((tk) => tk.startsWith(w))
+        : n.includes(w);
+      if (hit) return tp.key;
+    }
+  }
+  return null;
 }

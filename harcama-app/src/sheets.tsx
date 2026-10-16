@@ -1,8 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { InputAccessoryView, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { CATS, Expense, MONTHS, Settings, Sub, addDays, amountText, catIndex, dayLabel, parseAmount, todayIso, uid, fmtTL } from './lib';
+import { CATS, Expense, MONTHS, SUB_TYPES, Settings, Sub, addDays, amountText, catIndex, dayLabel, fmtTL, guessSubType, parseAmount, subType, todayIso, uid } from './lib';
 import { FONTS, Theme } from './theme';
-import { Button, CatIcon, Chip, Label, catIconName } from './ui';
+import { Button, CatIcon, Chip, IconName, Label, catIconName, subTypeColor } from './ui';
 
 type SheetAction = { label: string; onPress: () => void; disabled?: boolean };
 
@@ -128,7 +128,7 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
                 <CatIcon cat={f.cat} t={t} size={28} />
                 <View>
                   <Text style={{ color: t.fg, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>{f.note}</Text>
-                  <Text style={{ color: t.muted, fontSize: 12 }}>₺{amountText(f.amount)}</Text>
+                  <Text style={{ color: t.muted, fontSize: 12 }}>{fmtTL(f.amount)}</Text>
                 </View>
               </Pressable>
             ))}
@@ -188,21 +188,44 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
   const [freq, setFreq] = useState<Sub['freq']>(initial?.freq ?? 'monthly');
   const [day, setDay] = useState(String(initial?.day ?? new Date().getDate()));
   const [month, setMonth] = useState(initial?.month ?? new Date().getMonth() + 1);
-  const [cat, setCat] = useState(initial?.cat ?? 'Eğlence');
+  const [type, setType] = useState(initial?.type ?? 'yayin');
+  const [cat, setCat] = useState(initial?.cat ?? subType(initial?.type ?? 'yayin').cat);
+  // Kullanıcı türü/kategoriyi kendisi seçtiyse addan tahmin edilen değer onun yerine geçmez
+  const [typeTouched, setTypeTouched] = useState(!!initial);
+  const [catTouched, setCatTouched] = useState(!!initial);
   const value = parseAmount(amount);
   const d = parseInt(day, 10);
   const valid = !!name.trim() && !!value && d >= 1 && d <= 31;
 
+  const pickType = (k: string, byUser: boolean) => {
+    setType(k);
+    if (byUser) setTypeTouched(true);
+    if (!catTouched) setCat(subType(k).cat);
+  };
+  const onName = (v: string) => {
+    setName(v);
+    if (!typeTouched) {
+      const g = guessSubType(v);
+      if (g) pickType(g, false);
+    }
+  };
   const save = () => {
     if (!valid) return;
-    onSave({ id: initial?.id ?? 'sub_' + uid(), name: name.trim(), amount: value, day: d, freq, month: freq === 'yearly' ? month : 0, cat, skip: initial?.skip ?? '' });
+    onSave({ id: initial?.id ?? 'sub_' + uid(), name: name.trim(), amount: value, day: d, freq, month: freq === 'yearly' ? month : 0, cat, type, skip: initial?.skip ?? '' });
   };
 
   return (
     <Sheet visible={visible} title={initial ? 'Aboneliği düzenle' : 'Yeni abonelik'} onClose={onClose} t={t}
       accessoryId="sub-save" action={{ label: 'Kaydet', onPress: save, disabled: !valid }}>
       <Field label="Ad" t={t}>
-        <TextInput value={name} onChangeText={setName} placeholder="ör. Netflix, telefon faturası" placeholderTextColor={t.muted} autoFocus={!initial} style={inputStyle(t)} inputAccessoryViewID="sub-save" />
+        <TextInput value={name} onChangeText={onName} placeholder="ör. Netflix, telefon faturası" placeholderTextColor={t.muted} autoFocus={!initial} style={inputStyle(t)} inputAccessoryViewID="sub-save" />
+      </Field>
+      <Field label="Abonelik türü" t={t}>
+        <View style={st.chips}>
+          {SUB_TYPES.map((x) => (
+            <Chip key={x.key} label={x.label} icon={x.icon as IconName} color={subTypeColor(x.key, t)} active={type === x.key} onPress={() => pickType(x.key, true)} t={t} />
+          ))}
+        </View>
       </Field>
       <Field label="Tutar (₺)" t={t}>
         <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={t.muted} style={inputStyle(t, true)} inputAccessoryViewID="sub-save" />
@@ -225,8 +248,11 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
           </View>
         </Field>
       ) : null}
-      <Field label="Kategori" t={t}>
-        <CatChips value={cat} onChange={setCat} t={t} />
+      <Field label="Harcamalarda görüneceği kategori" t={t}>
+        <Text style={{ color: t.muted, fontSize: 13, lineHeight: 18 }}>
+          Ödendi olarak işaretlediğinde harcamalara bu kategoriyle eklenir. Türe göre otomatik seçilir, istersen değiştir.
+        </Text>
+        <CatChips value={cat} onChange={(c) => { setCat(c); setCatTouched(true); }} t={t} />
       </Field>
       <View style={st.actions}>
         {initial ? <DeleteButton onDelete={() => onDelete(initial.id)} t={t} /> : null}
@@ -353,7 +379,6 @@ function CatLimitRow({ cat, value, onChange, t }: { cat: string; value: number; 
         value={text}
         onChangeText={setText}
         onEndEditing={commit}
-        onBlur={commit}
         keyboardType="decimal-pad"
         placeholder="Limit yok"
         placeholderTextColor={t.muted}
