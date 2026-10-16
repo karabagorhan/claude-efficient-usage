@@ -138,6 +138,25 @@ h1 { font-family: var(--display); font-size: 22px; margin: 0; font-weight: 700; 
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .fab { display: block; width: 100%; max-width: 560px; margin: 0 auto; height: 56px; border: 0; border-radius: 18px; background: var(--fg); color: var(--bg); font-weight: 600; font-size: 17px; }
 
+/* Abonelikler */
+.addbtn { border: 1px solid var(--line); background: var(--bg); border-radius: 99px; padding: 4px 12px; font-size: 14px; font-weight: 600; }
+.subs-sum { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.subs-sum b { display: block; color: var(--fg); font-family: var(--display); font-size: 19px; }
+.sub-wrap { display: flex; flex-direction: column; gap: 8px; padding-block: 10px; }
+.sub-wrap + .sub-wrap { border-top: 1px solid var(--line); }
+.sub-row { display: grid; grid-template-columns: 10px 1fr auto; gap: 3px 10px; align-items: center; padding: 0 4px; width: 100%; border: 0; background: none; text-align: left; }
+.sub-row .dot { width: 10px; height: 10px; border-radius: 3px; }
+.sub-row .nm { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.sub-row .a { font-weight: 600; text-align: right; }
+.sub-row .a small { color: var(--muted); font-weight: 400; }
+.sub-row .meta { grid-column: 2 / -1; font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sub-act { display: flex; gap: 8px; flex-wrap: wrap; padding-left: 24px; }
+.sub-act button { border: 0; border-radius: 12px; padding: 8px 14px; font-weight: 600; font-size: 14px; }
+.sub-act .pay { background: var(--accent); color: var(--accent-fg); }
+.sub-act .skip { background: var(--bg); color: var(--muted); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+select { width: 100%; height: 48px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 14px; padding: 0 12px; font: inherit; font-size: 16px; }
+
 /* Alt sayfa */
 .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
 .sheet { background: var(--surface); width: 100%; max-width: 560px; border-radius: 24px 24px 0 0; max-height: 92%; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
@@ -199,6 +218,12 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
 
   <section class="tiles" aria-label="Ay analizi" id="tiles"></section>
 
+  <section class="card" aria-label="Abonelikler">
+    <div class="card-head"><span class="label">Abonelikler</span><button class="addbtn" id="subadd">+ Abonelik</button></div>
+    <div class="subs-sum num" id="subsum" hidden></div>
+    <div id="subs"></div>
+  </section>
+
   <section class="card chart" aria-label="Günlük harcama">
     <div class="card-head">
       <span class="label">Günlük harcama</span>
@@ -241,6 +266,32 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
   </form>
 </div>
 
+<div class="sheet-bg" id="subbg" hidden>
+  <form class="sheet" id="subform" role="dialog" aria-labelledby="subtitle">
+    <div class="sheet-top"><h2 id="subtitle">Yeni abonelik</h2><button type="button" class="x" id="subclose" aria-label="Kapat">✕</button></div>
+    <div class="field"><label class="label" for="subname">Ad</label>
+      <input id="subname" type="text" placeholder="ör. Netflix, telefon faturası" autocomplete="off"></div>
+    <div class="field"><label class="label" for="subamount">Tutar (₺)</label>
+      <input class="amount num" id="subamount" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+    <div class="field"><span class="label">Sıklık</span>
+      <div class="chips" id="subfreq">
+        <button type="button" class="chip" data-f="monthly" aria-pressed="true">Aylık</button>
+        <button type="button" class="chip" data-f="yearly" aria-pressed="false">Yıllık</button>
+      </div></div>
+    <div class="row2">
+      <div class="field"><label class="label" for="subday">Ödeme günü</label>
+        <input id="subday" type="number" inputmode="numeric" min="1" max="31" placeholder="1–31"></div>
+      <div class="field" id="submonthwrap" hidden><label class="label" for="submonth">Ay</label>
+        <select id="submonth"></select></div>
+    </div>
+    <div class="field"><span class="label">Kategori</span><div class="chips" id="subchips"></div></div>
+    <div class="actions">
+      <button type="button" class="delete" id="subdel" hidden>Sil</button>
+      <button class="save" id="subsave" type="submit" disabled>Kaydet</button>
+    </div>
+  </form>
+</div>
+
 <script>
 (function () {
   var CATS = ["Market", "Yeme-İçme", "Ulaşım", "Fatura", "Sağlık", "Eğlence", "Giyim", "Diğer"];
@@ -260,12 +311,22 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
 
   var state = {
     items: [], ym: iso(new Date()).slice(0, 7), cat: CATS[0], editing: null, armDel: false,
-    filterCat: null, filterDay: null, mode: "local", col: null, budget: 0, dl: null
+    filterCat: null, filterDay: null, mode: "local", col: null, budget: 0, dl: null,
+    subs: [], subEditing: null, subFreq: "monthly", subCat: "Eğlence", subArm: false
   };
   try { state.budget = parseFloat(localStorage.getItem("hd-budget")) || 0; } catch (e) {}
 
   /* ---------- Depolama: hesap (özel) varsa orası, yoksa bu tarayıcı ---------- */
-  function loadLocal() { try { state.items = JSON.parse(localStorage.getItem("hd-items") || "[]"); } catch (e) { state.items = []; } }
+  function loadLocal() {
+    try { state.items = JSON.parse(localStorage.getItem("hd-items") || "[]"); } catch (e) { state.items = []; }
+    try { state.subs = JSON.parse(localStorage.getItem("hd-subs") || "[]"); } catch (e) { state.subs = []; }
+  }
+  function saveLocalSubs() { try { localStorage.setItem("hd-subs", JSON.stringify(state.subs)); } catch (e) {} }
+  function expenseBody(it) {
+    var b = { amount: it.amount, cat: it.cat, note: it.note, date: it.date, ts: it.ts };
+    if (it.sub) { b.sub = it.sub; b.period = it.period; }
+    return b;
+  }
   function saveLocal() { try { localStorage.setItem("hd-items", JSON.stringify(state.items)); } catch (e) {} }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function setStatus(t) { $("status").textContent = t; }
@@ -274,7 +335,7 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
   function putItem(it) { (state.dbInit || Promise.resolve()).then(function () { putNow(it); }); }
   function putNow(it) {
     if (state.mode === "db") {
-      state.col.doc(it.id).set({ amount: it.amount, cat: it.cat, note: it.note, date: it.date, ts: it.ts })
+      state.col.doc(it.id).set(expenseBody(it))
         .catch(function () { setStatus("Kaydedilemedi. Bağlantını kontrol edip tekrar dene."); });
     } else {
       state.items = state.items.filter(function (x) { return x.id !== it.id; }).concat([it]);
@@ -292,6 +353,22 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
     render();
   }
 
+  function putSub(s) {
+    (state.dbInit || Promise.resolve()).then(function () {
+      if (state.mode === "db") {
+        state.col.doc(s.id).set({ kind: "sub", name: s.name, amount: s.amount, day: s.day, freq: s.freq, month: s.month, cat: s.cat, skip: s.skip || "" })
+          .catch(function () { setStatus("Abonelik kaydedilemedi. Tekrar dene."); });
+      } else {
+        state.subs = state.subs.filter(function (x) { return x.id !== s.id; }).concat([s]);
+        saveLocalSubs(); render();
+      }
+    });
+  }
+  function removeSub(id) {
+    if (state.mode === "db") state.col.doc(id).delete().catch(function () { setStatus("Abonelik silinemedi. Tekrar dene."); });
+    else { state.subs = state.subs.filter(function (x) { return x.id !== id; }); saveLocalSubs(); render(); }
+  }
+
   function initStore() {
     loadLocal(); render();
     setStatus("Veriler yalnızca bu tarayıcıda tutuluyor.");
@@ -307,13 +384,18 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
         state.col = db.collection("data/users/" + id);
         state.col.onSnapshot(function (snap) {
           state.mode = "db";
-          var items = [];
+          var items = [], subs = [];
           snap.docs.forEach(function (d) {
             var v = d.data() || {};
             if (d.id === "_settings") { if (typeof v.budget === "number") state.budget = v.budget; return; }
-            if (typeof v.amount === "number" && v.date) items.push({ id: d.id, amount: v.amount, cat: v.cat, note: v.note || "", date: v.date, ts: v.ts || 0 });
+            if (v.kind === "sub") {
+              if (typeof v.amount === "number") subs.push({ id: d.id, name: v.name || "", amount: v.amount, day: v.day || 1, freq: v.freq === "yearly" ? "yearly" : "monthly", month: v.month || 1, cat: v.cat || "Diğer", skip: v.skip || "" });
+              return;
+            }
+            if (typeof v.amount === "number" && v.date) items.push({ id: d.id, amount: v.amount, cat: v.cat, note: v.note || "", date: v.date, ts: v.ts || 0, sub: v.sub, period: v.period });
           });
           state.items = items;
+          state.subs = subs;
           setStatus("Hesabına özel kaydediliyor.");
           render(); ready();
         }, function () { state.mode = "local"; loadLocal(); setStatus("Hesap bağlantısı yok, veriler bu tarayıcıda."); render(); ready(); });
@@ -452,6 +534,7 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
       }
     }
     $("tiles").innerHTML = t;
+    renderSubs();
 
     drawChart(a);
     $("chartnote").textContent = state.filterDay
@@ -586,7 +669,7 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
   $("open").onclick = function () { openSheet(null); };
   $("close").onclick = closeSheet;
   $("sheetbg").onclick = function (e) { if (e.target === this) closeSheet(); };
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeSheet(); closeSub(); } });
   $("del").onclick = function () {
     if (!state.armDel) { setArm(true); return; }
     var id = state.editing; closeSheet(); if (id) removeItem(id);
@@ -597,9 +680,124 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
     var amt = parseAmount($("amount").value); if (!amt) return;
     var date = $("date").value || iso(new Date());
     var old = state.editing && state.items.filter(function (x) { return x.id === state.editing; })[0];
-    putItem({ id: state.editing || uid(), amount: amt, cat: state.cat, note: $("note").value.trim(), date: date, ts: old ? old.ts : Date.now() });
+    var it = { id: state.editing || uid(), amount: amt, cat: state.cat, note: $("note").value.trim(), date: date, ts: old ? old.ts : Date.now() };
+    if (old && old.sub) { it.sub = old.sub; it.period = old.period; }
+    putItem(it);
     state.ym = date.slice(0, 7);
     closeSheet(); render();
+  };
+
+  /* ---------- Abonelikler: ödeme günü gelince onay bekler ---------- */
+  function today0() { return parseIso(iso(new Date())); }
+  function subPeriod(s, ref) { return s.freq === "yearly" ? String(ref.getFullYear()) : iso(ref).slice(0, 7); }
+  function dueDate(s, y, m) {
+    var mm = s.freq === "yearly" ? s.month - 1 : m;
+    var last = new Date(y, mm + 1, 0).getDate();
+    return new Date(y, mm, Math.min(s.day, last));
+  }
+  function subStatus(s) {
+    var now = today0(), per = subPeriod(s, now);
+    var due = dueDate(s, now.getFullYear(), now.getMonth());
+    var paid = state.items.some(function (x) { return x.sub === s.id && x.period === per; });
+    var skipped = s.skip === per;
+    if (paid || skipped) {
+      var next = s.freq === "yearly" ? dueDate(s, now.getFullYear() + 1, 0) : dueDate(s, now.getFullYear(), now.getMonth() + 1);
+      return { state: paid ? "paid" : "skipped", due: due, next: next, period: per };
+    }
+    if (due <= now) return { state: "pending", due: due, period: per };
+    return { state: "upcoming", due: due, period: per, days: Math.round((due - now) / 864e5) };
+  }
+  function renderSubs() {
+    if (!state.subs.length) {
+      $("subsum").hidden = true;
+      $("subs").innerHTML = '<div class="status" style="text-align:left">Netflix, Spotify, telefon, spor salonu gibi düzenli ödemelerini ekle. Ödeme günü gelince burada onayını bekler.</div>';
+      return;
+    }
+    var monthly = state.subs.reduce(function (t, s) { return t + (s.freq === "yearly" ? s.amount / 12 : s.amount); }, 0);
+    $("subsum").hidden = false;
+    $("subsum").innerHTML = "<div><b>" + tl.format(monthly) + "</b>aylık</div><div><b>" + tl0.format(monthly * 12) + "</b>yıllık</div>" +
+      (state.budget ? "<div><b>%" + Math.round(monthly / state.budget * 100) + "</b>bütçenin</div>" : "");
+    var rank = { pending: 0, upcoming: 1, paid: 2, skipped: 2 };
+    var rows = state.subs.map(function (s) { return { s: s, st: subStatus(s) }; }).sort(function (p, q) {
+      return rank[p.st.state] - rank[q.st.state] || (p.st.next || p.st.due) - (q.st.next || q.st.due);
+    });
+    $("subs").innerHTML = rows.map(function (r) {
+      var s = r.s, st = r.st;
+      var when = s.freq === "yearly" ? "Yıllık · " + shortDay(iso(dueDate(s, 2000, 0))).replace(/\s?\d{4}$/, "") : "Her ay " + s.day + ". gün";
+      var pill;
+      if (st.state === "pending") pill = '<span class="pill up">Bekliyor</span>' + esc(shortDay(iso(st.due)));
+      else if (st.state === "upcoming") pill = '<span class="pill flat">' + st.days + " gün sonra</span>";
+      else pill = '<span class="pill ' + (st.state === "paid" ? "down" : "flat") + '">' + (st.state === "paid" ? "Ödendi" : "Atlandı") + "</span>sonraki " + esc(shortDay(iso(st.next)));
+      var act = st.state === "pending"
+        ? '<div class="sub-act"><button class="pay" data-pay="' + esc(s.id) + '">Ödendi olarak işaretle</button><button class="skip" data-skip="' + esc(s.id) + '">Bu dönemi atla</button></div>'
+        : "";
+      return '<div class="sub-wrap"><button class="sub-row" data-sub="' + esc(s.id) + '" aria-label="' + esc(s.name + ", düzenle") + '"><span class="dot k' + catIdx(s.cat) + '"></span><span class="nm">' + esc(s.name) +
+        '</span><span class="a num">' + tl.format(s.amount) + "<small>/" + (s.freq === "yearly" ? "yıl" : "ay") + '</small></span><span class="meta">' + esc(when) + " · " + pill + "</span></button>" + act + "</div>";
+    }).join("");
+  }
+  function findSub(id) { return state.subs.filter(function (x) { return x.id === id; })[0]; }
+
+  $("subs").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var s;
+    if (b.hasAttribute("data-pay")) {
+      s = findSub(b.getAttribute("data-pay")); if (!s) return;
+      var st = subStatus(s);
+      putItem({ id: uid(), amount: s.amount, cat: s.cat, note: s.name, date: iso(st.due), ts: Date.now(), sub: s.id, period: st.period });
+      setStatus(s.name + " bu dönemin harcamalarına eklendi.");
+    } else if (b.hasAttribute("data-skip")) {
+      s = findSub(b.getAttribute("data-skip")); if (!s) return;
+      putSub({ id: s.id, name: s.name, amount: s.amount, day: s.day, freq: s.freq, month: s.month, cat: s.cat, skip: subStatus(s).period });
+    } else if (b.hasAttribute("data-sub")) {
+      s = findSub(b.getAttribute("data-sub")); if (s) openSub(s);
+    }
+  });
+
+  // Abonelik formu
+  var mopts = "";
+  for (var mi = 0; mi < 12; mi++) mopts += '<option value="' + (mi + 1) + '">' + new Date(2000, mi, 1).toLocaleDateString("tr-TR", { month: "long" }) + "</option>";
+  $("submonth").innerHTML = mopts;
+  $("subchips").innerHTML = CATS.map(function (c) { return '<button type="button" class="chip" data-c="' + esc(c) + '" aria-pressed="false"><i class="k' + catIdx(c) + '"></i>' + esc(c) + "</button>"; }).join("");
+  function paintSub() {
+    Array.prototype.forEach.call($("subfreq").children, function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-f") === state.subFreq ? "true" : "false"); });
+    Array.prototype.forEach.call($("subchips").children, function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-c") === state.subCat ? "true" : "false"); });
+    $("submonthwrap").hidden = state.subFreq !== "yearly";
+  }
+  function subDay() { var d = parseInt($("subday").value, 10); return d >= 1 && d <= 31 ? d : 0; }
+  function subValid() { $("subsave").disabled = !($("subname").value.trim() && parseAmount($("subamount").value) && subDay()); }
+  ["subname", "subamount", "subday"].forEach(function (id) { $(id).addEventListener("input", subValid); });
+  $("subfreq").onclick = function (e) { var b = e.target.closest(".chip"); if (!b) return; state.subFreq = b.getAttribute("data-f"); paintSub(); };
+  $("subchips").onclick = function (e) { var b = e.target.closest(".chip"); if (!b) return; state.subCat = b.getAttribute("data-c"); paintSub(); };
+  function setSubArm(on) { state.subArm = on; $("subdel").classList.toggle("arm", on); $("subdel").textContent = on ? "Emin misin? Sil" : "Sil"; }
+  function openSub(s) {
+    state.subEditing = s ? s.id : null;
+    $("subtitle").textContent = s ? "Aboneliği düzenle" : "Yeni abonelik";
+    $("subname").value = s ? s.name : "";
+    $("subamount").value = s ? String(s.amount).replace(".", ",") : "";
+    $("subday").value = s ? s.day : new Date().getDate();
+    $("submonth").value = String(s ? s.month : new Date().getMonth() + 1);
+    state.subFreq = s ? s.freq : "monthly";
+    state.subCat = s ? s.cat : "Eğlence";
+    $("subdel").hidden = !s; setSubArm(false);
+    paintSub(); subValid(); $("subbg").hidden = false;
+    if (!s) setTimeout(function () { $("subname").focus(); }, 50);
+  }
+  function closeSub() { $("subbg").hidden = true; state.subEditing = null; }
+  $("subadd").onclick = function () { openSub(null); };
+  $("subclose").onclick = closeSub;
+  $("subbg").onclick = function (e) { if (e.target === this) closeSub(); };
+  $("subdel").onclick = function () {
+    if (!state.subArm) { setSubArm(true); return; }
+    var id = state.subEditing; closeSub(); if (id) removeSub(id);
+  };
+  $("subform").onsubmit = function (e) {
+    e.preventDefault();
+    var amt = parseAmount($("subamount").value), day = subDay(), name = $("subname").value.trim();
+    if (!amt || !day || !name) return;
+    var old = state.subEditing && findSub(state.subEditing);
+    putSub({ id: state.subEditing || "sub_" + uid(), name: name, amount: amt, day: day, freq: state.subFreq,
+      month: state.subFreq === "yearly" ? +$("submonth").value : 0, cat: state.subCat, skip: old ? old.skip : "" });
+    closeSub();
   };
 
   /* ---------- iPhone Kestirmeleri: #ekle, #ekle-250, #ekle-125_50-market ---------- */
