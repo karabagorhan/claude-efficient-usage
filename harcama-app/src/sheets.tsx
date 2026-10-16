@@ -220,6 +220,13 @@ export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestor
   const row = [st.row, { borderColor: t.line }];
   return (
     <View style={{ gap: 22 }}>
+      <Field label="Görünüm" t={t}>
+        <View style={st.chips}>
+          <Chip label="Noir" icon="moon-outline" active={settings.theme === 'noir'} onPress={() => onChange({ ...settings, theme: 'noir' })} t={t} />
+          <Chip label="Fildişi" icon="sunny-outline" active={settings.theme === 'ivory'} onPress={() => onChange({ ...settings, theme: 'ivory' })} t={t} />
+          <Chip label="Telefona göre" icon="phone-portrait-outline" active={settings.theme === 'system'} onPress={() => onChange({ ...settings, theme: 'system' })} t={t} />
+        </View>
+      </Field>
       <Field label="Aylık bütçe (₺)" t={t}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TextInput

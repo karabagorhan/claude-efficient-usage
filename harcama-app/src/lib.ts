@@ -29,6 +29,7 @@ export type Settings = {
   remindHour: number;
   subRemind: boolean;
   catBudgets: Record<string, number>; // kategori başına aylık limit (0 / yok = limitsiz)
+  theme: 'noir' | 'ivory' | 'system';
 };
 
 export const CATS = ['Market', 'Yeme-İçme', 'Ulaşım', 'Fatura', 'Sağlık', 'Eğlence', 'Giyim', 'Diğer'];

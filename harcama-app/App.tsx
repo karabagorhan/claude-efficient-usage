@@ -1,6 +1,6 @@
-import { BricolageGrotesque_600SemiBold } from '@expo-google-fonts/bricolage-grotesque/600SemiBold';
-import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
-import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque/800ExtraBold';
+import { PlayfairDisplay_600SemiBold } from '@expo-google-fonts/playfair-display/600SemiBold';
+import { PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display/700Bold';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
@@ -17,11 +17,11 @@ import { ensurePermission, reschedule } from './src/notify';
 import { ExpenseSheet, SettingsPanel, SubSheet } from './src/sheets';
 import { merge, useAppData } from './src/store';
 import { FONTS, Theme, useTheme } from './src/theme';
-import { Bars, Button, CatIcon, DailyChart, InsightList, Ionicons, Label, MenuItem, Pill, Progress, SideMenu } from './src/ui';
+import { Amount, Bars, Button, CatIcon, DailyChart, InsightList, Ionicons, Label, MenuItem, Pill, Progress, SideMenu } from './src/ui';
 
 export default function App() {
   // Yazı tipi yüklenemezse sistem yazı tipiyle devam edilir
-  const [fontsLoaded, fontError] = useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold });
+  const [fontsLoaded, fontError] = useFonts({ PlayfairDisplay_600SemiBold, PlayfairDisplay_700Bold });
   if (!fontsLoaded && !fontError) return null;
   return (
     <SafeAreaProvider>
@@ -56,10 +56,10 @@ const SLUG: Record<string, string> = {
 };
 
 function Main() {
-  const t = useTheme();
-  const st = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
   const { data, update } = useAppData();
+  const t = useTheme(data?.settings.theme);
+  const st = useMemo(() => makeStyles(t), [t]);
   const [screen, setScreen] = useState<Screen>('ozet');
   const [menuOpen, setMenuOpen] = useState(false);
   const [ym, setYm] = useState(todayIso().slice(0, 7));
@@ -317,15 +317,15 @@ function Main() {
         {q ? null : monthSwitcher}
         <View style={st.summaryRow}>
           <Text style={st.meta}>{q ? `Tüm aylarda ${shown.length} sonuç` : `${shown.length} işlem`}</Text>
-          <Text style={st.summaryVal}>{fmtTL(sum(shown))}</Text>
+          <Amount text={fmtTL(sum(shown))} style={st.summaryVal} symbolColor={t.gold} />
         </View>
         {cats.length > 1 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {cats.map((c) => (
               <Pressable key={c} onPress={() => setFilterCat(filterCat === c ? null : c)}
-                style={[st.catChip, { backgroundColor: filterCat === c ? t.fg : t.surface, borderColor: filterCat === c ? t.fg : t.line }]}>
+                style={[st.catChip, { backgroundColor: filterCat === c ? t.accentSoft : t.surface, borderColor: filterCat === c ? t.gold : t.line }]}>
                 <CatIcon cat={c} t={t} size={22} />
-                <Text style={{ color: filterCat === c ? t.bg : t.fg, fontSize: 14 }}>{c}</Text>
+                <Text style={{ color: filterCat === c ? t.gold : t.fg, fontSize: 14 }}>{c}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -387,8 +387,8 @@ function Main() {
       <>
         {subs.length ? (
           <View style={st.subSum}>
-            <View><Text style={st.subSumVal}>{fmtTL(monthly)}</Text><Text style={st.tileSub}>aylık</Text></View>
-            <View><Text style={st.subSumVal}>{fmtTL0(monthly * 12)}</Text><Text style={st.tileSub}>yıllık</Text></View>
+            <View><Amount text={fmtTL(monthly)} style={st.subSumVal} symbolColor={t.gold} /><Text style={st.tileSub}>aylık</Text></View>
+            <View><Amount text={fmtTL0(monthly * 12)} style={st.subSumVal} symbolColor={t.gold} /><Text style={st.tileSub}>yıllık</Text></View>
             {budget ? <View><Text style={st.subSumVal}>%{Math.round((monthly / budget) * 100)}</Text><Text style={st.tileSub}>bütçenin</Text></View> : null}
           </View>
         ) : null}
@@ -438,16 +438,16 @@ function Main() {
 
       {showFab ? (
         <View style={[st.fabBar, { paddingBottom: insets.bottom + 10 }]}>
-          <Button label="+ Harcama ekle" kind="dark" onPress={openAdd} t={t} style={{ height: 56, borderRadius: 18 }} />
+          <Button label="+  Harcama ekle" kind="primary" onPress={openAdd} t={t} style={st.fab} />
         </View>
       ) : null}
 
       {toastMsg ? (
         <View pointerEvents={toastAction ? 'auto' : 'none'} style={[st.toast, { bottom: insets.bottom + (showFab ? 82 : 24) }]}>
-          <Text style={{ color: t.bg, fontSize: 14, flexShrink: 1 }}>{toastMsg}</Text>
+          <Text style={{ color: t.fg, fontSize: 14, flexShrink: 1 }}>{toastMsg}</Text>
           {toastAction ? (
             <Pressable hitSlop={10} onPress={() => { toastAction.run(); setToastMsg(''); setToastAction(null); buzz(); }}>
-              <Text style={{ color: t.accentSoft, fontSize: 14, fontWeight: '700' }}>{toastAction.label}</Text>
+              <Text style={{ color: t.gold, fontSize: 14, fontWeight: '700' }}>{toastAction.label}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -469,38 +469,44 @@ function Main() {
 type Styles = ReturnType<typeof makeStyles>;
 type Ctx = { t: Theme; st: Styles; a: Analysis; ym: string; items: Expense[]; subs: Sub[]; monthItems: Expense[]; budget: number; settings: Settings };
 
+/** Özet kartı: koyu metal kart görünümü, şampanya altını ayrıntılar. */
 function Hero({ ctx, onBudget }: { ctx: Ctx; onBudget: () => void }) {
-  const { t, st, a, items, budget } = ctx;
+  const { t, st, a, ym, items, budget } = ctx;
   const left = budget - a.total;
   return (
-    <View style={st.hero}>
-      <View>
-        <Label t={t} color={t.accentFg}>{a.isCur ? 'Bugün harcanan' : 'Günlük ortalama'}</Label>
-        <Text style={st.heroBig}>{a.isCur ? fmtTL(sum(items.filter((x) => x.date === todayIso()))) : fmtTL(a.avg)}</Text>
+    <LinearGradient colors={t.heroGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.hero}>
+      <View style={st.heroTop}>
+        <Text style={st.heroBrand}>HARCAMA DEFTERİ</Text>
+        <Text style={st.heroBrand}>{monthLabel(ym).toLocaleUpperCase('tr-TR')}</Text>
       </View>
+      <View>
+        <Text style={st.heroLabel}>{a.isCur ? 'Bugün harcanan' : 'Günlük ortalama'}</Text>
+        <Amount text={a.isCur ? fmtTL(sum(items.filter((x) => x.date === todayIso()))) : fmtTL(a.avg)} style={st.heroBig} symbolColor={t.heroLabel} />
+      </View>
+      <View style={st.heroRule} />
       <View style={st.heroRow}>
         <View>
-          <Label t={t} color={t.accentFg}>{a.isCur ? 'Bu ay' : 'Ay toplamı'}</Label>
-          <Text style={st.heroMid}>{fmtTL(a.total)}</Text>
+          <Text style={st.heroLabel}>{a.isCur ? 'Bu ay' : 'Ay toplamı'}</Text>
+          <Amount text={fmtTL(a.total)} style={st.heroMid} symbolColor={t.heroLabel} />
         </View>
-        <Pressable onPress={onBudget} hitSlop={8}>
-          <Text style={st.heroLink}>{budget ? `Bütçe: ${fmtTL0(budget)}` : 'Bütçe belirle'}</Text>
+        <Pressable onPress={onBudget} hitSlop={8} style={st.heroBudget}>
+          <Text style={st.heroBudgetTxt}>{budget ? `Bütçe ${fmtTL0(budget)}` : 'Bütçe belirle'}</Text>
         </Pressable>
       </View>
       {budget ? (
         <View style={{ gap: 8 }}>
           <View style={st.track}>
-            <View style={[st.fill, { width: `${Math.min(100, (a.total / budget) * 100)}%`, backgroundColor: a.total > budget ? t.warnSoft : t.accentFg }]} />
+            <View style={[st.fill, { width: `${Math.min(100, (a.total / budget) * 100)}%`, backgroundColor: a.total > budget ? t.warn : t.heroFill }]} />
           </View>
           <View style={st.heroRow}>
             <Text style={st.heroSmall}>{left >= 0 ? `${fmtTL0(left)} kaldı` : `${fmtTL0(-left)} aşıldı`}</Text>
             <Text style={st.heroSmall}>
-              {a.isCur && left > 0 ? `kalan günlerde günde ${fmtTL0(left / (a.dim - a.elapsed + 1))}` : `%${Math.round((a.total / budget) * 100)} kullanıldı`}
+              {a.isCur && left > 0 ? `günde ${fmtTL0(left / (a.dim - a.elapsed + 1))} harcayabilirsin` : `%${Math.round((a.total / budget) * 100)} kullanıldı`}
             </Text>
           </View>
         </View>
       ) : null}
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -537,7 +543,7 @@ function Tiles({ ctx }: { ctx: Ctx }) {
       {tiles.map((x) => (
         <View key={x.label} style={st.tile}>
           <Label t={t}>{x.label}</Label>
-          <Text style={st.tileVal}>{x.value}</Text>
+          <Amount text={x.value} style={st.tileVal} symbolColor={t.gold} />
           {x.sub}
         </View>
       ))}
@@ -719,32 +725,38 @@ function makeStyles(t: Theme) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: t.bg },
     topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, backgroundColor: t.bg },
-    menuBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' },
+    menuBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: t.goldLine, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' },
     scroll: { paddingHorizontal: 16, paddingTop: 8, gap: 16 },
-    h1: { fontSize: 32, fontFamily: FONTS.display, color: t.fg, letterSpacing: -0.5 },
-    link: { color: t.accent, fontSize: 14, fontWeight: '600' },
+    h1: { fontSize: 34, fontFamily: FONTS.display, color: t.fg, letterSpacing: -0.3 },
+    link: { color: t.gold, fontSize: 14, fontWeight: '600', letterSpacing: 0.3 },
     months: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    mBtn: { width: 44, height: 40, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' },
-    mLabel: { fontSize: 17, fontWeight: '600', color: t.fg },
-    hero: { backgroundColor: t.accent, borderRadius: 28, padding: 22, gap: 16, shadowColor: t.accent, shadowOpacity: 0.25, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } },
-    heroBig: { color: t.accentFg, fontSize: 46, fontFamily: FONTS.display, marginTop: 4, fontVariant: ['tabular-nums'], letterSpacing: -1 },
-    heroMid: { color: t.accentFg, fontSize: 26, fontFamily: FONTS.bold, fontVariant: ['tabular-nums'] },
+    mBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: t.goldLine, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' },
+    mLabel: { fontSize: 19, fontFamily: FONTS.bold, color: t.fg },
+    hero: { borderRadius: 26, padding: 22, gap: 16, borderWidth: 1, borderColor: 'rgba(201,168,106,0.45)', overflow: 'hidden' },
+    heroTop: { flexDirection: 'row', justifyContent: 'space-between' },
+    heroBrand: { color: t.heroLabel, fontSize: 10, letterSpacing: 2.4, fontWeight: '600' },
+    heroLabel: { color: t.heroMuted, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' },
+    heroRule: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(201,168,106,0.4)' },
+    heroBudget: { borderWidth: 1, borderColor: 'rgba(201,168,106,0.5)', borderRadius: 99, paddingVertical: 6, paddingHorizontal: 12 },
+    heroBudgetTxt: { color: t.heroLabel, fontSize: 13, fontWeight: '600' },
+    fab: { height: 56, borderRadius: 28, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
+    heroBig: { color: t.heroFg, fontSize: 48, fontFamily: FONTS.display, marginTop: 6, letterSpacing: -0.5 },
+    heroMid: { color: t.heroFg, fontSize: 26, fontFamily: FONTS.bold, marginTop: 2 },
     heroRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 8 },
-    heroLink: { color: t.accentFg, fontSize: 14, textDecorationLine: 'underline' },
-    heroSmall: { color: t.accentFg, fontSize: 14, fontVariant: ['tabular-nums'] },
-    track: { height: 8, borderRadius: 99, backgroundColor: t.heroTrack, overflow: 'hidden' },
+    heroSmall: { color: t.heroMuted, fontSize: 13, fontVariant: ['tabular-nums'] },
+    track: { height: 4, borderRadius: 99, backgroundColor: t.heroTrack, overflow: 'hidden' },
     fill: { height: '100%', borderRadius: 99 },
     tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    tile: { flexGrow: 1, flexBasis: '45%', backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 18, padding: 14, gap: 4 },
-    tileVal: { fontSize: 23, fontFamily: FONTS.bold, color: t.fg, fontVariant: ['tabular-nums'] },
+    tile: { flexGrow: 1, flexBasis: '45%', backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 20, padding: 16, gap: 6 },
+    tileVal: { fontSize: 24, fontFamily: FONTS.bold, color: t.fg },
     tileSub: { fontSize: 13, color: t.muted },
-    card: { backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 20, padding: 16, gap: 12 },
+    card: { backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 22, padding: 18, gap: 14 },
     cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
     summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: 4 },
-    summaryVal: { fontSize: 26, fontFamily: FONTS.display, color: t.fg, fontVariant: ['tabular-nums'] },
+    summaryVal: { fontSize: 28, fontFamily: FONTS.display, color: t.fg },
     catChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 },
     subSum: { flexDirection: 'row', gap: 24, paddingHorizontal: 4 },
-    subSumVal: { fontSize: 24, fontFamily: FONTS.display, color: t.fg, fontVariant: ['tabular-nums'] },
+    subSumVal: { fontSize: 26, fontFamily: FONTS.display, color: t.fg },
     subWrap: { gap: 10, paddingVertical: 10 },
     subRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     subAct: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingLeft: 20 },
@@ -759,19 +771,19 @@ function makeStyles(t: Theme) {
     catRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 2 },
     dot: { width: 10, height: 10, borderRadius: 3 },
     filters: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-    fchip: { backgroundColor: t.fg, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 12 },
-    fchipTxt: { color: t.bg, fontSize: 14, fontWeight: '500' },
+    fchip: { backgroundColor: t.accent, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 12 },
+    fchipTxt: { color: t.accentFg, fontSize: 14, fontWeight: '600' },
     dayHead: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4 },
-    items: { backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 18, overflow: 'hidden' },
+    items: { backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 20, overflow: 'hidden' },
     item: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, paddingHorizontal: 14 },
     itemCat: { fontSize: 16, fontWeight: '500', color: t.fg },
-    itemAmt: { fontSize: 16, fontWeight: '600', color: t.fg, fontVariant: ['tabular-nums'] },
+    itemAmt: { fontSize: 16, fontWeight: '500', color: t.fg, fontVariant: ['tabular-nums'] },
     meta: { fontSize: 13, color: t.muted },
     empty: { alignItems: 'center', paddingVertical: 28, gap: 4 },
     emptyTitle: { fontSize: 22, fontFamily: FONTS.bold, color: t.fg, marginTop: 6 },
-    fabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 10, backgroundColor: t.bg },
-    toast: { position: 'absolute', alignSelf: 'center', maxWidth: '92%', backgroundColor: t.fg, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 16 },
-    search: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, paddingHorizontal: 12 },
+    fabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, backgroundColor: 'transparent' },
+    toast: { position: 'absolute', alignSelf: 'center', maxWidth: '92%', backgroundColor: t.raised, borderWidth: 1, borderColor: t.goldLine, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 16 },
+    search: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, borderRadius: 23, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, paddingHorizontal: 12 },
     searchInput: { flex: 1, fontSize: 16, color: t.fg, height: '100%' },
     rank: { width: 16, fontSize: 15, color: t.muted, fontFamily: FONTS.bold, textAlign: 'center' },
   });

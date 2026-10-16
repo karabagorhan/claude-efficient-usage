@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ComponentProps, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Animated, Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
 import { Analysis, Insight, catIndex, compact, pad } from './lib';
 import { FONTS, Theme } from './theme';
@@ -37,6 +37,7 @@ export function Button({ label, onPress, kind = 'primary', t, style, disabled }:
 }) {
   const bg = kind === 'primary' ? t.accent : kind === 'danger' ? t.warn : kind === 'dark' ? t.fg : t.surface;
   const fg = kind === 'primary' ? t.accentFg : kind === 'danger' ? t.surface : kind === 'dark' ? t.bg : t.fg;
+  const border = kind === 'ghost' ? t.goldLine : bg;
   return (
     <Pressable
       onPress={onPress}
@@ -44,11 +45,11 @@ export function Button({ label, onPress, kind = 'primary', t, style, disabled }:
       accessibilityRole="button"
       style={({ pressed }) => [
         s.btn,
-        { backgroundColor: bg, borderColor: kind === 'ghost' ? t.line : bg, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
+        { backgroundColor: bg, borderColor: border, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 },
         style,
       ]}
     >
-      <Text style={{ color: fg, fontWeight: '600', fontSize: 16 }}>{label}</Text>
+      <Text style={{ color: fg, fontWeight: '600', fontSize: 16, letterSpacing: 0.2 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -92,7 +93,7 @@ export function DailyChart({ a, ym, budget, selected, onSelect, t }: {
               const d = i + 1;
               const h = Math.max(2, (v / max) * ih);
               const day = `${ym}-${pad(d)}`;
-              const fill = selected === day ? t.fg : budgetDay && v > budgetDay ? t.warn : d === todayD ? t.accent : t.accentSoft;
+              const fill = selected === day ? t.fg : budgetDay && v > budgetDay ? t.warn : d === todayD ? t.accent : t.bar;
               return <Rect key={d} x={L + i * slot + (slot - bw) / 2} y={T + ih - h} width={bw} height={h} rx={1.5} fill={fill} />;
             })}
             {vals.map((_, i) => {
@@ -120,6 +121,26 @@ export function DailyChart({ a, ym, budget, selected, onSelect, t }: {
         </>
       )}
     </View>
+  );
+}
+
+/**
+ * Tutar metni: rakamlar serif yazı tipinde, ₺ işareti (yazı tipinde bulunmadığı için) sistem yazı tipinde
+ * ve daha küçük yazılır.
+ */
+export function Amount({ text, style, symbolColor }: { text: string; style: StyleProp<TextStyle>; symbolColor?: string }) {
+  const flat = StyleSheet.flatten(style) || {};
+  const size = (flat.fontSize ?? 16) * 0.6;
+  const parts = text.split('₺');
+  return (
+    <Text style={[style, { fontVariant: ['lining-nums'] }]}>
+      {parts.map((p, i) => (
+        <Text key={i}>
+          {i > 0 ? <Text style={{ fontFamily: 'System', fontSize: size, fontWeight: '400', color: symbolColor ?? flat.color, letterSpacing: 0 }}>₺</Text> : null}
+          {p}
+        </Text>
+      ))}
+    </Text>
   );
 }
 
@@ -151,7 +172,7 @@ export function SideMenu({ open, onClose, items, current, onSelect, top, bottom,
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Menüyü kapat" />
       </Animated.View>
       <Animated.View
-        style={[s.menu, { width: W, backgroundColor: t.surface, borderColor: t.line, paddingTop: top + 16, paddingBottom: bottom + 16,
+        style={[s.menu, { width: W, backgroundColor: t.surface, borderColor: t.goldLine, paddingTop: top + 16, paddingBottom: bottom + 16,
           transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [0, W + 20] }) }] }]}
       >
         <View style={s.menuHead}>
@@ -168,11 +189,12 @@ export function SideMenu({ open, onClose, items, current, onSelect, top, bottom,
               onPress={() => onSelect(it.key)}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              style={({ pressed }) => [s.menuItem, { backgroundColor: active ? t.accentSoft : pressed ? t.bg : 'transparent' }]}
+              style={({ pressed }) => [s.menuItem, { backgroundColor: active ? t.raised : pressed ? t.raised : 'transparent', borderColor: active ? t.goldLine : 'transparent' }]}
             >
-              <Ionicons name={it.icon} size={22} color={active ? t.accent : t.fg} />
+              {active ? <View style={[s.menuBar, { backgroundColor: t.gold }]} /> : null}
+              <Ionicons name={it.icon} size={22} color={active ? t.gold : t.muted} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: t.fg, fontSize: 17, fontWeight: active ? '700' : '500' }}>{it.label}</Text>
+                <Text style={{ color: active ? t.gold : t.fg, fontSize: 17, fontWeight: active ? '600' : '400' }}>{it.label}</Text>
                 {it.hint ? <Text style={{ color: t.muted, fontSize: 13 }}>{it.hint}</Text> : null}
               </View>
             </Pressable>
@@ -198,7 +220,7 @@ export function Bars({ data, selected, onSelect, t, height = 150 }: {
             style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 4 }}
             accessibilityLabel={`${d.label}: ${compact(d.value)}`}>
             <Text style={{ fontSize: 11, color: on ? t.fg : t.muted, fontWeight: on ? '700' : '400' }}>{d.value ? compact(d.value) : ''}</Text>
-            <View style={{ width: '100%', maxWidth: 34, height: d.value ? Math.max(4, (d.value / max) * barMax) : 3, borderRadius: 7, backgroundColor: on ? t.accent : t.accentSoft }} />
+            <View style={{ width: '100%', maxWidth: 34, height: d.value ? Math.max(4, (d.value / max) * barMax) : 3, borderRadius: 7, backgroundColor: on ? t.accent : t.bar }} />
             <Text style={{ fontSize: 12, color: on ? t.fg : t.muted, fontWeight: on ? '700' : '400' }}>{d.label}</Text>
           </Pressable>
         );
@@ -207,14 +229,14 @@ export function Bars({ data, selected, onSelect, t, height = 150 }: {
   );
 }
 
-const CAT_ICONS: IconName[] = ['cart', 'restaurant', 'bus', 'receipt', 'medkit', 'film', 'shirt', 'ellipsis-horizontal'];
+const CAT_ICONS: IconName[] = ['bag-handle-outline', 'restaurant-outline', 'car-outline', 'receipt-outline', 'medkit-outline', 'film-outline', 'shirt-outline', 'ellipsis-horizontal'];
 
 /** Kategori simgesi: kategorinin renginde yumuşak bir daire içinde. */
 export function CatIcon({ cat, t, size = 36 }: { cat: string; t: Theme; size?: number }) {
   const color = t.cats[catIndex(cat)];
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2.6, backgroundColor: color + '24', alignItems: 'center', justifyContent: 'center' }}>
-      <Ionicons name={CAT_ICONS[catIndex(cat)]} size={size * 0.5} color={color} />
+    <View style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 1, borderColor: color + '66', backgroundColor: color + '14', alignItems: 'center', justifyContent: 'center' }}>
+      <Ionicons name={CAT_ICONS[catIndex(cat)]} size={size * 0.46} color={color} />
     </View>
   );
 }
@@ -254,10 +276,11 @@ export function Progress({ value, max, t }: { value: number; max: number; t: The
 const s = StyleSheet.create({
   menu: { position: 'absolute', top: 0, bottom: 0, right: 0, borderLeftWidth: 1, paddingHorizontal: 12, gap: 4, borderTopLeftRadius: 24, borderBottomLeftRadius: 24 },
   menuHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 16 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 14 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  menuBar: { position: 'absolute', left: 0, top: 10, bottom: 10, width: 3, borderRadius: 2 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 99, paddingVertical: 8, paddingHorizontal: 14 },
   chipDot: { width: 8, height: 8, borderRadius: 4 },
   pill: { alignSelf: 'flex-start', borderRadius: 99, paddingVertical: 2, paddingHorizontal: 8 },
-  btn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderWidth: 1 },
-  label: { fontSize: 12, letterSpacing: 0.8, fontWeight: '600' },
+  btn: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, borderWidth: 1 },
+  label: { fontSize: 11, letterSpacing: 1.6, fontWeight: '600' },
 });
