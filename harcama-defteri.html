@@ -1,0 +1,376 @@
+<title>Harcama Defteri</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: tek sütun, telefon odaklı. Üstte ay seçici, özet kartı, 7 günlük çubuklar, kategori dağılımı, günlere göre liste; altta sabit "Harcama ekle" çubuğu ve açılan form. */
+:root {
+  --bg: #f2f4f1;
+  --surface: #ffffff;
+  --fg: #16201d;
+  --muted: #5d6b66;
+  --line: #dde3df;
+  --accent: #0d6b5b;
+  --accent-fg: #ffffff;
+  --accent-soft: #d9ece7;
+  --warn: #b4410c;
+  --warn-soft: #f8e1d4;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1513; --surface: #182019; --fg: #e8efec; --muted: #93a39c; --line: #2a362f;
+    --accent: #4cc4ac; --accent-fg: #06201a; --accent-soft: #1c3a33; --warn: #f08a55; --warn-soft: #3b2417;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1513; --surface: #182019; --fg: #e8efec; --muted: #93a39c; --line: #2a362f;
+  --accent: #4cc4ac; --accent-fg: #06201a; --accent-soft: #1c3a33; --warn: #f08a55; --warn-soft: #3b2417;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.4;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 110px;
+}
+.wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+.label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+h1 { font-family: var(--display); font-size: 22px; margin: 0; font-weight: 700; }
+.months { display: flex; align-items: center; gap: 4px; }
+.months button { width: 40px; height: 40px; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; font-size: 18px; }
+.months span { min-width: 104px; text-align: center; font-weight: 600; text-transform: capitalize; }
+
+.hero { background: var(--accent); color: var(--accent-fg); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.hero .label { color: inherit; opacity: .8; }
+.today { font-family: var(--display); font-size: 44px; line-height: 1; font-weight: 700; margin-top: 4px; }
+.hero-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.month-total { font-family: var(--display); font-size: 24px; font-weight: 600; }
+.bar { height: 8px; border-radius: 99px; background: rgba(255,255,255,.28); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent-fg); border-radius: 99px; }
+.bar.over i { background: #ffd2b8; }
+.hero-foot { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; flex-wrap: wrap; }
+.linkbtn { background: none; border: 0; padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; font-size: 14px; }
+.budget-edit { display: flex; gap: 8px; }
+.budget-edit input { flex: 1; min-width: 0; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 110px; }
+.week div { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
+.week i { display: block; width: 100%; max-width: 28px; background: var(--accent-soft); border-radius: 6px 6px 3px 3px; min-height: 3px; }
+.week .on i { background: var(--accent); }
+.week small { font-size: 11px; color: var(--muted); }
+.week .v { font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+.cats { display: flex; flex-direction: column; gap: 10px; }
+.cat-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 15px; }
+.cat-row .t { height: 6px; background: var(--accent-soft); border-radius: 99px; grid-column: 1 / -1; overflow: hidden; }
+.cat-row .t i { display: block; height: 100%; background: var(--accent); }
+
+.day { display: flex; flex-direction: column; gap: 4px; }
+.day-head { display: flex; justify-content: space-between; padding: 0 4px; }
+.items { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 14px; align-items: center; }
+.item + .item { border-top: 1px solid var(--line); }
+.item .n { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; min-width: 0; }
+.item .a { font-weight: 600; text-align: right; }
+.item .c { font-weight: 500; }
+.item .del { grid-column: 1 / -1; justify-self: end; background: none; border: 0; color: var(--muted); font-size: 13px; padding: 4px 0 0; }
+.item .del.arm { color: var(--warn); font-weight: 600; }
+.empty { text-align: center; padding: 28px 12px; color: var(--muted); }
+.empty b { display: block; color: var(--fg); font-family: var(--display); font-size: 20px; margin-bottom: 4px; }
+.status { text-align: center; font-size: 12px; color: var(--muted); }
+
+.fab-bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px max(16px, env(safe-area-inset-left, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--bg) 70%, transparent); z-index: 5; }
+.fab { display: block; width: 100%; max-width: 520px; margin: 0 auto; height: 56px; border: 0; border-radius: 18px; background: var(--fg); color: var(--bg); font-weight: 600; font-size: 17px; }
+
+.sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { background: var(--surface); width: 100%; max-width: 520px; border-radius: 24px 24px 0 0; padding: 18px max(16px, env(safe-area-inset-left, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; max-height: 92%; overflow-y: auto; }
+.sheet h2 { margin: 0; font-family: var(--display); font-size: 20px; }
+.sheet-top { display: flex; justify-content: space-between; align-items: center; }
+.x { border: 0; background: var(--bg); width: 36px; height: 36px; border-radius: 50%; font-size: 18px; }
+input[type=text], input[type=date], input[type=number] { width: 100%; height: 48px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 14px; padding: 0 14px; font: inherit; font-size: 16px; }
+.amount { height: 64px !important; font-family: var(--display); font-size: 32px !important; font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--bg); border-radius: 99px; padding: 8px 14px; font-size: 15px; }
+.chip[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.save { height: 54px; border: 0; border-radius: 16px; background: var(--accent); color: var(--accent-fg); font-weight: 600; font-size: 17px; }
+.save:disabled { opacity: .45; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+@media (prefers-reduced-motion: no-preference) { .sheet { animation: up .2s ease-out; } @keyframes up { from { transform: translateY(24px); opacity: .6; } } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Harcama Defteri</h1>
+    <div class="months">
+      <button id="prev" aria-label="Önceki ay">‹</button>
+      <span id="mlabel" class="num"></span>
+      <button id="next" aria-label="Sonraki ay">›</button>
+    </div>
+  </header>
+
+  <section class="hero" aria-label="Özet">
+    <div>
+      <div class="label">Bugün harcanan</div>
+      <div class="today num" id="today">₺0</div>
+    </div>
+    <div class="hero-row">
+      <div>
+        <div class="label" id="mtitle">Bu ay</div>
+        <div class="month-total num" id="mtotal">₺0</div>
+      </div>
+      <button class="linkbtn" id="budgetbtn">Bütçe belirle</button>
+    </div>
+    <div id="budgetbox" hidden>
+      <form class="budget-edit" id="budgetform">
+        <input type="number" inputmode="decimal" id="budgetinput" placeholder="Aylık bütçe (₺)" min="0">
+        <button class="chip" type="submit" style="color:var(--fg)">Kaydet</button>
+      </form>
+    </div>
+    <div id="budgetbar" hidden>
+      <div class="bar" id="bbar"><i id="bfill"></i></div>
+      <div class="hero-foot num"><span id="bleft"></span><span id="bperday"></span></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Son 7 gün">
+    <div class="label">Son 7 gün</div>
+    <div class="week" id="week"></div>
+  </section>
+
+  <section class="card" aria-label="Kategoriler">
+    <div class="label">Kategorilere göre</div>
+    <div class="cats" id="cats"></div>
+  </section>
+
+  <section id="list" aria-label="Harcamalar" style="display:flex;flex-direction:column;gap:14px"></section>
+  <div class="status" id="status"></div>
+</div>
+
+<div class="fab-bar"><button class="fab" id="open">+ Harcama ekle</button></div>
+
+<div class="sheet-bg" id="sheetbg" hidden>
+  <form class="sheet" id="form" role="dialog" aria-label="Harcama ekle">
+    <div class="sheet-top"><h2>Yeni harcama</h2><button type="button" class="x" id="close" aria-label="Kapat">✕</button></div>
+    <div class="field"><label class="label" for="amount">Tutar (₺)</label>
+      <input class="amount num" id="amount" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+    <div class="field"><span class="label">Kategori</span><div class="chips" id="chips"></div></div>
+    <div class="field"><label class="label" for="note">Not</label>
+      <input id="note" type="text" placeholder="İsteğe bağlı, ör. Simit ve çay" autocomplete="off"></div>
+    <div class="field"><label class="label" for="date">Tarih</label><input id="date" type="date"></div>
+    <button class="save" id="save" type="submit" disabled>Kaydet</button>
+  </form>
+</div>
+
+<script>
+(function () {
+  var CATS = ["Market", "Yeme-İçme", "Ulaşım", "Fatura", "Sağlık", "Eğlence", "Giyim", "Diğer"];
+  var tl = new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 2 });
+  var tl0 = new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 });
+  var $ = function (id) { return document.getElementById(id); };
+
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseIso(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+
+  var state = { items: [], ym: iso(new Date()).slice(0, 7), cat: CATS[0], armed: null, mode: "local", col: null, budget: 0 };
+  try { state.budget = parseFloat(localStorage.getItem("hd-budget")) || 0; } catch (e) {}
+
+  /* ---- Depolama: giriş yapılmışsa hesaba (özel), değilse bu tarayıcıya ---- */
+  function loadLocal() {
+    try { state.items = JSON.parse(localStorage.getItem("hd-items") || "[]"); } catch (e) { state.items = []; }
+  }
+  function saveLocal() { try { localStorage.setItem("hd-items", JSON.stringify(state.items)); } catch (e) {} }
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  function addItem(it) {
+    if (state.mode === "db") {
+      state.col.doc(it.id).set({ amount: it.amount, cat: it.cat, note: it.note, date: it.date, ts: it.ts })
+        .catch(function () { setStatus("Kaydedilemedi, tekrar dene."); });
+    } else { state.items.push(it); saveLocal(); render(); }
+  }
+  function removeItem(id) {
+    if (state.mode === "db") state.col.doc(id).delete().catch(function () { setStatus("Silinemedi, tekrar dene."); });
+    else { state.items = state.items.filter(function (x) { return x.id !== id; }); saveLocal(); render(); }
+  }
+  function setStatus(t) { $("status").textContent = t; }
+
+  function initStore() {
+    loadLocal(); render();
+    setStatus("Veriler yalnızca bu tarayıcıda tutuluyor.");
+    if (!window.claude || !window.claude.use) return;
+    Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
+      var db = r[0], user = r[1];
+      if (!db || !user) return null;
+      return Promise.resolve(user.id()).then(function (id) {
+        if (!id) return null;
+        var col = db.collection("data/users/" + id);
+        state.col = col;
+        col.onSnapshot(function (snap) {
+          state.mode = "db";
+          state.items = snap.docs.map(function (d) { var v = d.data() || {}; return { id: d.id, amount: v.amount, cat: v.cat, note: v.note, date: v.date, ts: v.ts || 0 }; })
+            .filter(function (x) { return typeof x.amount === "number" && x.date; });
+          setStatus("Hesabına özel kaydediliyor.");
+          render();
+        }, function () { state.mode = "local"; loadLocal(); setStatus("Hesap bağlantısı yok, veriler bu tarayıcıda."); render(); });
+      });
+    }).catch(function () {});
+  }
+
+  /* ---- Hesaplar ---- */
+  function sum(arr) { return arr.reduce(function (s, x) { return s + x.amount; }, 0); }
+  function monthLabel(ym) {
+    var d = parseIso(ym + "-01");
+    return d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+  }
+  function dayLabel(s) {
+    var t = iso(new Date()), y = new Date(); y.setDate(y.getDate() - 1);
+    if (s === t) return "Bugün";
+    if (s === iso(y)) return "Dün";
+    return parseIso(s).toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" });
+  }
+
+  function render() {
+    var todayIso = iso(new Date());
+    var isCur = state.ym === todayIso.slice(0, 7);
+    var monthItems = state.items.filter(function (x) { return x.date.slice(0, 7) === state.ym; });
+    var total = sum(monthItems);
+
+    $("mlabel").textContent = monthLabel(state.ym);
+    $("mtitle").textContent = isCur ? "Bu ay" : monthLabel(state.ym);
+    $("today").textContent = tl.format(sum(state.items.filter(function (x) { return x.date === todayIso; })));
+    $("mtotal").textContent = tl.format(total);
+    $("next").disabled = isCur;
+    $("next").style.opacity = isCur ? .35 : 1;
+
+    // Bütçe
+    var b = state.budget;
+    $("budgetbtn").textContent = b ? "Bütçeyi düzenle" : "Bütçe belirle";
+    $("budgetbar").hidden = !b;
+    if (b) {
+      var pct = Math.min(100, total / b * 100);
+      $("bfill").style.width = pct + "%";
+      $("bbar").classList.toggle("over", total > b);
+      var left = b - total;
+      $("bleft").textContent = left >= 0 ? tl0.format(left) + " kaldı" : tl0.format(-left) + " aşıldı";
+      if (isCur && left > 0) {
+        var now = new Date(), dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        var daysLeft = dim - now.getDate() + 1;
+        $("bperday").textContent = "günde " + tl0.format(left / daysLeft);
+      } else $("bperday").textContent = "";
+    }
+
+    // Son 7 gün
+    var days = [], i;
+    for (i = 6; i >= 0; i--) { var d = new Date(); d.setDate(d.getDate() - i); days.push(d); }
+    var vals = days.map(function (d) { return sum(state.items.filter(function (x) { return x.date === iso(d); })); });
+    var max = Math.max.apply(null, vals.concat([1]));
+    $("week").innerHTML = days.map(function (d, k) {
+      var h = Math.round(vals[k] / max * 64);
+      return '<div class="' + (k === 6 ? "on" : "") + '"><span class="v num">' + (vals[k] ? tl0.format(vals[k]).replace("₺", "") : "") + '</span><i style="height:' + (vals[k] ? Math.max(h, 4) : 3) + 'px"></i><small>' + d.toLocaleDateString("tr-TR", { weekday: "short" }) + "</small></div>";
+    }).join("");
+
+    // Kategoriler
+    var by = {};
+    monthItems.forEach(function (x) { by[x.cat] = (by[x.cat] || 0) + x.amount; });
+    var rows = Object.keys(by).sort(function (a, c) { return by[c] - by[a]; });
+    $("cats").innerHTML = rows.length ? rows.map(function (c) {
+      return '<div class="cat-row"><span>' + esc(c) + '</span><span class="num">' + tl.format(by[c]) + '</span><div class="t"><i style="width:' + (by[c] / total * 100).toFixed(1) + '%"></i></div></div>';
+    }).join("") : '<div class="status">Bu ay henüz harcama yok.</div>';
+
+    // Liste
+    var groups = {};
+    monthItems.forEach(function (x) { (groups[x.date] = groups[x.date] || []).push(x); });
+    var keys = Object.keys(groups).sort().reverse();
+    if (!keys.length) {
+      $("list").innerHTML = '<div class="empty"><b>Defter boş</b>İlk harcamanı eklemek için aşağıdaki düğmeye dokun.</div>';
+      return;
+    }
+    $("list").innerHTML = keys.map(function (k) {
+      var its = groups[k].sort(function (a, c) { return c.ts - a.ts; });
+      return '<div class="day"><div class="day-head"><span class="label">' + esc(dayLabel(k)) + '</span><span class="label num">' + tl.format(sum(its)) + '</span></div><div class="items">' +
+        its.map(function (x) {
+          var armed = state.armed === x.id;
+          return '<div class="item"><span class="c">' + esc(x.cat) + '</span><span class="a num">' + tl.format(x.amount) + '</span>' +
+            (x.note ? '<span class="n">' + esc(x.note) + "</span><span></span>" : "") +
+            '<button class="del' + (armed ? " arm" : "") + '" data-id="' + esc(x.id) + '">' + (armed ? "Silmek için tekrar dokun" : "Sil") + "</button></div>";
+        }).join("") + "</div></div>";
+    }).join("");
+  }
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  /* ---- Olaylar ---- */
+  function shiftMonth(n) {
+    var d = parseIso(state.ym + "-01"); d.setMonth(d.getMonth() + n);
+    var ym = iso(d).slice(0, 7);
+    if (ym > iso(new Date()).slice(0, 7)) return;
+    state.ym = ym; render();
+  }
+  $("prev").onclick = function () { shiftMonth(-1); };
+  $("next").onclick = function () { shiftMonth(1); };
+
+  $("list").addEventListener("click", function (e) {
+    var b = e.target.closest(".del"); if (!b) return;
+    var id = b.getAttribute("data-id");
+    if (state.armed === id) { state.armed = null; removeItem(id); }
+    else { state.armed = id; render(); }
+  });
+
+  $("budgetbtn").onclick = function () {
+    var box = $("budgetbox"); box.hidden = !box.hidden;
+    if (!box.hidden) { $("budgetinput").value = state.budget || ""; $("budgetinput").focus(); }
+  };
+  $("budgetform").onsubmit = function (e) {
+    e.preventDefault();
+    state.budget = Math.max(0, parseFloat($("budgetinput").value) || 0);
+    try { localStorage.setItem("hd-budget", String(state.budget)); } catch (x) {}
+    $("budgetbox").hidden = true; render();
+  };
+
+  $("chips").innerHTML = CATS.map(function (c) { return '<button type="button" class="chip" data-c="' + esc(c) + '" aria-pressed="false">' + esc(c) + "</button>"; }).join("");
+  function paintChips() {
+    Array.prototype.forEach.call($("chips").children, function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-c") === state.cat ? "true" : "false"); });
+  }
+  $("chips").onclick = function (e) { var b = e.target.closest(".chip"); if (!b) return; state.cat = b.getAttribute("data-c"); paintChips(); };
+
+  function parseAmount(s) {
+    s = String(s).trim().replace(/\s/g, "").replace(/₺/g, "");
+    if (s.indexOf(",") > -1) s = s.replace(/\./g, "").replace(",", ".");
+    var n = parseFloat(s);
+    return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0;
+  }
+  $("amount").oninput = function () { $("save").disabled = !parseAmount(this.value); };
+
+  function openSheet() {
+    $("amount").value = ""; $("note").value = ""; $("date").value = iso(new Date()); $("save").disabled = true;
+    paintChips(); $("sheetbg").hidden = false;
+    setTimeout(function () { $("amount").focus(); }, 50);
+  }
+  function closeSheet() { $("sheetbg").hidden = true; }
+  $("open").onclick = openSheet;
+  $("close").onclick = closeSheet;
+  $("sheetbg").onclick = function (e) { if (e.target === this) closeSheet(); };
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
+
+  $("form").onsubmit = function (e) {
+    e.preventDefault();
+    var a = parseAmount($("amount").value); if (!a) return;
+    var date = $("date").value || iso(new Date());
+    addItem({ id: uid(), amount: a, cat: state.cat, note: $("note").value.trim(), date: date, ts: Date.now() });
+    state.ym = date.slice(0, 7);
+    closeSheet(); render();
+  };
+
+  initStore();
+})();
+</script>
