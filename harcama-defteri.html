@@ -132,6 +132,10 @@ h1 { font-family: var(--display); font-size: 22px; margin: 0; font-weight: 700; 
 .foot { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .status { text-align: center; font-size: 12px; color: var(--muted); }
 .ghost { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 8px 14px; font-size: 14px; }
+.exports { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.listhint { font-size: 13px; color: var(--muted); padding: 0 4px; }
+.item .a::after { content: " ›"; color: var(--muted); font-weight: 400; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 30; background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 14px; font-size: 14px; max-width: calc(100% - 32px); text-align: center; }
 
 .fab-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: linear-gradient(to top, var(--bg) 70%, transparent);
   padding-top: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -243,10 +247,15 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
   <section id="list" aria-label="Harcamalar" style="display:flex;flex-direction:column;gap:14px"></section>
 
   <div class="foot">
-    <button class="ghost" id="export" hidden>Bu ayı CSV olarak indir</button>
+    <div class="exports" id="exports" hidden>
+      <button class="ghost" id="xmonth">Bu ayı Excel'e aktar</button>
+      <button class="ghost" id="xall">Tümünü Excel'e aktar</button>
+    </div>
     <div class="status" id="status"></div>
   </div>
 </div>
+
+<div class="toast" id="toast" role="status" hidden></div>
 
 <div class="fab-bar"><button class="fab" id="open">+ Harcama ekle</button></div>
 
@@ -373,7 +382,7 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
     loadLocal(); render();
     setStatus("Veriler yalnızca bu tarayıcıda tutuluyor.");
     if (!window.claude || !window.claude.use) return;
-    window.claude.use("downloads").then(function (dl) { state.dl = dl; $("export").hidden = !dl; }).catch(function () {});
+    window.claude.use("downloads").then(function (dl) { state.dl = dl; $("exports").hidden = !dl; }).catch(function () {});
     var ready;
     state.dbInit = new Promise(function (res) { ready = res; setTimeout(res, 8000); });
     Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
@@ -574,7 +583,7 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
         : '<div class="empty"><b>Defter boş</b>İlk harcamanı eklemek için aşağıdaki düğmeye dokun.</div>';
       return;
     }
-    $("list").innerHTML = keys.map(function (k) {
+    $("list").innerHTML = '<div class="listhint">Yanlış girdiğin bir harcamayı düzeltmek için üzerine dokun.</div>' + keys.map(function (k) {
       var its = groups[k].sort(function (p, q) { return q.ts - p.ts; });
       return '<div class="day"><div class="day-head"><span class="label">' + esc(dayLabel(k)) + '</span><span class="label num">' + tl.format(sum(its)) + '</span></div><div class="items">' +
         its.map(function (x) {
@@ -623,19 +632,94 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
     saveBudget(Math.max(0, parseFloat(String($("budgetinput").value).replace(",", ".")) || 0));
   };
 
-  $("export").onclick = function () {
+  /* ---------- Excel (.xlsx) dışa aktarma ---------- */
+  function loadXLSX() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    return new Promise(function (res, rej) {
+      var s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      s.onload = function () { if (window.XLSX) res(window.XLSX); else rej(new Error("xlsx")); };
+      s.onerror = function () { rej(new Error("xlsx")); };
+      document.head.appendChild(s);
+    });
+  }
+  // Excel tarih seri numarası (saat dilimi kaymasını önlemek için UTC ile)
+  function xlDate(s) { var p = s.split("-"); return (Date.UTC(+p[0], +p[1] - 1, +p[2]) - Date.UTC(1899, 11, 30)) / 864e5; }
+  function sheet(X, data, cols, fmts) {
+    var ws = X.utils.aoa_to_sheet(data);
+    var range = X.utils.decode_range(ws["!ref"]);
+    for (var r = 1; r <= range.e.r; r++) {
+      Object.keys(fmts).forEach(function (col) {
+        var c = ws[col + (r + 1)];
+        if (c && typeof c.v === "number") c.z = fmts[col];
+      });
+    }
+    ws["!cols"] = cols.map(function (w) { return { wch: w }; });
+    return ws;
+  }
+  var TL_FMT = '#,##0.00 "₺"';
+
+  function exportExcel(all) {
     if (!state.dl) return;
-    var rows = state.items.filter(function (x) { return x.date.slice(0, 7) === state.ym; })
+    var rows = state.items.filter(function (x) { return all || x.date.slice(0, 7) === state.ym; })
       .sort(function (p, q) { return p.date < q.date ? -1 : p.date > q.date ? 1 : p.ts - q.ts; });
-    if (!rows.length) { setStatus("Bu ay indirilecek harcama yok."); return; }
-    var q = function (s) { return '"' + String(s).replace(/"/g, '""') + '"'; };
-    var csv = "﻿Tarih;Kategori;Not;Tutar\n" + rows.map(function (x) {
-      return [x.date, q(x.cat), q(x.note || ""), x.amount.toFixed(2).replace(".", ",")].join(";");
-    }).join("\n");
-    state.dl.save({ filename: "harcamalar-" + state.ym + ".csv", data: csv })
-      .then(function () { setStatus("CSV dosyası kaydedildi."); })
-      .catch(function (err) { if (err && err.code !== "declined") setStatus("Dosya kaydedilemedi."); });
-  };
+    if (!rows.length) { toast(all ? "Henüz aktarılacak harcama yok." : "Bu ay aktarılacak harcama yok."); return; }
+    toast("Excel dosyası hazırlanıyor…");
+    loadXLSX().then(function (X) {
+      var wb = X.utils.book_new(), total = sum(rows);
+
+      // 1. Harcamalar
+      var d1 = [["Tarih", "Kategori", "Not", "Tutar", "Abonelik"]].concat(rows.map(function (x) {
+        return [xlDate(x.date), x.cat, x.note || "", x.amount, x.sub ? "Evet" : ""];
+      }));
+      d1.push([], ["", "", "Toplam", total]);
+      X.utils.book_append_sheet(wb, sheet(X, d1, [12, 14, 34, 14, 10], { A: "dd.mm.yyyy", D: TL_FMT }), "Harcamalar");
+
+      // 2. Kategoriler
+      var by = {}, cnt = {};
+      rows.forEach(function (x) { by[x.cat] = (by[x.cat] || 0) + x.amount; cnt[x.cat] = (cnt[x.cat] || 0) + 1; });
+      var d2 = [["Kategori", "Tutar", "Pay", "İşlem"]].concat(Object.keys(by).sort(function (p, q) { return by[q] - by[p]; }).map(function (c) {
+        return [c, by[c], by[c] / total, cnt[c]];
+      }));
+      d2.push(["Toplam", total, 1, rows.length]);
+      X.utils.book_append_sheet(wb, sheet(X, d2, [16, 14, 8, 8], { B: TL_FMT, C: "0.0%" }), "Kategoriler");
+
+      // 3. Aylar (tüm kayıtlar aktarılırken)
+      if (all) {
+        var bm = {};
+        rows.forEach(function (x) { var m = x.date.slice(0, 7); bm[m] = (bm[m] || 0) + x.amount; });
+        var d3 = [["Ay", "Toplam"]].concat(Object.keys(bm).sort().map(function (m) { return [monthLabel(m), bm[m]]; }));
+        X.utils.book_append_sheet(wb, sheet(X, d3, [16, 14], { B: TL_FMT }), "Aylar");
+      }
+
+      // 4. Abonelikler
+      if (state.subs.length) {
+        var d4 = [["Ad", "Tutar", "Sıklık", "Ödeme günü", "Kategori", "Aylık karşılığı"]].concat(state.subs.map(function (s) {
+          var yearly = s.freq === "yearly";
+          return [s.name, s.amount, yearly ? "Yıllık" : "Aylık",
+            yearly ? s.day + " " + new Date(2000, s.month - 1, 1).toLocaleDateString("tr-TR", { month: "long" }) : "Her ay " + s.day,
+            s.cat, yearly ? s.amount / 12 : s.amount];
+        }));
+        X.utils.book_append_sheet(wb, sheet(X, d4, [22, 14, 8, 14, 14, 16], { B: TL_FMT, F: TL_FMT }), "Abonelikler");
+      }
+
+      var out = X.write(wb, { bookType: "xlsx", type: "array" });
+      var name = all ? "harcamalar-tumu-" + iso(new Date()) + ".xlsx" : "harcamalar-" + state.ym + ".xlsx";
+      return state.dl.save({ filename: name, data: out });
+    }).then(function (r) { if (r) toast("Excel dosyası kaydedildi."); })
+      .catch(function (err) {
+        if (err && err.code === "declined") return;
+        toast(err && err.code ? "Dosya kaydedilemedi." : "Excel dosyası oluşturulamadı. İnternet bağlantını kontrol edip tekrar dene.");
+      });
+  }
+  $("xmonth").onclick = function () { exportExcel(false); };
+  $("xall").onclick = function () { exportExcel(true); };
+
+  var toastTimer;
+  function toast(msg) {
+    var t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 2600);
+  }
 
   // Form
   $("chips").innerHTML = CATS.map(function (c) { return '<button type="button" class="chip" data-c="' + esc(c) + '" aria-pressed="false"><i class="k' + catIdx(c) + '"></i>' + esc(c) + "</button>"; }).join("");
@@ -683,6 +767,7 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
     var it = { id: state.editing || uid(), amount: amt, cat: state.cat, note: $("note").value.trim(), date: date, ts: old ? old.ts : Date.now() };
     if (old && old.sub) { it.sub = old.sub; it.period = old.period; }
     putItem(it);
+    toast(old ? "Harcama güncellendi." : "Harcama eklendi.");
     state.ym = date.slice(0, 7);
     closeSheet(); render();
   };
