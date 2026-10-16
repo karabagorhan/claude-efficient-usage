@@ -270,7 +270,9 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function setStatus(t) { $("status").textContent = t; }
 
-  function putItem(it) {
+  // Hesap bağlantısı kurulurken kaydedilen harcama tarayıcıya düşmesin diye önce bağlantıyı bekle
+  function putItem(it) { (state.dbInit || Promise.resolve()).then(function () { putNow(it); }); }
+  function putNow(it) {
     if (state.mode === "db") {
       state.col.doc(it.id).set({ amount: it.amount, cat: it.cat, note: it.note, date: it.date, ts: it.ts })
         .catch(function () { setStatus("Kaydedilemedi. Bağlantını kontrol edip tekrar dene."); });
@@ -295,11 +297,13 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
     setStatus("Veriler yalnızca bu tarayıcıda tutuluyor.");
     if (!window.claude || !window.claude.use) return;
     window.claude.use("downloads").then(function (dl) { state.dl = dl; $("export").hidden = !dl; }).catch(function () {});
+    var ready;
+    state.dbInit = new Promise(function (res) { ready = res; setTimeout(res, 8000); });
     Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (r) {
       var db = r[0], user = r[1];
-      if (!db || !user) return null;
+      if (!db || !user) { ready(); return null; }
       return Promise.resolve(user.id()).then(function (id) {
-        if (!id) return;
+        if (!id) { ready(); return; }
         state.col = db.collection("data/users/" + id);
         state.col.onSnapshot(function (snap) {
           state.mode = "db";
@@ -311,10 +315,10 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
           });
           state.items = items;
           setStatus("Hesabına özel kaydediliyor.");
-          render();
-        }, function () { state.mode = "local"; loadLocal(); setStatus("Hesap bağlantısı yok, veriler bu tarayıcıda."); render(); });
+          render(); ready();
+        }, function () { state.mode = "local"; loadLocal(); setStatus("Hesap bağlantısı yok, veriler bu tarayıcıda."); render(); ready(); });
       });
-    }).catch(function () {});
+    }).catch(function () { ready(); });
   }
 
   /* ---------- Etiketler ---------- */
@@ -598,6 +602,30 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
     closeSheet(); render();
   };
 
+  /* ---------- iPhone Kestirmeleri: #ekle, #ekle-250, #ekle-125_50-market ---------- */
+  var SLUG = { market: "Market", yeme: "Yeme-İçme", ulasim: "Ulaşım", fatura: "Fatura", saglik: "Sağlık", eglence: "Eğlence", giyim: "Giyim", diger: "Diğer" };
+  function hashAmount(s) {
+    if (s.indexOf("_") > -1) s = s.replace(/\./g, "").replace("_", ".");
+    else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+    var n = parseFloat(s);
+    return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0;
+  }
+  function handleHash() {
+    var h = (location.hash || "").slice(1).toLowerCase();
+    if (h.indexOf("ekle") !== 0) return;
+    var amt = 0, cat = null;
+    h.split("-").slice(1).forEach(function (p) {
+      if (/^[0-9._]+$/.test(p)) amt = hashAmount(p);
+      else if (SLUG[p]) cat = SLUG[p];
+    });
+    openSheet(null);
+    if (cat) { state.cat = cat; paintChips(); }
+    if (amt) { $("amount").value = String(amt).replace(".", ","); $("save").disabled = false; }
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  }
+  window.addEventListener("hashchange", handleHash);
+
   initStore();
+  handleHash();
 })();
 </script>
