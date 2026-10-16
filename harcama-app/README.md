@@ -56,3 +56,14 @@ npx expo export --platform ios   # iOS paketinin derlendiğini doğrular
 Kod yapısı: `App.tsx` ana ekran; `src/lib.ts` hesaplar; `src/store.ts` kayıt;
 `src/sheets.tsx` formlar; `src/ui.tsx` grafik ve düğmeler; `src/files.ts` Excel/yedek;
 `src/notify.ts` bildirimler.
+
+## Doğrudan açma bağlantıları (Expo Go, kestirmeler için)
+
+| Bağlantı | Açılınca |
+|---|---|
+| `exp://u.expo.dev/24b23d12-c615-4047-b61a-624003ad0003?runtime-version=1.0.0&channel-name=main` | Uygulama (Özet) |
+| `exp://u.expo.dev/24b23d12-c615-4047-b61a-624003ad0003?runtime-version=1.0.0&channel-name=ekle` | Yeni harcama formu |
+| `exp://u.expo.dev/24b23d12-c615-4047-b61a-624003ad0003?runtime-version=1.0.0&channel-name=butce` | Ayarlar → bütçe alanı |
+
+Üç kanal aynı projedir, aynı verileri görür. Yayınlarken: `ekle` için `EXPO_PUBLIC_OPEN_ADD=1`,
+`butce` için `EXPO_PUBLIC_OPEN_SCREEN=butce` ortam değişkeniyle `eas update --branch <kanal>`.

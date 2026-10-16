@@ -48,6 +48,8 @@ const MENU: MenuItem[] = [
 
 // "ekle" kanalına yayınlanan sürüm açılışta doğrudan Yeni harcama formunu gösterir (kestirme bağlantısı için).
 const OPEN_ADD_ON_LAUNCH = process.env.EXPO_PUBLIC_OPEN_ADD === '1';
+// "butce" kanalına yayınlanan sürüm açılışta Ayarlar'daki bütçe alanını açar, klavye hazır gelir.
+const OPEN_BUDGET_ON_LAUNCH = process.env.EXPO_PUBLIC_OPEN_SCREEN === 'butce';
 
 // Kestirmeler / bağlantı: .../ekle?tutar=125,50&kategori=market
 const SLUG: Record<string, string> = {
@@ -60,7 +62,8 @@ function Main() {
   const { data, update } = useAppData();
   const t = useTheme(data?.settings.theme);
   const st = useMemo(() => makeStyles(t), [t]);
-  const [screen, setScreen] = useState<Screen>('ozet');
+  const [screen, setScreen] = useState<Screen>(OPEN_BUDGET_ON_LAUNCH ? 'ayarlar' : 'ozet');
+  const [budgetFocusKey, setBudgetFocusKey] = useState(OPEN_BUDGET_ON_LAUNCH ? 1 : 0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [ym, setYm] = useState(todayIso().slice(0, 7));
   const [filterCat, setFilterCat] = useState<string | null>(null);
@@ -110,6 +113,23 @@ function Main() {
       if (state === 'active' && wasBackground) {
         wasBackground = false;
         if (!anySheetOpen.current) openAdd();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Bütçe bağlantısı: arka plandan dönüşte de bütçe alanına git
+  useEffect(() => {
+    if (!OPEN_BUDGET_ON_LAUNCH) return;
+    let wasBackground = false;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background') wasBackground = true;
+      if (state === 'active' && wasBackground) {
+        wasBackground = false;
+        if (anySheetOpen.current) return;
+        setMenuOpen(false);
+        setScreen('ayarlar');
+        setBudgetFocusKey(Date.now());
       }
     });
     return () => sub.remove();
@@ -408,6 +428,8 @@ function Main() {
     body = (
       <View style={st.card}>
         <SettingsPanel
+          key={budgetFocusKey}
+          focusBudget={budgetFocusKey > 0}
           settings={settings}
           onChange={changeSettings}
           onExport={doExport}

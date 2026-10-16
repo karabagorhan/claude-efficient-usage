@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { CATS, Expense, MONTHS, Settings, Sub, addDays, amountText, catIndex, dayLabel, parseAmount, todayIso, uid } from './lib';
 import { FONTS, Theme } from './theme';
 import { Button, CatIcon, Chip, Label, catIconName } from './ui';
@@ -206,8 +206,9 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
 }
 
 /* ---------- Ayarlar ekranı: bütçe, bildirimler, dışa/içe aktarma ---------- */
-export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestore, ym, monthName, t }: {
+export function SettingsPanel({ settings, focusBudget, onChange, onExport, onBackup, onRestore, ym, monthName, t }: {
   settings: Settings;
+  focusBudget?: boolean;
   onChange: (s: Settings) => void;
   onExport: (ym: string | null) => void;
   onBackup: () => void;
@@ -220,13 +221,6 @@ export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestor
   const row = [st.row, { borderColor: t.line }];
   return (
     <View style={{ gap: 22 }}>
-      <Field label="Görünüm" t={t}>
-        <View style={st.chips}>
-          <Chip label="Noir" icon="moon-outline" active={settings.theme === 'noir'} onPress={() => onChange({ ...settings, theme: 'noir' })} t={t} />
-          <Chip label="Fildişi" icon="sunny-outline" active={settings.theme === 'ivory'} onPress={() => onChange({ ...settings, theme: 'ivory' })} t={t} />
-          <Chip label="Telefona göre" icon="phone-portrait-outline" active={settings.theme === 'system'} onPress={() => onChange({ ...settings, theme: 'system' })} t={t} />
-        </View>
-      </Field>
       <Field label="Aylık bütçe (₺)" t={t}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TextInput
@@ -235,9 +229,21 @@ export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestor
             keyboardType="decimal-pad"
             placeholder="Bütçe yok"
             placeholderTextColor={t.muted}
+            autoFocus={focusBudget}
+            selectTextOnFocus
+            returnKeyType="done"
+            onSubmitEditing={() => onChange({ ...settings, budget: parseAmount(budget) })}
             style={[...inputStyle(t), { flex: 1 }]}
+            accessibilityLabel="Aylık bütçe"
           />
-          <Button label="Kaydet" onPress={() => onChange({ ...settings, budget: parseAmount(budget) })} t={t} style={{ height: 48 }} />
+          <Button label="Kaydet" onPress={() => { Keyboard.dismiss(); onChange({ ...settings, budget: parseAmount(budget) }); }} t={t} style={{ height: 48 }} />
+        </View>
+      </Field>
+      <Field label="Görünüm" t={t}>
+        <View style={st.chips}>
+          <Chip label="Noir" icon="moon-outline" active={settings.theme === 'noir'} onPress={() => onChange({ ...settings, theme: 'noir' })} t={t} />
+          <Chip label="Fildişi" icon="sunny-outline" active={settings.theme === 'ivory'} onPress={() => onChange({ ...settings, theme: 'ivory' })} t={t} />
+          <Chip label="Telefona göre" icon="phone-portrait-outline" active={settings.theme === 'system'} onPress={() => onChange({ ...settings, theme: 'system' })} t={t} />
         </View>
       </Field>
 
