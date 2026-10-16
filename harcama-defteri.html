@@ -250,6 +250,7 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
     <div class="exports" id="exports" hidden>
       <button class="ghost" id="xmonth">Bu ayı Excel'e aktar</button>
       <button class="ghost" id="xall">Tümünü Excel'e aktar</button>
+      <button class="ghost" id="xbackup">Yedek al (uygulamaya taşımak için)</button>
     </div>
     <div class="status" id="status"></div>
   </div>
@@ -714,6 +715,14 @@ input[type=text], input[type=date], input[type=number] { width: 100%; height: 48
   }
   $("xmonth").onclick = function () { exportExcel(false); };
   $("xall").onclick = function () { exportExcel(true); };
+  // Telefondaki Harcama Defteri uygulamasının "Yedekten geri yükle" düğmesiyle aynı biçim
+  $("xbackup").onclick = function () {
+    if (!state.dl) return;
+    var body = JSON.stringify({ app: "harcama-defteri", version: 1, exportedAt: new Date().toISOString(), items: state.items, subs: state.subs, settings: { budget: state.budget } });
+    state.dl.save({ filename: "harcama-yedek-" + iso(new Date()) + ".json", data: body })
+      .then(function () { toast("Yedek kaydedildi."); })
+      .catch(function (err) { if (err && err.code === "declined") return; toast("Yedek kaydedilemedi."); });
+  };
 
   var toastTimer;
   function toast(msg) {
