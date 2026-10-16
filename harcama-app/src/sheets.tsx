@@ -180,9 +180,8 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
   );
 }
 
-/* ---------- Ayarlar: bütçe, bildirimler, dışa/içe aktarma ---------- */
-export function SettingsSheet({ visible, settings, onChange, onExport, onBackup, onRestore, ym, monthName, onClose, t }: {
-  visible: boolean;
+/* ---------- Ayarlar ekranı: bütçe, bildirimler, dışa/içe aktarma ---------- */
+export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestore, ym, monthName, t }: {
   settings: Settings;
   onChange: (s: Settings) => void;
   onExport: (ym: string | null) => void;
@@ -190,13 +189,12 @@ export function SettingsSheet({ visible, settings, onChange, onExport, onBackup,
   onRestore: () => void;
   ym: string;
   monthName: string;
-  onClose: () => void;
   t: Theme;
 }) {
   const [budget, setBudget] = useState(settings.budget ? amountText(settings.budget) : '');
   const row = [st.row, { borderColor: t.line }];
   return (
-    <Sheet visible={visible} title="Ayarlar" onClose={onClose} t={t}>
+    <View style={{ gap: 22 }}>
       <Field label="Aylık bütçe (₺)" t={t}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TextInput
@@ -251,7 +249,7 @@ export function SettingsSheet({ visible, settings, onChange, onExport, onBackup,
         <Button label="Yedek al" kind="ghost" onPress={onBackup} t={t} />
         <Button label="Yedekten geri yükle" kind="ghost" onPress={onRestore} t={t} />
       </View>
-    </Sheet>
+    </View>
   );
 }
 

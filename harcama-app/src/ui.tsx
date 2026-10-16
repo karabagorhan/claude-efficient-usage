@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { ComponentProps, useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
 import { Analysis, compact, pad } from './lib';
 import { Theme } from './theme';
@@ -122,7 +123,91 @@ export function DailyChart({ a, ym, budget, selected, onSelect, t }: {
   );
 }
 
+export type IconName = ComponentProps<typeof Ionicons>['name'];
+export { Ionicons };
+
+export type MenuItem = { key: string; label: string; icon: IconName; hint?: string };
+
+/** Sağdan kayarak açılan menü. */
+export function SideMenu({ open, onClose, items, current, onSelect, top, bottom, t }: {
+  open: boolean; onClose: () => void; items: MenuItem[]; current: string; onSelect: (key: string) => void; top: number; bottom: number; t: Theme;
+}) {
+  const x = useRef(new Animated.Value(1)).current;
+  const [mounted, setMounted] = useState(open);
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      Animated.timing(x, { toValue: 0, duration: 220, useNativeDriver: true }).start();
+    } else {
+      Animated.timing(x, { toValue: 1, duration: 180, useNativeDriver: true }).start(({ finished }) => finished && setMounted(false));
+    }
+  }, [open, x]);
+  if (!mounted) return null;
+  const W = 290;
+  return (
+    <View style={StyleSheet.absoluteFill}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim, opacity: x.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}>
+        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Menüyü kapat" />
+      </Animated.View>
+      <Animated.View
+        style={[s.menu, { width: W, backgroundColor: t.surface, borderColor: t.line, paddingTop: top + 16, paddingBottom: bottom + 16,
+          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [0, W + 20] }) }] }]}
+      >
+        <View style={s.menuHead}>
+          <Text style={{ color: t.fg, fontSize: 20, fontWeight: '800' }}>Harcama Defteri</Text>
+          <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Kapat">
+            <Ionicons name="close" size={26} color={t.muted} />
+          </Pressable>
+        </View>
+        {items.map((it) => {
+          const active = it.key === current;
+          return (
+            <Pressable
+              key={it.key}
+              onPress={() => onSelect(it.key)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              style={({ pressed }) => [s.menuItem, { backgroundColor: active ? t.accentSoft : pressed ? t.bg : 'transparent' }]}
+            >
+              <Ionicons name={it.icon} size={22} color={active ? t.accent : t.fg} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: t.fg, fontSize: 17, fontWeight: active ? '700' : '500' }}>{it.label}</Text>
+                {it.hint ? <Text style={{ color: t.muted, fontSize: 13 }}>{it.hint}</Text> : null}
+              </View>
+            </Pressable>
+          );
+        })}
+      </Animated.View>
+    </View>
+  );
+}
+
+/** Son aylar için toplam çubukları (raporlar). */
+export function MonthBars({ data, selected, onSelect, t }: {
+  data: { ym: string; label: string; total: number }[]; selected: string; onSelect: (ym: string) => void; t: Theme;
+}) {
+  const max = Math.max(...data.map((d) => d.total), 1);
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 150 }}>
+      {data.map((d) => {
+        const on = d.ym === selected;
+        return (
+          <Pressable key={d.ym} onPress={() => onSelect(d.ym)} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 4 }}
+            accessibilityLabel={`${d.label}: ${compact(d.total)}`}>
+            <Text style={{ fontSize: 11, color: on ? t.fg : t.muted, fontWeight: on ? '700' : '400' }}>{d.total ? compact(d.total) : ''}</Text>
+            <View style={{ width: '100%', maxWidth: 34, height: d.total ? Math.max(4, (d.total / max) * 100) : 3, borderRadius: 6, backgroundColor: on ? t.accent : t.accentSoft }} />
+            <Text style={{ fontSize: 12, color: on ? t.fg : t.muted, fontWeight: on ? '700' : '400' }}>{d.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
+  menu: { position: 'absolute', top: 0, bottom: 0, right: 0, borderLeftWidth: 1, paddingHorizontal: 12, gap: 4, borderTopLeftRadius: 24, borderBottomLeftRadius: 24 },
+  menuHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 16 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 14 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 99, paddingVertical: 8, paddingHorizontal: 14 },
   chipDot: { width: 8, height: 8, borderRadius: 4 },
   pill: { alignSelf: 'flex-start', borderRadius: 99, paddingVertical: 2, paddingHorizontal: 8 },
