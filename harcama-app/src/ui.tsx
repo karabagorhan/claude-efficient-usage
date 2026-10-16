@@ -2,10 +2,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { ComponentProps, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
-import { Analysis, compact, pad } from './lib';
-import { Theme } from './theme';
+import { Analysis, Insight, catIndex, compact, pad } from './lib';
+import { FONTS, Theme } from './theme';
 
-export function Chip({ label, active, color, onPress, t }: { label: string; active: boolean; color?: string; onPress: () => void; t: Theme }) {
+export function Chip({ label, active, color, icon, onPress, t }: { label: string; active: boolean; color?: string; icon?: IconName; onPress: () => void; t: Theme }) {
   return (
     <Pressable
       onPress={onPress}
@@ -16,7 +16,7 @@ export function Chip({ label, active, color, onPress, t }: { label: string; acti
         { backgroundColor: active ? t.accent : t.bg, borderColor: active ? t.accent : t.line, opacity: pressed ? 0.7 : 1 },
       ]}
     >
-      {color ? <View style={[s.chipDot, { backgroundColor: color }]} /> : null}
+      {icon ? <Ionicons name={icon} size={16} color={active ? t.accentFg : color ?? t.fg} /> : color ? <View style={[s.chipDot, { backgroundColor: color }]} /> : null}
       <Text style={{ color: active ? t.accentFg : t.fg, fontSize: 15 }}>{label}</Text>
     </Pressable>
   );
@@ -125,6 +125,7 @@ export function DailyChart({ a, ym, budget, selected, onSelect, t }: {
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 export { Ionicons };
+export const catIconName = (c: string): IconName => CAT_ICONS[catIndex(c)];
 
 export type MenuItem = { key: string; label: string; icon: IconName; hint?: string };
 
@@ -154,7 +155,7 @@ export function SideMenu({ open, onClose, items, current, onSelect, top, bottom,
           transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [0, W + 20] }) }] }]}
       >
         <View style={s.menuHead}>
-          <Text style={{ color: t.fg, fontSize: 20, fontWeight: '800' }}>Harcama Defteri</Text>
+          <Text style={{ color: t.fg, fontSize: 22, fontFamily: FONTS.display }}>Harcama Defteri</Text>
           <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Kapat">
             <Ionicons name="close" size={26} color={t.muted} />
           </Pressable>
@@ -182,24 +183,70 @@ export function SideMenu({ open, onClose, items, current, onSelect, top, bottom,
   );
 }
 
-/** Son aylar için toplam çubukları (raporlar). */
-export function MonthBars({ data, selected, onSelect, t }: {
-  data: { ym: string; label: string; total: number }[]; selected: string; onSelect: (ym: string) => void; t: Theme;
+/** Basit dikey çubuk grafik (6 aylık toplamlar, haftanın günleri). */
+export function Bars({ data, selected, onSelect, t, height = 150 }: {
+  data: { key: string; label: string; value: number }[]; selected?: string; onSelect?: (key: string) => void; t: Theme; height?: number;
 }) {
-  const max = Math.max(...data.map((d) => d.total), 1);
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const barMax = height - 46;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 150 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, height }}>
       {data.map((d) => {
-        const on = d.ym === selected;
+        const on = d.key === selected;
         return (
-          <Pressable key={d.ym} onPress={() => onSelect(d.ym)} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 4 }}
-            accessibilityLabel={`${d.label}: ${compact(d.total)}`}>
-            <Text style={{ fontSize: 11, color: on ? t.fg : t.muted, fontWeight: on ? '700' : '400' }}>{d.total ? compact(d.total) : ''}</Text>
-            <View style={{ width: '100%', maxWidth: 34, height: d.total ? Math.max(4, (d.total / max) * 100) : 3, borderRadius: 6, backgroundColor: on ? t.accent : t.accentSoft }} />
+          <Pressable key={d.key} disabled={!onSelect} onPress={() => onSelect?.(d.key)}
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: 4 }}
+            accessibilityLabel={`${d.label}: ${compact(d.value)}`}>
+            <Text style={{ fontSize: 11, color: on ? t.fg : t.muted, fontWeight: on ? '700' : '400' }}>{d.value ? compact(d.value) : ''}</Text>
+            <View style={{ width: '100%', maxWidth: 34, height: d.value ? Math.max(4, (d.value / max) * barMax) : 3, borderRadius: 7, backgroundColor: on ? t.accent : t.accentSoft }} />
             <Text style={{ fontSize: 12, color: on ? t.fg : t.muted, fontWeight: on ? '700' : '400' }}>{d.label}</Text>
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+const CAT_ICONS: IconName[] = ['cart', 'restaurant', 'bus', 'receipt', 'medkit', 'film', 'shirt', 'ellipsis-horizontal'];
+
+/** Kategori simgesi: kategorinin renginde yumuşak bir daire içinde. */
+export function CatIcon({ cat, t, size = 36 }: { cat: string; t: Theme; size?: number }) {
+  const color = t.cats[catIndex(cat)];
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2.6, backgroundColor: color + '24', alignItems: 'center', justifyContent: 'center' }}>
+      <Ionicons name={CAT_ICONS[catIndex(cat)]} size={size * 0.5} color={color} />
+    </View>
+  );
+}
+
+/** Otomatik yorumlar listesi. */
+export function InsightList({ list, t }: { list: Insight[]; t: Theme }) {
+  return (
+    <View style={{ gap: 10 }}>
+      {list.map((x, i) => {
+        const color = x.kind === 'warn' ? t.warn : x.kind === 'good' ? t.good : t.accent;
+        const bg = x.kind === 'warn' ? t.warnSoft : x.kind === 'good' ? t.goodSoft : t.accentSoft;
+        const icon: IconName = x.kind === 'warn' ? 'alert-circle' : x.kind === 'good' ? 'checkmark-circle' : 'sparkles';
+        return (
+          <View key={i} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+            <View style={{ width: 28, height: 28, borderRadius: 10, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={icon} size={16} color={color} />
+            </View>
+            <Text style={{ flex: 1, color: t.fg, fontSize: 15, lineHeight: 21, paddingTop: 3 }}>{x.text}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/** İnce ilerleme çubuğu (kategori limitleri). */
+export function Progress({ value, max, t }: { value: number; max: number; t: Theme }) {
+  const over = value > max;
+  const near = !over && value >= max * 0.8;
+  return (
+    <View style={{ height: 6, borderRadius: 99, backgroundColor: t.bg, overflow: 'hidden' }}>
+      <View style={{ width: `${Math.min(100, (value / max) * 100)}%`, height: '100%', borderRadius: 99, backgroundColor: over || near ? t.warn : t.accent }} />
     </View>
   );
 }

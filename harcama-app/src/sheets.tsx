@@ -1,8 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { CATS, Expense, MONTHS, Settings, Sub, addDays, amountText, catIndex, dayLabel, parseAmount, todayIso, uid } from './lib';
-import { Theme } from './theme';
-import { Button, Chip, Label } from './ui';
+import { FONTS, Theme } from './theme';
+import { Button, CatIcon, Chip, Label, catIconName } from './ui';
 
 function Sheet({ visible, title, onClose, children, t }: { visible: boolean; title: string; onClose: () => void; children: ReactNode; t: Theme }) {
   return (
@@ -39,7 +39,7 @@ function CatChips({ value, onChange, t }: { value: string; onChange: (c: string)
   return (
     <View style={st.chips}>
       {CATS.map((c) => (
-        <Chip key={c} label={c} active={value === c} color={t.cats[catIndex(c)]} onPress={() => onChange(c)} t={t} />
+        <Chip key={c} label={c} active={value === c} color={t.cats[catIndex(c)]} icon={catIconName(c)} onPress={() => onChange(c)} t={t} />
       ))}
     </View>
   );
@@ -59,10 +59,11 @@ function DeleteButton({ onDelete, t }: { onDelete: () => void; t: Theme }) {
 }
 
 /* ---------- Harcama ekle / düzenle ---------- */
-export function ExpenseSheet({ visible, initial, prefill, onSave, onDelete, onClose, t }: {
+export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave, onDelete, onClose, t }: {
   visible: boolean;
   initial: Expense | null;
   prefill?: { amount?: number; cat?: string };
+  frequent?: { cat: string; note: string; amount: number }[];
   onSave: (e: Expense) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
@@ -87,6 +88,25 @@ export function ExpenseSheet({ visible, initial, prefill, onSave, onDelete, onCl
 
   return (
     <Sheet visible={visible} title={initial ? 'Harcamayı düzenle' : 'Yeni harcama'} onClose={onClose} t={t}>
+      {!initial && frequent.length ? (
+        <Field label="Sık girdiklerin" t={t}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} keyboardShouldPersistTaps="always">
+            {frequent.map((f) => (
+              <Pressable
+                key={f.cat + f.note}
+                onPress={() => { setCat(f.cat); setNote(f.note); setAmount(amountText(f.amount)); }}
+                style={({ pressed }) => [st.freq, { backgroundColor: t.bg, borderColor: t.line, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <CatIcon cat={f.cat} t={t} size={28} />
+                <View>
+                  <Text style={{ color: t.fg, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>{f.note}</Text>
+                  <Text style={{ color: t.muted, fontSize: 12 }}>₺{amountText(f.amount)}</Text>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </Field>
+      ) : null}
       <Field label="Tutar (₺)" t={t}>
         <TextInput
           value={amount}
@@ -106,6 +126,11 @@ export function ExpenseSheet({ visible, initial, prefill, onSave, onDelete, onCl
         <TextInput value={note} onChangeText={setNote} placeholder="İsteğe bağlı, ör. Simit ve çay" placeholderTextColor={t.muted} style={inputStyle(t)} />
       </Field>
       <Field label="Tarih" t={t}>
+        <View style={st.chips}>
+          <Chip label="Bugün" active={date === todayIso()} onPress={() => setDate(todayIso())} t={t} />
+          <Chip label="Dün" active={date === addDays(todayIso(), -1)} onPress={() => setDate(addDays(todayIso(), -1))} t={t} />
+          <Chip label="2 gün önce" active={date === addDays(todayIso(), -2)} onPress={() => setDate(addDays(todayIso(), -2))} t={t} />
+        </View>
         <View style={[st.stepper, { backgroundColor: t.bg, borderColor: t.line }]}>
           <Pressable onPress={() => setDate(addDays(date, -1))} hitSlop={8} style={st.stepBtn} accessibilityLabel="Önceki gün">
             <Text style={[st.stepTxt, { color: t.fg }]}>‹</Text>
@@ -210,6 +235,21 @@ export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestor
       </Field>
 
       <View style={{ gap: 0 }}>
+        <Label t={t}>Kategori limitleri (aylık)</Label>
+        <Text style={{ color: t.muted, fontSize: 14, lineHeight: 20, paddingVertical: 6 }}>
+          Bir kategoride limitin %80'ine gelince Özet ve Raporlar'da uyarı görürsün. Boş bırakılan kategori limitsizdir.
+        </Text>
+        {CATS.map((c) => (
+          <CatLimitRow key={c} cat={c} value={settings.catBudgets[c] || 0} t={t}
+            onChange={(v) => {
+              const next = { ...settings.catBudgets };
+              if (v) next[c] = v; else delete next[c];
+              onChange({ ...settings, catBudgets: next });
+            }} />
+        ))}
+      </View>
+
+      <View style={{ gap: 0 }}>
         <Label t={t}>Bildirimler</Label>
         <View style={row}>
           <Text style={[st.rowTxt, { color: t.fg }]}>Akşam hatırlatması</Text>
@@ -253,9 +293,38 @@ export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestor
   );
 }
 
+function CatLimitRow({ cat, value, onChange, t }: { cat: string; value: number; onChange: (v: number) => void; t: Theme }) {
+  const [text, setText] = useState(value ? amountText(value) : '');
+  const commit = () => {
+    const v = parseAmount(text);
+    if (v !== value) onChange(v);
+  };
+  return (
+    <View style={[st.row, { borderColor: t.line }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+        <CatIcon cat={cat} t={t} size={30} />
+        <Text style={[st.rowTxt, { color: t.fg }]}>{cat}</Text>
+      </View>
+      <TextInput
+        value={text}
+        onChangeText={setText}
+        onEndEditing={commit}
+        onBlur={commit}
+        keyboardType="decimal-pad"
+        placeholder="Limit yok"
+        placeholderTextColor={t.muted}
+        style={[st.limitInput, { backgroundColor: t.bg, borderColor: t.line, color: t.fg }]}
+        accessibilityLabel={`${cat} aylık limiti`}
+      />
+    </View>
+  );
+}
+
 const st = StyleSheet.create({
+  freq: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 10, maxWidth: 200 },
+  limitInput: { width: 110, height: 40, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, fontSize: 16, textAlign: 'right' },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
-  title: { fontSize: 22, fontWeight: '700' },
+  title: { fontSize: 24, fontFamily: FONTS.display },
   body: { padding: 20, gap: 18, paddingBottom: 48 },
   input: { height: 48, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, fontSize: 17 },
   big: { height: 64, fontSize: 32, fontWeight: '700' },

@@ -28,6 +28,7 @@ export type Settings = {
   remind: boolean;
   remindHour: number;
   subRemind: boolean;
+  catBudgets: Record<string, number>; // kategori başına aylık limit (0 / yok = limitsiz)
 };
 
 export const CATS = ['Market', 'Yeme-İçme', 'Ulaşım', 'Fatura', 'Sağlık', 'Eğlence', 'Giyim', 'Diğer'];
@@ -172,3 +173,107 @@ export function subStatus(s: Sub, items: Expense[]): SubState {
   return { state: 'upcoming', due, period, days: Math.round((due.getTime() - now.getTime()) / 864e5) };
 }
 export const monthlyCost = (s: Sub) => (s.freq === 'yearly' ? s.amount / 12 : s.amount);
+
+/* ---------- Raporlar ---------- */
+const DAYS_SHORT_MON = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+/** Haftanın her günü için gün başına ortalama harcama (Pazartesi'den başlar). */
+export function weekdayAverages(items: Expense[], ym: string) {
+  const a = analyse(items, ym);
+  const totals = [0, 0, 0, 0, 0, 0, 0];
+  const counts = [0, 0, 0, 0, 0, 0, 0];
+  for (let d = 1; d <= a.elapsed; d++) counts[(parseIso(`${ym}-${pad(d)}`).getDay() + 6) % 7]++;
+  items.filter((x) => x.date.slice(0, 7) === ym).forEach((x) => (totals[(parseIso(x.date).getDay() + 6) % 7] += x.amount));
+  return DAYS_SHORT_MON.map((label, i) => ({ key: label, label, value: counts[i] ? totals[i] / counts[i] : 0 }));
+}
+
+/** Kategori bazında bu ay ile geçen ayın aynı dönemi. */
+export function categoryCompare(items: Expense[], ym: string) {
+  const a = analyse(items, ym);
+  const prevYm = addMonths(ym, -1);
+  const cur: Record<string, number> = {};
+  const prev: Record<string, number> = {};
+  items.forEach((x) => {
+    const day = +x.date.slice(8);
+    if (x.date.slice(0, 7) === ym && day <= a.cutoff) cur[x.cat] = (cur[x.cat] || 0) + x.amount;
+    if (x.date.slice(0, 7) === prevYm && day <= a.cutoff) prev[x.cat] = (prev[x.cat] || 0) + x.amount;
+  });
+  return { cur, prev };
+}
+
+/** Son 90 günde en sık girilen (kategori + not) ikilileri, son tutarlarıyla. */
+export function frequentEntries(items: Expense[], limit = 6) {
+  const since = addDays(todayIso(), -90);
+  const map: Record<string, { cat: string; note: string; amount: number; count: number; ts: number }> = {};
+  items.forEach((x) => {
+    if (!x.note || x.sub || x.date < since) return;
+    const k = x.cat + '|' + x.note.toLocaleLowerCase('tr-TR');
+    const m = map[k];
+    if (!m) map[k] = { cat: x.cat, note: x.note, amount: x.amount, count: 1, ts: x.ts };
+    else {
+      m.count++;
+      if (x.ts > m.ts) { m.amount = x.amount; m.ts = x.ts; }
+    }
+  });
+  return Object.values(map).filter((m) => m.count >= 2).sort((p, q) => q.count - p.count || q.ts - p.ts).slice(0, limit);
+}
+
+export type Insight = { kind: 'warn' | 'good' | 'info'; text: string };
+
+/** Seçili ay için kısa, otomatik yorumlar. En önemlisi başta. */
+export function insights(items: Expense[], ym: string, settings: Settings): Insight[] {
+  const a = analyse(items, ym);
+  const out: Insight[] = [];
+  const month = items.filter((x) => x.date.slice(0, 7) === ym);
+  if (!month.length) return out;
+  const by: Record<string, number> = {};
+  month.forEach((x) => (by[x.cat] = (by[x.cat] || 0) + x.amount));
+
+  // Kategori limitleri
+  Object.keys(settings.catBudgets).forEach((c) => {
+    const lim = settings.catBudgets[c];
+    const v = by[c] || 0;
+    if (!lim) return;
+    if (v > lim) out.push({ kind: 'warn', text: `${c} limitini ${fmtTL0(v - lim)} aştın (${fmtTL0(v)} / ${fmtTL0(lim)}).` });
+    else if (v >= lim * 0.8) out.push({ kind: 'warn', text: `${c} limitinde doluluk %${Math.round((v / lim) * 100)}, ${fmtTL0(lim - v)} kaldı.` });
+  });
+
+  // Bütçe gidişatı
+  if (a.isCur && settings.budget && a.elapsed >= 3) {
+    const diff = a.projection - settings.budget;
+    if (diff > 0) out.push({ kind: 'warn', text: `Bu hızla ay sonunda bütçeyi yaklaşık ${fmtTL0(diff)} aşacaksın.` });
+    else out.push({ kind: 'good', text: `Bu hızla ay sonunda bütçeden yaklaşık ${fmtTL0(-diff)} artacak.` });
+  }
+
+  // En çok harcanan kategori
+  const top = Object.keys(by).sort((p, q) => by[q] - by[p])[0];
+  out.push({ kind: 'info', text: `En çok ${top} kategorisine harcadın: ${fmtTL0(by[top])} (ay toplamındaki payı %${Math.round((by[top] / a.total) * 100)}).` });
+
+  // Geçen aya göre en çok değişen kategori
+  const { cur, prev } = categoryCompare(items, ym);
+  let best: { c: string; d: number } | null = null;
+  Object.keys({ ...cur, ...prev }).forEach((c) => {
+    const d = (cur[c] || 0) - (prev[c] || 0);
+    if ((prev[c] || 0) > 0 && Math.abs(d) >= 100 && (!best || Math.abs(d) > Math.abs(best.d))) best = { c, d };
+  });
+  if (best) {
+    const b = best as { c: string; d: number };
+    out.push({
+      kind: b.d > 0 ? 'warn' : 'good',
+      text: `${b.c} harcaman geçen ayın aynı dönemine göre ${fmtTL0(Math.abs(b.d))} ${b.d > 0 ? 'arttı' : 'azaldı'}.`,
+    });
+  }
+
+  // Hafta sonu / hafta içi
+  const wd = weekdayAverages(items, ym);
+  const weekday = (wd[0].value + wd[1].value + wd[2].value + wd[3].value + wd[4].value) / 5;
+  const weekend = (wd[5].value + wd[6].value) / 2;
+  if (weekday > 0 && weekend > weekday * 1.4) out.push({ kind: 'info', text: `Hafta sonları günde ortalama ${fmtTL0(weekend)} harcıyorsun, hafta içinin ${(weekend / weekday).toFixed(1).replace('.', ',')} katı.` });
+
+  // Harcamasız günler
+  const spentDays = new Set(month.map((x) => x.date)).size;
+  const free = a.elapsed - spentDays;
+  if (free >= 3) out.push({ kind: 'good', text: `Bu ay ${free} gün hiç harcama yapmadın.` });
+
+  return out;
+}

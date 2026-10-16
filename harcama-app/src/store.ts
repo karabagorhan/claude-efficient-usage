@@ -7,7 +7,7 @@ const KEY = 'harcama-defteri:v1';
 
 export type Data = { items: Expense[]; subs: Sub[]; settings: Settings };
 
-export const defaultSettings: Settings = { budget: 0, remind: false, remindHour: 21, subRemind: true };
+export const defaultSettings: Settings = { budget: 0, remind: false, remindHour: 21, subRemind: true, catBudgets: {} };
 const empty: Data = { items: [], subs: [], settings: defaultSettings };
 
 function num(v: unknown, d = 0) {
@@ -48,6 +48,9 @@ export function normalize(raw: any): Data {
     remind: st.remind === true,
     remindHour: Math.min(23, Math.max(0, num(st.remindHour, 21))),
     subRemind: st.subRemind !== false,
+    catBudgets: Object.fromEntries(
+      CATS.filter((c) => typeof st.catBudgets?.[c] === 'number' && st.catBudgets[c] > 0).map((c) => [c, st.catBudgets[c] as number]),
+    ),
   };
   return { items, subs, settings };
 }
@@ -62,7 +65,7 @@ export function merge(cur: Data, incoming: Data): { data: Data; added: number } 
     data: {
       items: cur.items.concat(newItems),
       subs: cur.subs.concat(newSubs),
-      settings: { ...cur.settings, budget: cur.settings.budget || incoming.settings.budget },
+      settings: { ...cur.settings, budget: cur.settings.budget || incoming.settings.budget, catBudgets: { ...incoming.settings.catBudgets, ...cur.settings.catBudgets } },
     },
     added: newItems.length + newSubs.length,
   };

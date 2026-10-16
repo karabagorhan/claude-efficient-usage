@@ -1,20 +1,28 @@
+import { BricolageGrotesque_600SemiBold } from '@expo-google-fonts/bricolage-grotesque/600SemiBold';
+import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
+import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque/800ExtraBold';
+import { useFonts } from 'expo-font';
+import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { exportBackup, exportExcel, pickBackup } from './src/files';
 import {
-  Analysis, Expense, MONTHS, Settings, Sub, addMonths, analyse, catIndex, dayLabel, fmtTL, fmtTL0, iso,
-  monthLabel, monthlyCost, parseAmount, shortDay, subStatus, sum, todayIso, uid,
+  Analysis, Expense, MONTHS, Settings, Sub, addMonths, analyse, catIndex, categoryCompare, dayLabel, fmtTL, fmtTL0, frequentEntries,
+  insights, iso, monthLabel, monthlyCost, parseAmount, shortDay, subStatus, sum, todayIso, uid, weekdayAverages,
 } from './src/lib';
 import { ensurePermission, reschedule } from './src/notify';
 import { ExpenseSheet, SettingsPanel, SubSheet } from './src/sheets';
 import { merge, useAppData } from './src/store';
-import { Theme, useTheme } from './src/theme';
-import { Button, DailyChart, Ionicons, Label, MenuItem, MonthBars, Pill, SideMenu } from './src/ui';
+import { FONTS, Theme, useTheme } from './src/theme';
+import { Bars, Button, CatIcon, DailyChart, InsightList, Ionicons, Label, MenuItem, Pill, Progress, SideMenu } from './src/ui';
 
 export default function App() {
+  // Yazı tipi yüklenemezse sistem yazı tipiyle devam edilir
+  const [fontsLoaded, fontError] = useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold });
+  if (!fontsLoaded && !fontError) return null;
   return (
     <SafeAreaProvider>
       <Main />
@@ -60,14 +68,23 @@ function Main() {
   const [expSheet, setExpSheet] = useState<ExpenseSheetState>(null);
   const [subSheet, setSubSheet] = useState<SubSheetState>(null);
   const [toastMsg, setToastMsg] = useState('');
+  const [toastAction, setToastAction] = useState<{ label: string; run: () => void } | null>(null);
+  const [query, setQuery] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const url = Linking.useLinkingURL();
 
-  const toast = (m: string) => {
+  const toast = (m: string, action?: { label: string; run: () => void }) => {
     setToastMsg(m);
+    setToastAction(action ?? null);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastMsg(''), 2600);
+    toastTimer.current = setTimeout(() => { setToastMsg(''); setToastAction(null); }, action ? 4500 : 2600);
+  };
+  const buzz = (kind: 'success' | 'light' | 'warn' = 'light') => {
+    const p = kind === 'success' ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      : kind === 'warn' ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+      : Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    p.catch(() => {});
   };
   const openAdd = () => setExpSheet({ key: Date.now(), initial: null });
 
@@ -137,16 +154,23 @@ function Main() {
     update((d) => ({ ...d, items: d.items.filter((x) => x.id !== e.id).concat([e]) }));
     setExpSheet(null);
     setYm(e.date.slice(0, 7));
-    toast(isNew ? 'Harcama eklendi.' : 'Harcama güncellendi.');
+    buzz('success');
+    toast(isNew ? `${fmtTL(e.amount)} ${e.cat} eklendi.` : 'Harcama güncellendi.');
   };
   const deleteExpense = (id: string) => {
+    const removed = items.find((x) => x.id === id);
     update((d) => ({ ...d, items: d.items.filter((x) => x.id !== id) }));
     setExpSheet(null);
-    toast('Harcama silindi.');
+    buzz('warn');
+    toast('Harcama silindi.', removed ? {
+      label: 'Geri al',
+      run: () => update((d) => ({ ...d, items: d.items.filter((x) => x.id !== removed.id).concat([removed]) })),
+    } : undefined);
   };
   const saveSub = (s: Sub) => {
     update((d) => ({ ...d, subs: d.subs.filter((x) => x.id !== s.id).concat([s]) }));
     setSubSheet(null);
+    buzz('success');
   };
   const deleteSub = (id: string) => {
     update((d) => ({ ...d, subs: d.subs.filter((x) => x.id !== id) }));
@@ -156,6 +180,7 @@ function Main() {
     const sst = subStatus(s, items);
     const e: Expense = { id: uid(), amount: s.amount, cat: s.cat, note: s.name, date: iso(sst.due), ts: Date.now(), sub: s.id, period: sst.period };
     update((d) => ({ ...d, items: d.items.concat([e]) }));
+    buzz('success');
     toast(`${s.name} harcamalara eklendi.`);
   };
   const skipSub = (s: Sub) => {
@@ -221,17 +246,18 @@ function Main() {
       style={({ pressed }) => [st.item, i > 0 && st.topLine, pressed && { backgroundColor: t.bg }]}
       accessibilityLabel={`${x.cat} ${fmtTL(x.amount)}, düzenle`}
     >
-      <View style={[st.dot, { backgroundColor: t.cats[catIndex(x.cat)] }]} />
+      <CatIcon cat={x.cat} t={t} />
       <View style={{ flex: 1 }}>
-        <Text style={st.itemCat}>{x.cat}</Text>
-        {x.note || showDate ? <Text style={st.meta}>{[showDate ? dayLabel(x.date) : '', x.note].filter(Boolean).join(' · ')}</Text> : null}
+        <Text style={st.itemCat} numberOfLines={1}>{x.note || x.cat}</Text>
+        <Text style={st.meta} numberOfLines={1}>{[x.note ? x.cat : '', showDate ? dayLabel(x.date) : '', x.sub ? 'abonelik' : ''].filter(Boolean).join(' · ') || x.cat}</Text>
       </View>
       <Text style={st.itemAmt}>{fmtTL(x.amount)}</Text>
       <Ionicons name="chevron-forward" size={16} color={t.muted} />
     </Pressable>
   );
 
-  const ctx: Ctx = { t, st, a, ym, items, subs, monthItems, budget };
+  const ctx: Ctx = { t, st, a, ym, items, subs, monthItems, budget, settings };
+  const notes = insights(items, ym, settings);
 
   let body: ReactNode = null;
   if (screen === 'ozet') {
@@ -242,6 +268,15 @@ function Main() {
         {monthSwitcher}
         <Hero ctx={ctx} onBudget={() => go('ayarlar')} />
         <Tiles ctx={ctx} />
+        {notes.length ? (
+          <View style={st.card}>
+            <View style={st.cardHead}>
+              <Label t={t}>Öne çıkanlar</Label>
+              {notes.length > 3 ? <Pressable onPress={() => go('raporlar')} hitSlop={8}><Text style={st.link}>Tümü</Text></Pressable> : null}
+            </View>
+            <InsightList list={notes.slice(0, 3)} t={t} />
+          </View>
+        ) : null}
         {pending.length ? (
           <View style={st.card}>
             <View style={st.cardHead}>
@@ -263,24 +298,33 @@ function Main() {
       </>
     );
   } else if (screen === 'harcamalar') {
-    const shown = monthItems.filter((x) => (!filterCat || x.cat === filterCat) && (!filterDay || x.date === filterDay));
+    const q = query.trim().toLocaleLowerCase('tr-TR');
+    // Arama tüm aylarda yapılır; arama yokken seçili ay listelenir
+    const pool = q ? items : monthItems;
+    const shown = pool.filter((x) => (!filterCat || x.cat === filterCat) && (!filterDay || x.date === filterDay) &&
+      (!q || x.note.toLocaleLowerCase('tr-TR').includes(q) || x.cat.toLocaleLowerCase('tr-TR').includes(q) || fmtTL(x.amount).includes(q)));
     const groups: Record<string, Expense[]> = {};
     shown.forEach((x) => (groups[x.date] = groups[x.date] || []).push(x));
     const days = Object.keys(groups).sort().reverse();
     const cats = Array.from(new Set(monthItems.map((x) => x.cat)));
     body = (
       <>
-        {monthSwitcher}
+        <View style={st.search}>
+          <Ionicons name="search" size={18} color={t.muted} />
+          <TextInput value={query} onChangeText={setQuery} placeholder="Not, kategori ya da tutar ara" placeholderTextColor={t.muted}
+            style={st.searchInput} returnKeyType="search" clearButtonMode="while-editing" accessibilityLabel="Harcamalarda ara" />
+        </View>
+        {q ? null : monthSwitcher}
         <View style={st.summaryRow}>
-          <Text style={st.meta}>{monthItems.length} işlem</Text>
-          <Text style={st.summaryVal}>{fmtTL(shown.length === monthItems.length ? a.total : sum(shown))}</Text>
+          <Text style={st.meta}>{q ? `Tüm aylarda ${shown.length} sonuç` : `${shown.length} işlem`}</Text>
+          <Text style={st.summaryVal}>{fmtTL(sum(shown))}</Text>
         </View>
         {cats.length > 1 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {cats.map((c) => (
               <Pressable key={c} onPress={() => setFilterCat(filterCat === c ? null : c)}
                 style={[st.catChip, { backgroundColor: filterCat === c ? t.fg : t.surface, borderColor: filterCat === c ? t.fg : t.line }]}>
-                <View style={[st.dot, { backgroundColor: t.cats[catIndex(c)] }]} />
+                <CatIcon cat={c} t={t} size={22} />
                 <Text style={{ color: filterCat === c ? t.bg : t.fg, fontSize: 14 }}>{c}</Text>
               </Pressable>
             ))}
@@ -310,9 +354,10 @@ function Main() {
           </>
         ) : (
           <View style={st.empty}>
-            <Text style={st.emptyTitle}>{monthItems.length ? 'Eşleşen harcama yok' : 'Bu ay harcama yok'}</Text>
+            <Ionicons name={q ? 'search' : 'wallet-outline'} size={40} color={t.muted} />
+            <Text style={st.emptyTitle}>{q ? 'Sonuç bulunamadı' : monthItems.length ? 'Eşleşen harcama yok' : 'Bu ay harcama yok'}</Text>
             <Text style={[st.meta, { textAlign: 'center' }]}>
-              {monthItems.length ? 'Filtreyi kaldırarak tüm ayı görebilirsin.' : 'Aşağıdaki düğmeyle harcama ekleyebilirsin.'}
+              {q ? 'Başka bir kelime dene.' : monthItems.length ? 'Filtreyi kaldırarak tüm ayı görebilirsin.' : 'Aşağıdaki düğmeyle harcama ekleyebilirsin.'}
             </Text>
           </View>
         )}
@@ -322,6 +367,7 @@ function Main() {
     body = (
       <Reports
         ctx={ctx}
+        notes={notes}
         filterDay={filterDay}
         onDay={(d) => setFilterDay(filterDay === d ? null : d)}
         onCat={(c) => { setFilterCat(c); setFilterDay(null); go('harcamalar'); }}
@@ -397,15 +443,20 @@ function Main() {
       ) : null}
 
       {toastMsg ? (
-        <View pointerEvents="none" style={[st.toast, { bottom: insets.bottom + 82 }]}>
-          <Text style={{ color: t.bg, fontSize: 14, textAlign: 'center' }}>{toastMsg}</Text>
+        <View pointerEvents={toastAction ? 'auto' : 'none'} style={[st.toast, { bottom: insets.bottom + (showFab ? 82 : 24) }]}>
+          <Text style={{ color: t.bg, fontSize: 14, flexShrink: 1 }}>{toastMsg}</Text>
+          {toastAction ? (
+            <Pressable hitSlop={10} onPress={() => { toastAction.run(); setToastMsg(''); setToastAction(null); buzz(); }}>
+              <Text style={{ color: t.accentSoft, fontSize: 14, fontWeight: '700' }}>{toastAction.label}</Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
 
       <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} items={MENU} current={screen} onSelect={go} top={insets.top} bottom={insets.bottom} t={t} />
 
       {expSheet ? (
-        <ExpenseSheet key={expSheet.key} visible initial={expSheet.initial} prefill={expSheet.prefill} onSave={saveExpense} onDelete={deleteExpense} onClose={() => setExpSheet(null)} t={t} />
+        <ExpenseSheet key={expSheet.key} visible initial={expSheet.initial} prefill={expSheet.prefill} frequent={frequentEntries(items)} onSave={saveExpense} onDelete={deleteExpense} onClose={() => setExpSheet(null)} t={t} />
       ) : null}
       {subSheet ? (
         <SubSheet key={subSheet.key} visible initial={subSheet.initial} onSave={saveSub} onDelete={deleteSub} onClose={() => setSubSheet(null)} t={t} />
@@ -416,7 +467,7 @@ function Main() {
 
 /* ---------- Ekran parçaları ---------- */
 type Styles = ReturnType<typeof makeStyles>;
-type Ctx = { t: Theme; st: Styles; a: Analysis; ym: string; items: Expense[]; subs: Sub[]; monthItems: Expense[]; budget: number };
+type Ctx = { t: Theme; st: Styles; a: Analysis; ym: string; items: Expense[]; subs: Sub[]; monthItems: Expense[]; budget: number; settings: Settings };
 
 function Hero({ ctx, onBudget }: { ctx: Ctx; onBudget: () => void }) {
   const { t, st, a, items, budget } = ctx;
@@ -500,7 +551,7 @@ function SubRow({ s, ctx, first, onEdit, onPay, onSkip }: { s: Sub; ctx: Ctx; fi
   return (
     <View style={[st.subWrap, !first && st.topLine]}>
       <Pressable onPress={onEdit} style={st.subRow} accessibilityLabel={`${s.name}, düzenle`}>
-        <View style={[st.dot, { backgroundColor: t.cats[catIndex(s.cat)] }]} />
+        <CatIcon cat={s.cat} t={t} />
         <View style={{ flex: 1, gap: 3 }}>
           <Text style={st.itemCat}>{s.name}</Text>
           <View style={st.metaRow}>
@@ -518,7 +569,7 @@ function SubRow({ s, ctx, first, onEdit, onPay, onSkip }: { s: Sub; ctx: Ctx; fi
         </Text>
       </Pressable>
       {x.state === 'pending' ? (
-        <View style={st.subAct}>
+        <View style={[st.subAct, { paddingLeft: 46 }]}>
           <Button label="Ödendi olarak işaretle" onPress={onPay} t={t} style={st.smallBtn} />
           <Button label="Bu dönemi atla" kind="ghost" onPress={onSkip} t={t} style={st.smallBtn} />
         </View>
@@ -527,19 +578,22 @@ function SubRow({ s, ctx, first, onEdit, onPay, onSkip }: { s: Sub; ctx: Ctx; fi
   );
 }
 
-function Reports({ ctx, filterDay, onDay, onCat, onShowDay, onMonth, onExport, monthSwitcher }: {
-  ctx: Ctx; filterDay: string | null; onDay: (d: string) => void; onCat: (c: string) => void; onShowDay: () => void;
+function Reports({ ctx, notes, filterDay, onDay, onCat, onShowDay, onMonth, onExport, monthSwitcher }: {
+  ctx: Ctx; notes: ReturnType<typeof insights>; filterDay: string | null; onDay: (d: string) => void; onCat: (c: string) => void; onShowDay: () => void;
   onMonth: (ym: string) => void; onExport: () => void; monthSwitcher: ReactNode;
 }) {
-  const { t, st, a, ym, items, monthItems, budget } = ctx;
+  const { t, st, a, ym, items, monthItems, budget, settings } = ctx;
+  const { cur, prev } = categoryCompare(items, ym);
+  const week = weekdayAverages(items, ym);
+  const busiest = week.reduce((m, d) => (d.value > m.value ? d : m), week[0]);
   // Son 6 ay (seçili ay dahil)
   const months = Array.from({ length: 6 }, (_, i) => addMonths(ym, i - 5)).map((m) => ({
-    ym: m,
+    key: m,
     label: MONTHS[+m.slice(5) - 1].slice(0, 3),
-    total: sum(items.filter((x) => x.date.slice(0, 7) === m)),
+    value: sum(items.filter((x) => x.date.slice(0, 7) === m)),
   }));
-  const withData = months.filter((m) => m.total > 0);
-  const avg6 = withData.length ? sum(withData.map((m) => ({ amount: m.total }))) / withData.length : 0;
+  const withData = months.filter((m) => m.value > 0);
+  const avg6 = withData.length ? sum(withData.map((m) => ({ amount: m.value }))) / withData.length : 0;
 
   const by: Record<string, number> = {};
   const cnt: Record<string, number> = {};
@@ -553,12 +607,18 @@ function Reports({ ctx, filterDay, onDay, onCat, onShowDay, onMonth, onExport, m
   return (
     <>
       {monthSwitcher}
+      {notes.length ? (
+        <View style={st.card}>
+          <Label t={t}>Öne çıkanlar</Label>
+          <InsightList list={notes} t={t} />
+        </View>
+      ) : null}
       <View style={st.card}>
         <View style={st.cardHead}>
           <Label t={t}>Son 6 ay</Label>
           {avg6 ? <Text style={st.meta}>ortalama {fmtTL0(avg6)}</Text> : null}
         </View>
-        <MonthBars data={months} selected={ym} onSelect={onMonth} t={t} />
+        <Bars data={months} selected={ym} onSelect={onMonth} t={t} />
       </View>
 
       <View style={st.card}>
@@ -580,6 +640,17 @@ function Reports({ ctx, filterDay, onDay, onCat, onShowDay, onMonth, onExport, m
         )}
       </View>
 
+      {monthItems.length ? (
+        <View style={st.card}>
+          <View style={st.cardHead}>
+            <Label t={t}>Haftanın günlerine göre</Label>
+            <Text style={st.meta}>gün başına ortalama</Text>
+          </View>
+          <Bars data={week} selected={busiest.value ? busiest.key : undefined} t={t} height={130} />
+          {busiest.value ? <Text style={st.meta}>En çok harcadığın gün: {busiest.label} (ortalama {fmtTL0(busiest.value)})</Text> : null}
+        </View>
+      ) : null}
+
       <View style={st.card}>
         <View style={st.cardHead}>
           <Label t={t}>Kategorilere göre</Label>
@@ -592,10 +663,17 @@ function Reports({ ctx, filterDay, onDay, onCat, onShowDay, onMonth, onExport, m
             </View>
             {catRows.map((c, i) => (
               <Pressable key={c} onPress={() => onCat(c)} style={[st.catRow, i > 0 && st.topLine]}>
-                <View style={[st.dot, { backgroundColor: t.cats[catIndex(c)] }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={st.itemCat}>{c}</Text>
-                  <Text style={st.meta}>%{Math.round((by[c] / a.total) * 100)} · {cnt[c]} işlem</Text>
+                <CatIcon cat={c} t={t} />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <View style={st.metaRow}>
+                    <Text style={st.itemCat}>{c}</Text>
+                    <CatChange cur={cur[c] || 0} prev={prev[c] || 0} t={t} />
+                  </View>
+                  <Text style={st.meta}>
+                    %{Math.round((by[c] / a.total) * 100)} · {cnt[c]} işlem
+                    {settings.catBudgets[c] ? ` · limit ${fmtTL0(settings.catBudgets[c])}` : ''}
+                  </Text>
+                  {settings.catBudgets[c] ? <Progress value={by[c]} max={settings.catBudgets[c]} t={t} /> : null}
                 </View>
                 <Text style={st.itemAmt}>{fmtTL(by[c])}</Text>
                 <Ionicons name="chevron-forward" size={16} color={t.muted} />
@@ -612,7 +690,8 @@ function Reports({ ctx, filterDay, onDay, onCat, onShowDay, onMonth, onExport, m
           <Label t={t}>En büyük harcamalar</Label>
           {top.map((x, i) => (
             <View key={x.id} style={[st.catRow, i > 0 && st.topLine]}>
-              <View style={[st.dot, { backgroundColor: t.cats[catIndex(x.cat)] }]} />
+              <Text style={st.rank}>{i + 1}</Text>
+              <CatIcon cat={x.cat} t={t} size={30} />
               <View style={{ flex: 1 }}>
                 <Text style={st.itemCat}>{x.note || x.cat}</Text>
                 <Text style={st.meta}>{x.cat} · {shortDay(x.date)}</Text>
@@ -628,20 +707,28 @@ function Reports({ ctx, filterDay, onDay, onCat, onShowDay, onMonth, onExport, m
   );
 }
 
+/** Geçen ayın aynı dönemine göre kategori değişimi. */
+function CatChange({ cur, prev, t }: { cur: number; prev: number; t: Theme }) {
+  if (!prev) return null;
+  const r = Math.round(((cur - prev) / prev) * 100);
+  if (!r) return null;
+  return <Pill kind={r > 0 ? 'up' : 'down'} label={`${r > 0 ? '↑' : '↓'} %${Math.abs(r)}`} t={t} />;
+}
+
 function makeStyles(t: Theme) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: t.bg },
     topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, backgroundColor: t.bg },
     menuBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' },
     scroll: { paddingHorizontal: 16, paddingTop: 8, gap: 16 },
-    h1: { fontSize: 30, fontWeight: '800', color: t.fg, letterSpacing: -0.5 },
+    h1: { fontSize: 32, fontFamily: FONTS.display, color: t.fg, letterSpacing: -0.5 },
     link: { color: t.accent, fontSize: 14, fontWeight: '600' },
     months: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     mBtn: { width: 44, height: 40, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' },
     mLabel: { fontSize: 17, fontWeight: '600', color: t.fg },
-    hero: { backgroundColor: t.accent, borderRadius: 24, padding: 20, gap: 14 },
-    heroBig: { color: t.accentFg, fontSize: 42, fontWeight: '800', marginTop: 4, fontVariant: ['tabular-nums'], letterSpacing: -1 },
-    heroMid: { color: t.accentFg, fontSize: 24, fontWeight: '700', fontVariant: ['tabular-nums'] },
+    hero: { backgroundColor: t.accent, borderRadius: 28, padding: 22, gap: 16, shadowColor: t.accent, shadowOpacity: 0.25, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } },
+    heroBig: { color: t.accentFg, fontSize: 46, fontFamily: FONTS.display, marginTop: 4, fontVariant: ['tabular-nums'], letterSpacing: -1 },
+    heroMid: { color: t.accentFg, fontSize: 26, fontFamily: FONTS.bold, fontVariant: ['tabular-nums'] },
     heroRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 8 },
     heroLink: { color: t.accentFg, fontSize: 14, textDecorationLine: 'underline' },
     heroSmall: { color: t.accentFg, fontSize: 14, fontVariant: ['tabular-nums'] },
@@ -649,17 +736,17 @@ function makeStyles(t: Theme) {
     fill: { height: '100%', borderRadius: 99 },
     tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     tile: { flexGrow: 1, flexBasis: '45%', backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 18, padding: 14, gap: 4 },
-    tileVal: { fontSize: 21, fontWeight: '700', color: t.fg, fontVariant: ['tabular-nums'] },
+    tileVal: { fontSize: 23, fontFamily: FONTS.bold, color: t.fg, fontVariant: ['tabular-nums'] },
     tileSub: { fontSize: 13, color: t.muted },
     card: { backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 20, padding: 16, gap: 12 },
     cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
     summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: 4 },
-    summaryVal: { fontSize: 24, fontWeight: '800', color: t.fg, fontVariant: ['tabular-nums'] },
+    summaryVal: { fontSize: 26, fontFamily: FONTS.display, color: t.fg, fontVariant: ['tabular-nums'] },
     catChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 },
     subSum: { flexDirection: 'row', gap: 24, paddingHorizontal: 4 },
-    subSumVal: { fontSize: 22, fontWeight: '800', color: t.fg, fontVariant: ['tabular-nums'] },
+    subSumVal: { fontSize: 24, fontFamily: FONTS.display, color: t.fg, fontVariant: ['tabular-nums'] },
     subWrap: { gap: 10, paddingVertical: 10 },
-    subRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    subRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     subAct: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingLeft: 20 },
     smallBtn: { height: 38, borderRadius: 12, paddingHorizontal: 12 },
     metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
@@ -669,20 +756,23 @@ function makeStyles(t: Theme) {
     legendTxt: { fontSize: 12, color: t.muted },
     dash: { width: 14, height: 0, borderTopWidth: 2, borderStyle: 'dashed' },
     stack: { flexDirection: 'row', height: 14, borderRadius: 99, overflow: 'hidden', gap: 2 },
-    catRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 4 },
+    catRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 2 },
     dot: { width: 10, height: 10, borderRadius: 3 },
     filters: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
     fchip: { backgroundColor: t.fg, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 12 },
     fchipTxt: { color: t.bg, fontSize: 14, fontWeight: '500' },
     dayHead: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4 },
     items: { backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 18, overflow: 'hidden' },
-    item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 },
+    item: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, paddingHorizontal: 14 },
     itemCat: { fontSize: 16, fontWeight: '500', color: t.fg },
     itemAmt: { fontSize: 16, fontWeight: '600', color: t.fg, fontVariant: ['tabular-nums'] },
     meta: { fontSize: 13, color: t.muted },
     empty: { alignItems: 'center', paddingVertical: 28, gap: 4 },
-    emptyTitle: { fontSize: 20, fontWeight: '700', color: t.fg },
+    emptyTitle: { fontSize: 22, fontFamily: FONTS.bold, color: t.fg, marginTop: 6 },
     fabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 10, backgroundColor: t.bg },
-    toast: { position: 'absolute', alignSelf: 'center', maxWidth: '90%', backgroundColor: t.fg, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 16 },
+    toast: { position: 'absolute', alignSelf: 'center', maxWidth: '92%', backgroundColor: t.fg, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 16 },
+    search: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, paddingHorizontal: 12 },
+    searchInput: { flex: 1, fontSize: 16, color: t.fg, height: '100%' },
+    rank: { width: 16, fontSize: 15, color: t.muted, fontFamily: FONTS.bold, textAlign: 'center' },
   });
 }

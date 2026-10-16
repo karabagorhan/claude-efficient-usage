@@ -41,6 +41,13 @@ const dark: typeof light = {
 
 export type Theme = typeof light;
 
+// Başlık ve büyük rakamlar için web sürümüyle aynı yazı tipi (Bricolage Grotesque); metinler sistem yazı tipinde.
+export const FONTS = {
+  display: 'BricolageGrotesque_800ExtraBold',
+  bold: 'BricolageGrotesque_700Bold',
+  semi: 'BricolageGrotesque_600SemiBold',
+};
+
 export function useTheme(): Theme {
   return useColorScheme() === 'dark' ? dark : light;
 }
