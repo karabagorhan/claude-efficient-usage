@@ -1,23 +1,50 @@
 import { ReactNode, useState } from 'react';
-import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { CATS, Expense, MONTHS, Settings, Sub, addDays, amountText, catIndex, dayLabel, parseAmount, todayIso, uid } from './lib';
+import { InputAccessoryView, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { CATS, Expense, MONTHS, Settings, Sub, addDays, amountText, catIndex, dayLabel, parseAmount, todayIso, uid, fmtTL } from './lib';
 import { FONTS, Theme } from './theme';
 import { Button, CatIcon, Chip, Label, catIconName } from './ui';
 
-function Sheet({ visible, title, onClose, children, t }: { visible: boolean; title: string; onClose: () => void; children: ReactNode; t: Theme }) {
+type SheetAction = { label: string; onPress: () => void; disabled?: boolean };
+
+/**
+ * Alt sayfa: üstte Vazgeç / Kaydet, klavye açılınca içerik yukarı kayar,
+ * klavyenin hemen üstünde tam genişlikte bir Kaydet çubuğu durur (iOS).
+ */
+function Sheet({ visible, title, onClose, action, accessoryId, children, t }: {
+  visible: boolean; title: string; onClose: () => void; action?: SheetAction; accessoryId?: string; children: ReactNode; t: Theme;
+}) {
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: t.surface }}>
-        <View style={st.head}>
-          <Text style={[st.title, { color: t.fg }]}>{title}</Text>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.surface }}>
+        <View style={st.topRow}>
           <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button">
-            <Text style={{ color: t.accent, fontSize: 17, fontWeight: '600' }}>Kapat</Text>
+            <Text style={{ color: t.muted, fontSize: 17 }}>Vazgeç</Text>
           </Pressable>
+          {action ? (
+            <Pressable onPress={action.onPress} disabled={action.disabled} hitSlop={12} accessibilityRole="button"
+              style={[st.topSave, { backgroundColor: action.disabled ? 'transparent' : t.accent, borderColor: action.disabled ? t.line : t.accent }]}>
+              <Text style={{ color: action.disabled ? t.muted : t.accentFg, fontSize: 16, fontWeight: '700' }}>{action.label}</Text>
+            </Pressable>
+          ) : null}
         </View>
-        <ScrollView contentContainerStyle={st.body} keyboardShouldPersistTaps="handled">
+        <Text style={[st.title, { color: t.fg }]}>{title}</Text>
+        <ScrollView contentContainerStyle={st.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
           {children}
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
+      {action && accessoryId && Platform.OS === 'ios' ? (
+        <InputAccessoryView nativeID={accessoryId}>
+          <View style={[st.accessory, { backgroundColor: t.raised, borderTopColor: t.line }]}>
+            <Pressable onPress={() => Keyboard.dismiss()} hitSlop={10} accessibilityLabel="Klavyeyi kapat">
+              <Text style={{ color: t.muted, fontSize: 15 }}>Klavyeyi kapat</Text>
+            </Pressable>
+            <Pressable onPress={action.onPress} disabled={action.disabled} accessibilityRole="button"
+              style={[st.accessorySave, { backgroundColor: t.accent, opacity: action.disabled ? 0.4 : 1 }]}>
+              <Text style={{ color: t.accentFg, fontSize: 16, fontWeight: '700' }}>{action.label}</Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      ) : null}
     </Modal>
   );
 }
@@ -87,7 +114,8 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
   };
 
   return (
-    <Sheet visible={visible} title={initial ? 'Harcamayı düzenle' : 'Yeni harcama'} onClose={onClose} t={t}>
+    <Sheet visible={visible} title={initial ? 'Harcamayı düzenle' : 'Yeni harcama'} onClose={onClose} t={t}
+      accessoryId="expense-save" action={{ label: value ? `Kaydet · ${fmtTL(value)}` : 'Kaydet', onPress: save, disabled: !value }}>
       {!initial && frequent.length ? (
         <Field label="Sık girdiklerin" t={t}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} keyboardShouldPersistTaps="always">
@@ -115,6 +143,7 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
           placeholder="0,00"
           placeholderTextColor={t.muted}
           autoFocus={!initial}
+          inputAccessoryViewID="expense-save"
           style={inputStyle(t, true)}
           accessibilityLabel="Tutar"
         />
@@ -123,7 +152,8 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
         <CatChips value={cat} onChange={setCat} t={t} />
       </Field>
       <Field label="Not" t={t}>
-        <TextInput value={note} onChangeText={setNote} placeholder="İsteğe bağlı, ör. Simit ve çay" placeholderTextColor={t.muted} style={inputStyle(t)} />
+        <TextInput value={note} onChangeText={setNote} placeholder="İsteğe bağlı, ör. Simit ve çay" placeholderTextColor={t.muted} style={inputStyle(t)}
+          inputAccessoryViewID="expense-save" returnKeyType="done" onSubmitEditing={save} />
       </Field>
       <Field label="Tarih" t={t}>
         <View style={st.chips}>
@@ -169,12 +199,13 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
   };
 
   return (
-    <Sheet visible={visible} title={initial ? 'Aboneliği düzenle' : 'Yeni abonelik'} onClose={onClose} t={t}>
+    <Sheet visible={visible} title={initial ? 'Aboneliği düzenle' : 'Yeni abonelik'} onClose={onClose} t={t}
+      accessoryId="sub-save" action={{ label: 'Kaydet', onPress: save, disabled: !valid }}>
       <Field label="Ad" t={t}>
-        <TextInput value={name} onChangeText={setName} placeholder="ör. Netflix, telefon faturası" placeholderTextColor={t.muted} autoFocus={!initial} style={inputStyle(t)} />
+        <TextInput value={name} onChangeText={setName} placeholder="ör. Netflix, telefon faturası" placeholderTextColor={t.muted} autoFocus={!initial} style={inputStyle(t)} inputAccessoryViewID="sub-save" />
       </Field>
       <Field label="Tutar (₺)" t={t}>
-        <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={t.muted} style={inputStyle(t, true)} />
+        <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={t.muted} style={inputStyle(t, true)} inputAccessoryViewID="sub-save" />
       </Field>
       <Field label="Sıklık" t={t}>
         <View style={st.chips}>
@@ -183,7 +214,7 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
         </View>
       </Field>
       <Field label="Ödeme günü (1–31)" t={t}>
-        <TextInput value={day} onChangeText={setDay} keyboardType="number-pad" maxLength={2} style={inputStyle(t)} />
+        <TextInput value={day} onChangeText={setDay} keyboardType="number-pad" maxLength={2} style={inputStyle(t)} inputAccessoryViewID="sub-save" />
       </Field>
       {freq === 'yearly' ? (
         <Field label="Ödeme ayı" t={t}>
@@ -336,8 +367,11 @@ function CatLimitRow({ cat, value, onChange, t }: { cat: string; value: number; 
 const st = StyleSheet.create({
   freq: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 10, maxWidth: 200 },
   limitInput: { width: 110, height: 40, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, fontSize: 16, textAlign: 'right' },
-  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
-  title: { fontSize: 24, fontFamily: FONTS.display },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, minHeight: 56 },
+  topSave: { borderWidth: 1, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 18 },
+  accessory: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  accessorySave: { flex: 1, maxWidth: 260, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 28, fontFamily: FONTS.display, paddingHorizontal: 20, paddingTop: 4 },
   body: { padding: 20, gap: 18, paddingBottom: 48 },
   input: { height: 48, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, fontSize: 17 },
   big: { height: 64, fontSize: 32, fontWeight: '700' },
