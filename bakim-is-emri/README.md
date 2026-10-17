@@ -24,3 +24,7 @@ olmazsa `npx expo start --tunnel` dene.
 - `App.tsx` – ekranlar (liste, filtre, yeni iş emri formu)
 - `src/types.ts` – tipler, öncelik/durum listeleri
 - `src/storage.ts` – kalıcı kayıt
+
+## Demo
+
+Örnek verilerle ekran görüntüleri: [`demo/`](demo/) — liste, filtre, yeni iş emri formu, eklenmiş hali.

@@ -215,7 +215,7 @@ function YeniForm({
             multiline
           />
           <Text style={s.etiket}>Öncelik</Text>
-          <View style={s.filtreSatiri}>
+          <View style={[s.filtreSatiri, s.formFiltre]}>
             {ONCELIKLER.map((o) => (
               <Pressable
                 key={o}
@@ -269,6 +269,7 @@ const s = StyleSheet.create({
   form: { flex: 1, padding: 16, gap: 12 },
   girdi: { backgroundColor: '#fff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e5e7eb' },
   cokSatir: { minHeight: 90, textAlignVertical: 'top' },
+  formFiltre: { paddingHorizontal: 0 },
   etiket: { fontWeight: '600', color: '#374151' },
   formAlt: { flexDirection: 'row', gap: 12, marginTop: 8 },
   birincil: { flex: 1, backgroundColor: '#1f2937', borderRadius: 10, padding: 14, alignItems: 'center' },
