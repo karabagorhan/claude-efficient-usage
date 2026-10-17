@@ -262,20 +262,12 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
   );
 }
 
-/* ---------- Ayarlar ekranı: bütçe, bildirimler, dışa/içe aktarma ---------- */
-export function SettingsPanel({ settings, focusBudget, onChange, onExport, onBackup, onRestore, ym, monthName, t }: {
-  settings: Settings;
-  focusBudget?: boolean;
-  onChange: (s: Settings) => void;
-  onExport: (ym: string | null) => void;
-  onBackup: () => void;
-  onRestore: () => void;
-  ym: string;
-  monthName: string;
-  t: Theme;
+/* ---------- Bütçe ve limitler ekranı ---------- */
+export function BudgetPanel({ settings, focusBudget, onChange, t }: {
+  settings: Settings; focusBudget?: boolean; onChange: (s: Settings) => void; t: Theme;
 }) {
   const [budget, setBudget] = useState(settings.budget ? amountText(settings.budget) : '');
-  const row = [st.row, { borderColor: t.line }];
+  const limitTotal = Object.values(settings.catBudgets).reduce((a, b) => a + b, 0);
   return (
     <View style={{ gap: 22 }}>
       <Field label="Aylık bütçe (₺)" t={t}>
@@ -290,17 +282,10 @@ export function SettingsPanel({ settings, focusBudget, onChange, onExport, onBac
             selectTextOnFocus
             returnKeyType="done"
             onSubmitEditing={() => onChange({ ...settings, budget: parseAmount(budget) })}
-            style={[...inputStyle(t), { flex: 1 }]}
+            style={[...inputStyle(t), { flex: 1, minWidth: 0 }]}
             accessibilityLabel="Aylık bütçe"
           />
           <Button label="Kaydet" onPress={() => { Keyboard.dismiss(); onChange({ ...settings, budget: parseAmount(budget) }); }} t={t} style={{ height: 48 }} />
-        </View>
-      </Field>
-      <Field label="Görünüm" t={t}>
-        <View style={st.chips}>
-          <Chip label="Noir" icon="moon-outline" active={settings.theme === 'noir'} onPress={() => onChange({ ...settings, theme: 'noir' })} t={t} />
-          <Chip label="Fildişi" icon="sunny-outline" active={settings.theme === 'ivory'} onPress={() => onChange({ ...settings, theme: 'ivory' })} t={t} />
-          <Chip label="Telefona göre" icon="phone-portrait-outline" active={settings.theme === 'system'} onPress={() => onChange({ ...settings, theme: 'system' })} t={t} />
         </View>
       </Field>
 
@@ -308,6 +293,7 @@ export function SettingsPanel({ settings, focusBudget, onChange, onExport, onBac
         <Label t={t}>Kategori limitleri (aylık)</Label>
         <Text style={{ color: t.muted, fontSize: 14, lineHeight: 20, paddingVertical: 6 }}>
           Bir kategoride limitin %80'ine gelince Özet ve Raporlar'da uyarı görürsün. Boş bırakılan kategori limitsizdir.
+          {limitTotal ? ` Limitlerin toplamı ${fmtTL(limitTotal)}.` : ''}
         </Text>
         {CATS.map((c) => (
           <CatLimitRow key={c} cat={c} value={settings.catBudgets[c] || 0} t={t}
@@ -318,6 +304,37 @@ export function SettingsPanel({ settings, focusBudget, onChange, onExport, onBac
             }} />
         ))}
       </View>
+    </View>
+  );
+}
+
+/* ---------- Ayarlar ekranı: ad, görünüm, bildirimler, dışa/içe aktarma ---------- */
+export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestore, ym, monthName, t }: {
+  settings: Settings;
+  onChange: (s: Settings) => void;
+  onExport: (ym: string | null) => void;
+  onBackup: () => void;
+  onRestore: () => void;
+  ym: string;
+  monthName: string;
+  t: Theme;
+}) {
+  const [name, setName] = useState(settings.name);
+  const row = [st.row, { borderColor: t.line }];
+  return (
+    <View style={{ gap: 22 }}>
+      <Field label="Adın (menüde görünür)" t={t}>
+        <TextInput value={name} onChangeText={setName} placeholder="Kişisel hesap" placeholderTextColor={t.muted} maxLength={40}
+          onEndEditing={() => name.trim() !== settings.name && onChange({ ...settings, name: name.trim() })}
+          returnKeyType="done" style={inputStyle(t)} accessibilityLabel="Ad" />
+      </Field>
+      <Field label="Görünüm" t={t}>
+        <View style={st.chips}>
+          <Chip label="Noir" icon="moon-outline" active={settings.theme === 'noir'} onPress={() => onChange({ ...settings, theme: 'noir' })} t={t} />
+          <Chip label="Fildişi" icon="sunny-outline" active={settings.theme === 'ivory'} onPress={() => onChange({ ...settings, theme: 'ivory' })} t={t} />
+          <Chip label="Telefona göre" icon="phone-portrait-outline" active={settings.theme === 'system'} onPress={() => onChange({ ...settings, theme: 'system' })} t={t} />
+        </View>
+      </Field>
 
       <View style={{ gap: 0 }}>
         <Label t={t}>Bildirimler</Label>

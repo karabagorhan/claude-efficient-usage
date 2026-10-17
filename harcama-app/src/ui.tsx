@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ComponentProps, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Animated, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
 import { Analysis, Insight, catIndex, compact, pad, subType, subTypeIndex } from './lib';
 import { FONTS, Theme } from './theme';
@@ -148,58 +149,152 @@ export type IconName = ComponentProps<typeof Ionicons>['name'];
 export { Ionicons };
 export const catIconName = (c: string): IconName => CAT_ICONS[catIndex(c)];
 
-export type MenuItem = { key: string; label: string; icon: IconName; hint?: string };
+export type MenuBadge = { text: string; kind: 'gold' | 'warn' | 'muted' };
+export type MenuItem = { key: string; label: string; icon: IconName; badge?: MenuBadge | null };
+export type MenuSection = { title: string; items: MenuItem[] };
+export type MenuPin = { cat: string; amount: string };
+export type MenuBudget = { label: string; pct: number; amount: string; total: string; over: boolean } | null;
 
-/** Sağdan kayarak açılan menü. */
-export function SideMenu({ open, onClose, items, current, onSelect, top, bottom, t }: {
-  open: boolean; onClose: () => void; items: MenuItem[]; current: string; onSelect: (key: string) => void; top: number; bottom: number; t: Theme;
+const MENU_W = 304;
+
+/** Soldan kayarak açılan yan menü: hesap kartı, bölümler, bu ayın kategorileri, bütçe kartı ve profil. */
+export function SideMenu({ open, onClose, header, sections, pins, current, onSelect, onPin, budget, onBudget, status, profile, top, bottom, t }: {
+  open: boolean; onClose: () => void;
+  header: { title: string; sub: string };
+  sections: MenuSection[]; pins: MenuPin[]; current: string;
+  onSelect: (key: string) => void; onPin: (cat: string) => void;
+  budget: MenuBudget; onBudget: () => void; status: string;
+  profile: { name: string; sub: string; initials: string };
+  top: number; bottom: number; t: Theme;
 }) {
   const x = useRef(new Animated.Value(1)).current;
   const [mounted, setMounted] = useState(open);
   useEffect(() => {
     if (open) {
       setMounted(true);
-      Animated.timing(x, { toValue: 0, duration: 220, useNativeDriver: true }).start();
+      Animated.timing(x, { toValue: 0, duration: 240, useNativeDriver: true }).start();
     } else {
-      Animated.timing(x, { toValue: 1, duration: 180, useNativeDriver: true }).start(({ finished }) => finished && setMounted(false));
+      Animated.timing(x, { toValue: 1, duration: 190, useNativeDriver: true }).start(({ finished }) => finished && setMounted(false));
     }
   }, [open, x]);
   if (!mounted) return null;
-  const W = 290;
+  const badgeStyle = (b: MenuBadge) =>
+    b.kind === 'gold' ? { bg: t.gold, fg: t.accentFg, border: t.gold }
+      : b.kind === 'warn' ? { bg: t.warnSoft, fg: t.warn, border: t.warnSoft }
+      : { bg: t.raised, fg: t.muted, border: t.line };
   return (
     <View style={StyleSheet.absoluteFill}>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim, opacity: x.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Menüyü kapat" />
       </Animated.View>
       <Animated.View
-        style={[s.menu, { width: W, backgroundColor: t.surface, borderColor: t.goldLine, paddingTop: top + 16, paddingBottom: bottom + 16,
-          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [0, W + 20] }) }] }]}
+        accessibilityRole="menu"
+        style={[s.menu, { width: MENU_W, backgroundColor: t.surface, borderColor: t.goldLine, paddingTop: top + 14, paddingBottom: bottom + 14,
+          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [0, -(MENU_W + 24)] }) }] }]}
       >
-        <View style={s.menuHead}>
-          <Text style={{ color: t.fg, fontSize: 22, fontFamily: FONTS.display }}>Harcama Defteri</Text>
-          <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Kapat">
-            <Ionicons name="close" size={26} color={t.muted} />
+        {/* Hesap kartı */}
+        <Pressable onPress={() => onSelect('ozet')} style={({ pressed }) => [s.account, { backgroundColor: t.raised, borderColor: t.line, opacity: pressed ? 0.85 : 1 }]}>
+          <LinearGradient colors={['#e4c98f', '#c9a86a', '#8a6a35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.monogram}>
+            <Text style={{ fontFamily: FONTS.display, fontSize: 17, color: '#0b0b0d' }}>HD</Text>
+          </LinearGradient>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: FONTS.display, fontSize: 18, color: t.fg }} numberOfLines={1}>{header.title}</Text>
+            <Text style={{ fontSize: 13, color: t.muted }} numberOfLines={1}>{header.sub}</Text>
+          </View>
+          <Ionicons name="chevron-down" size={18} color={t.muted} />
+        </Pressable>
+
+        {/* Kısa ekranlarda bütçe kartı dahil her şey kayar; uzun ekranlarda kart en alta yaslanır */}
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 4 }} showsVerticalScrollIndicator={false}>
+          {sections.map((sec) => (
+            <View key={sec.title}>
+              <Text style={[s.secTitle, { color: t.muted }]}>{sec.title.toLocaleUpperCase('tr-TR')}</Text>
+              {sec.items.map((it) => {
+                const active = it.key === current;
+                const b = it.badge ? badgeStyle(it.badge) : null;
+                return (
+                  <Pressable
+                    key={it.key}
+                    onPress={() => onSelect(it.key)}
+                    accessibilityRole="menuitem"
+                    accessibilityState={{ selected: active }}
+                    style={({ pressed }) => [s.menuItem, {
+                      backgroundColor: active ? t.accentSoft : pressed ? t.raised : 'transparent',
+                      borderColor: active ? t.goldLine : 'transparent',
+                    }]}
+                  >
+                    {active ? <View style={[s.menuBar, { backgroundColor: t.gold }]} /> : null}
+                    <Ionicons name={it.icon} size={20} color={active ? t.gold : t.muted} />
+                    <Text style={{ flex: 1, color: active ? t.gold : t.fg, fontSize: 16, fontWeight: active ? '600' : '400' }}>{it.label}</Text>
+                    {b && it.badge ? (
+                      <View style={[s.badge, { backgroundColor: b.bg, borderColor: b.border }]}>
+                        <Text style={{ color: b.fg, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{it.badge.text}</Text>
+                      </View>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+
+          {pins.length ? (
+            <View>
+              <Text style={[s.secTitle, { color: t.muted }]}>BU AYIN KATEGORİLERİ</Text>
+              {pins.map((p) => (
+                <Pressable key={p.cat} onPress={() => onPin(p.cat)} style={({ pressed }) => [s.pin, { backgroundColor: pressed ? t.raised : 'transparent' }]}
+                  accessibilityLabel={`${p.cat}, ${p.amount}, harcamaları göster`}>
+                  <CatIcon cat={p.cat} t={t} size={26} />
+                  <Text style={{ flex: 1, fontSize: 15, color: t.fg }}>{p.cat}</Text>
+                  <Text style={{ fontSize: 14, color: t.muted, fontVariant: ['tabular-nums'] }}>{p.amount}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
+          <View style={{ flexGrow: 1, minHeight: 14 }} />
+          {/* Bütçe kartı */}
+          <Pressable onPress={onBudget} style={({ pressed }) => [s.budget, { backgroundColor: t.raised, borderColor: t.line, opacity: pressed ? 0.85 : 1 }]}
+            accessibilityLabel={budget ? `${budget.label}: ${budget.amount} / ${budget.total}` : 'Bütçe belirle'}>
+            {budget ? (
+              <>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <Text style={[s.secLabel, { color: t.muted }]}>{budget.label.toLocaleUpperCase('tr-TR')}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: budget.over ? t.warn : t.gold }}>%{budget.pct}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+                  <Amount text={budget.amount} style={{ fontFamily: FONTS.display, fontSize: 24, color: t.fg }} symbolColor={t.gold} />
+                  <Text style={{ fontSize: 14, color: t.muted }}>/ {budget.total}</Text>
+                </View>
+                <View style={{ height: 4, borderRadius: 2, backgroundColor: t.heroTrack, overflow: 'hidden' }}>
+                  <View style={{ width: `${Math.min(100, budget.pct)}%`, height: 4, borderRadius: 2, backgroundColor: budget.over ? t.warn : t.gold }} />
+                </View>
+              </>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Ionicons name="wallet-outline" size={20} color={t.gold} />
+                <Text style={{ flex: 1, fontSize: 15, color: t.fg }}>Aylık bütçe belirle</Text>
+                <Ionicons name="chevron-forward" size={16} color={t.muted} />
+              </View>
+            )}
+          </Pressable>
+        </ScrollView>
+
+        {/* Profil */}
+        <View style={s.profile}>
+          <View style={[s.avatar, { backgroundColor: t.line, borderColor: t.goldLine }]}>
+            <Text style={{ color: t.gold, fontSize: 14, fontWeight: '600' }}>{profile.initials}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: t.fg }} numberOfLines={1}>{profile.name}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: t.good }} />
+              <Text style={{ fontSize: 12, color: t.muted, flexShrink: 1 }} numberOfLines={1}>{status}</Text>
+            </View>
+          </View>
+          <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Menüyü kapat" style={[s.close, { borderColor: t.line }]}>
+            <Ionicons name="close" size={18} color={t.muted} />
           </Pressable>
         </View>
-        {items.map((it) => {
-          const active = it.key === current;
-          return (
-            <Pressable
-              key={it.key}
-              onPress={() => onSelect(it.key)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              style={({ pressed }) => [s.menuItem, { backgroundColor: active ? t.raised : pressed ? t.raised : 'transparent', borderColor: active ? t.goldLine : 'transparent' }]}
-            >
-              {active ? <View style={[s.menuBar, { backgroundColor: t.gold }]} /> : null}
-              <Ionicons name={it.icon} size={22} color={active ? t.gold : t.muted} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: active ? t.gold : t.fg, fontSize: 17, fontWeight: active ? '600' : '400' }}>{it.label}</Text>
-                {it.hint ? <Text style={{ color: t.muted, fontSize: 13 }}>{it.hint}</Text> : null}
-              </View>
-            </Pressable>
-          );
-        })}
       </Animated.View>
     </View>
   );
@@ -285,10 +380,19 @@ export function Progress({ value, max, t }: { value: number; max: number; t: The
 }
 
 const s = StyleSheet.create({
-  menu: { position: 'absolute', top: 0, bottom: 0, right: 0, borderLeftWidth: 1, paddingHorizontal: 12, gap: 4, borderTopLeftRadius: 24, borderBottomLeftRadius: 24 },
-  menuHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 16 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  menuBar: { position: 'absolute', left: 0, top: 10, bottom: 10, width: 3, borderRadius: 2 },
+  menu: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRightWidth: 1, paddingHorizontal: 14, gap: 8, borderTopRightRadius: 28, borderBottomRightRadius: 28 },
+  account: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 18, borderWidth: 1 },
+  monogram: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  secTitle: { fontSize: 11, letterSpacing: 1.6, fontWeight: '600', paddingTop: 14, paddingBottom: 4, paddingHorizontal: 12 },
+  secLabel: { fontSize: 11, letterSpacing: 1.6, fontWeight: '600' },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 13, height: 44, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, overflow: 'hidden', marginBottom: 2 },
+  menuBar: { position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: 2 },
+  badge: { minWidth: 22, height: 22, paddingHorizontal: 7, borderRadius: 11, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  pin: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 40, paddingHorizontal: 14, borderRadius: 12 },
+  budget: { padding: 12, borderRadius: 18, borderWidth: 1, gap: 8 },
+  profile: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 6, paddingTop: 4 },
+  avatar: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  close: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 99, paddingVertical: 8, paddingHorizontal: 14 },
   chipDot: { width: 8, height: 8, borderRadius: 4 },
   pill: { alignSelf: 'flex-start', borderRadius: 99, paddingVertical: 2, paddingHorizontal: 8 },

@@ -15,10 +15,10 @@ import {
   insights, iso, monthLabel, monthlyCost, parseAmount, shortDay, subStatus, sum, todayIso, uid, weekdayAverages,
 } from './src/lib';
 import { ensurePermission, reschedule } from './src/notify';
-import { ExpenseSheet, SettingsPanel, SubSheet } from './src/sheets';
+import { BudgetPanel, ExpenseSheet, SettingsPanel, SubSheet } from './src/sheets';
 import { merge, useAppData } from './src/store';
 import { FONTS, Theme, useTheme } from './src/theme';
-import { Amount, Bars, Button, CatIcon, SubTypeIcon, subTypeColor, DailyChart, InsightList, Ionicons, Label, MenuItem, Pill, Progress, SideMenu } from './src/ui';
+import { Amount, Bars, Button, CatIcon, SubTypeIcon, subTypeColor, DailyChart, InsightList, Ionicons, Label, MenuSection, Pill, Progress, SideMenu } from './src/ui';
 
 export default function App() {
   // Yazı tipi yüklenemezse sistem yazı tipiyle devam edilir
@@ -31,21 +31,26 @@ export default function App() {
   );
 }
 
-type Screen = 'ozet' | 'harcamalar' | 'raporlar' | 'abonelikler' | 'ayarlar';
+type Screen = 'ozet' | 'harcamalar' | 'raporlar' | 'abonelikler' | 'butce' | 'ayarlar';
 type ExpenseSheetState = { key: number; initial: Expense | null; prefill?: { amount?: number; cat?: string } } | null;
 type SubSheetState = { key: number; initial: Sub | null } | null;
 
 const TITLES: Record<Screen, string> = {
-  ozet: 'Özet', harcamalar: 'Harcamalar', raporlar: 'Raporlar', abonelikler: 'Abonelikler', ayarlar: 'Ayarlar',
+  ozet: 'Özet', harcamalar: 'Harcamalar', raporlar: 'Raporlar', abonelikler: 'Abonelikler', butce: 'Bütçe ve limitler', ayarlar: 'Ayarlar',
 };
-const MENU: MenuItem[] = [
-  { key: 'ozet', label: 'Özet', icon: 'home-outline', hint: 'Bugün, bu ay, bütçe' },
-  { key: 'ekle', label: 'Harcama ekle', icon: 'add-circle-outline', hint: 'Yeni harcama gir' },
-  { key: 'harcamalar', label: 'Harcamalar', icon: 'list-outline', hint: 'Liste, düzenleme, silme' },
-  { key: 'raporlar', label: 'Raporlar', icon: 'bar-chart-outline', hint: 'Grafikler, kategoriler, Excel' },
-  { key: 'abonelikler', label: 'Abonelikler', icon: 'repeat-outline', hint: 'Düzenli ödemeler, türlere göre' },
-  { key: 'ayarlar', label: 'Ayarlar', icon: 'settings-outline', hint: 'Bütçe, bildirim, yedek' },
-];
+
+/** Son kaydın üzerinden geçen süre: "az önce", "12 dk önce", "3 sa önce", "2 gün önce". */
+function agoText(ts: number) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'az önce';
+  if (m < 60) return `${m} dk önce`;
+  if (m < 60 * 24) return `${Math.floor(m / 60)} sa önce`;
+  return `${Math.floor(m / 1440)} gün önce`;
+}
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return parts.length ? (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toLocaleUpperCase('tr-TR') : 'HD';
+}
 
 /**
  * Kestirme bağlantıları aynı uygulamayı açar; ne gösterileceğine açılış bağlantısına bakılarak karar verilir:
@@ -117,7 +122,7 @@ function Main() {
         setMenuOpen(false);
         setExpSheet(null);
         setSubSheet(null);
-        setScreen('ayarlar');
+        setScreen('butce');
         setBudgetFocusKey(Date.now());
       }
     };
@@ -280,7 +285,7 @@ function Main() {
     body = (
       <>
         {monthSwitcher}
-        <Hero ctx={ctx} onBudget={() => { go('ayarlar'); setBudgetFocusKey(Date.now()); }} />
+        <Hero ctx={ctx} onBudget={() => { go('butce'); setBudgetFocusKey(Date.now()); }} />
         <Tiles ctx={ctx} />
         {notes.length ? (
           <View style={st.card}>
@@ -456,12 +461,16 @@ function Main() {
         <Button label="+ Abonelik ekle" kind="ghost" onPress={() => setSubSheet({ key: Date.now(), initial: null })} t={t} />
       </>
     );
+  } else if (screen === 'butce') {
+    body = (
+      <View style={st.card}>
+        <BudgetPanel key={budgetFocusKey} focusBudget={budgetFocusKey > 0} settings={settings} onChange={changeSettings} t={t} />
+      </View>
+    );
   } else {
     body = (
       <View style={st.card}>
         <SettingsPanel
-          key={budgetFocusKey}
-          focusBudget={budgetFocusKey > 0}
           settings={settings}
           onChange={changeSettings}
           onExport={doExport}
@@ -475,16 +484,42 @@ function Main() {
     );
   }
 
-  const showFab = screen !== 'ayarlar' && screen !== 'abonelikler';
+  const showFab = screen === 'ozet' || screen === 'harcamalar' || screen === 'raporlar';
+
+  /* ---------- Yan menü verisi (her zaman içinde bulunulan ay) ---------- */
+  const curYm = todayIso().slice(0, 7);
+  const curItems = items.filter((x) => x.date.slice(0, 7) === curYm);
+  const curTotal = sum(curItems);
+  const byCat: Record<string, number> = {};
+  curItems.forEach((x) => (byCat[x.cat] = (byCat[x.cat] || 0) + x.amount));
+  const pendingSubs = subs.filter((x) => subStatus(x, items).state === 'pending').length;
+  const limitAlerts = Object.keys(settings.catBudgets).filter((c) => (byCat[c] || 0) >= settings.catBudgets[c] * 0.8).length;
+  const menuSections: MenuSection[] = [
+    { title: 'Genel', items: [
+      { key: 'ozet', label: 'Özet', icon: 'grid-outline' },
+      { key: 'ekle', label: 'Harcama ekle', icon: 'add-circle-outline' },
+      { key: 'harcamalar', label: 'Harcamalar', icon: 'list-outline', badge: curItems.length ? { text: String(curItems.length), kind: 'muted' } : null },
+      { key: 'raporlar', label: 'Raporlar', icon: 'bar-chart-outline', badge: limitAlerts ? { text: String(limitAlerts), kind: 'warn' } : null },
+    ] },
+    { title: 'Yönetim', items: [
+      { key: 'abonelikler', label: 'Abonelikler', icon: 'repeat-outline', badge: pendingSubs ? { text: String(pendingSubs), kind: 'gold' } : null },
+      { key: 'butce', label: 'Bütçe ve limitler', icon: 'wallet-outline' },
+      { key: 'ayarlar', label: 'Ayarlar', icon: 'settings-outline' },
+    ] },
+  ];
+  const menuPins = Object.keys(byCat).sort((p, q) => byCat[q] - byCat[p]).slice(0, 3).map((c) => ({ cat: c, amount: fmtTL0(byCat[c]) }));
+  const lastTs = items.reduce((m, x) => Math.max(m, x.ts || 0), 0);
+  const curMonthName = monthLabel(curYm).split(' ')[0];
 
   return (
     <View style={st.root}>
       <StatusBar style={t.statusBar} />
       <View style={[st.topBar, { paddingTop: insets.top + 6 }]}>
-        <Text style={st.h1}>{TITLES[screen]}</Text>
         <Pressable onPress={() => setMenuOpen(true)} style={st.menuBtn} hitSlop={8} accessibilityLabel="Menüyü aç" accessibilityRole="button">
-          <Ionicons name="menu" size={26} color={t.fg} />
+          <Ionicons name="menu" size={24} color={t.fg} />
+          {pendingSubs || limitAlerts ? <View style={[st.menuDot, { borderColor: t.bg }]} /> : null}
         </Pressable>
+        <Text style={[st.h1, { flex: 1 }]} numberOfLines={1} adjustsFontSizeToFit>{TITLES[screen]}</Text>
       </View>
       <ScrollView ref={scrollRef} contentContainerStyle={[st.scroll, { paddingBottom: insets.bottom + (showFab ? 110 : 40) }]} keyboardShouldPersistTaps="handled">
         {body}
@@ -507,7 +542,29 @@ function Main() {
         </View>
       ) : null}
 
-      <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} items={MENU} current={screen} onSelect={go} top={insets.top} bottom={insets.bottom} t={t} />
+      <SideMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        header={{ title: 'Harcama Defteri', sub: `Kişisel bütçe · ${monthLabel(curYm)}` }}
+        sections={menuSections}
+        pins={menuPins}
+        current={screen}
+        onSelect={go}
+        onPin={(c) => { setYm(curYm); setFilterCat(c); setFilterDay(null); setQuery(''); go('harcamalar'); }}
+        budget={settings.budget ? {
+          label: `${curMonthName} bütçesi`,
+          pct: Math.round((curTotal / settings.budget) * 100),
+          amount: fmtTL0(curTotal),
+          total: fmtTL0(settings.budget),
+          over: curTotal > settings.budget,
+        } : null}
+        onBudget={() => { go('butce'); setBudgetFocusKey(settings.budget ? 0 : Date.now()); }}
+        status={lastTs ? `Son kayıt ${agoText(lastTs)}` : 'Henüz kayıt yok'}
+        profile={{ name: settings.name || 'Kişisel hesap', sub: `Kişisel hesap · ${settings.theme === 'ivory' ? 'Fildişi' : settings.theme === 'system' ? 'Telefona göre' : 'Noir'}`, initials: initials(settings.name) }}
+        top={insets.top}
+        bottom={insets.bottom}
+        t={t}
+      />
 
       {expSheet ? (
         <ExpenseSheet key={expSheet.key} visible initial={expSheet.initial} prefill={expSheet.prefill} frequent={frequentEntries(items)} onSave={saveExpense} onDelete={deleteExpense} onClose={() => setExpSheet(null)} t={t} />
@@ -778,7 +835,8 @@ function CatChange({ cur, prev, t }: { cur: number; prev: number; t: Theme }) {
 function makeStyles(t: Theme) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: t.bg },
-    topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, backgroundColor: t.bg },
+    topBar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 8, backgroundColor: t.bg },
+    menuDot: { position: 'absolute', top: 8, right: 8, width: 10, height: 10, borderRadius: 5, backgroundColor: t.gold, borderWidth: 2 },
     menuBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: t.goldLine, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' },
     scroll: { paddingHorizontal: 16, paddingTop: 8, gap: 16 },
     h1: { fontSize: 34, fontFamily: FONTS.display, color: t.fg, letterSpacing: -0.3 },

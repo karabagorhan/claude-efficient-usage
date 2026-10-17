@@ -31,6 +31,7 @@ export type Settings = {
   subRemind: boolean;
   catBudgets: Record<string, number>; // kategori başına aylık limit (0 / yok = limitsiz)
   theme: 'noir' | 'ivory' | 'system';
+  name: string; // menüdeki profil satırında görünen ad
 };
 
 export const CATS = ['Market', 'Yeme-İçme', 'Ulaşım', 'Fatura', 'Sağlık', 'Eğlence', 'Giyim', 'Diğer'];

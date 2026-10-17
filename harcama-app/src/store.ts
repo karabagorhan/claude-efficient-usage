@@ -7,7 +7,7 @@ const KEY = 'harcama-defteri:v1';
 
 export type Data = { items: Expense[]; subs: Sub[]; settings: Settings };
 
-export const defaultSettings: Settings = { budget: 0, remind: false, remindHour: 21, subRemind: true, catBudgets: {}, theme: 'noir' };
+export const defaultSettings: Settings = { budget: 0, remind: false, remindHour: 21, subRemind: true, catBudgets: {}, theme: 'noir', name: 'Orhan Karabağ' };
 const empty: Data = { items: [], subs: [], settings: defaultSettings };
 
 function num(v: unknown, d = 0) {
@@ -50,6 +50,7 @@ export function normalize(raw: any): Data {
     remindHour: Math.min(23, Math.max(0, num(st.remindHour, 21))),
     subRemind: st.subRemind !== false,
     theme: st.theme === 'ivory' || st.theme === 'system' ? st.theme : 'noir',
+    name: typeof st.name === 'string' ? st.name.slice(0, 40) : 'Orhan Karabağ',
     catBudgets: Object.fromEntries(
       CATS.filter((c) => typeof st.catBudgets?.[c] === 'number' && st.catBudgets[c] > 0).map((c) => [c, st.catBudgets[c] as number]),
     ),
