@@ -1,0 +1,12 @@
+name: Deploy Spendly Web
+
+on:
+  push:
+    branches: ['spendly-v2.1']
+
+jobs:
+  deploy:
+    name: Deploy to EAS Hosting
+    type: deploy
+    params:
+      prod: true
