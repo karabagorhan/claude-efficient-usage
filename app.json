@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Harcama Defteri",
-    "slug": "harcama-defteri",
+    "name": "Spendly",
+    "slug": "spendly",
     "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -33,14 +33,6 @@
       "expo-font"
     ],
     "scheme": "harcama",
-    "owner": "karabagorhans-team",
-    "extra": {
-      "eas": {
-        "projectId": "24b23d12-c615-4047-b61a-624003ad0003"
-      }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/24b23d12-c615-4047-b61a-624003ad0003"
-    }
+    "owner": "karabagorhan"
   }
 }
