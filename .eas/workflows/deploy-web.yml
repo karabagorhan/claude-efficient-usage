@@ -7,6 +7,10 @@ on:
 jobs:
   deploy:
     name: Deploy to EAS Hosting
-    type: deploy
-    params:
-      prod: true
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - name: Export web app
+        run: npx expo export --platform web
+      - name: Deploy production site
+        run: npx eas-cli@latest deploy --non-interactive --prod --dev-domain spendly --export-dir dist
