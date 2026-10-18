@@ -7,6 +7,7 @@ import type { Catalog } from './index';
 const en: Catalog = {
   // App
   'app.name': 'Expense Ledger',
+  'app.monogram': 'EL',
 
   // Common
   'common.all': 'All',
@@ -30,6 +31,7 @@ const en: Catalog = {
 
   // Date formats and names
   'fmt.monthYear': '{month} {year}',
+  'fmt.percent': '{n}%',
   'fmt.dayShort': '{month} {day}',
   'fmt.dayLong': '{weekday}, {month} {day}',
   'date.today': 'Today',
@@ -80,7 +82,7 @@ const en: Catalog = {
   'subwords.ev': 'electricity,electric,water,utilities,heating,power',
   'subwords.kira': 'rent,lease,hoa,dues,landlord',
   'subwords.spor': 'gym,fitness,yoga,pilates,sport,dentist,pharmacy',
-  'subwords.yazilim': 'software,cloud,storage,subscription,hosting',
+  'subwords.yazilim': 'software,cloud,storage,hosting',
   'subwords.sigorta': 'insurance,policy',
   'subwords.egitim': 'course,school,tuition,class,lessons,books',
   'subwords.ulasim': 'parking,transit,metro,toll,leasing',
@@ -103,8 +105,8 @@ const en: Catalog = {
   'menu.pinLabel': '{cat}, {amount}, show expenses',
   'menu.budgetOf': '{month} budget',
   'menu.setBudget': 'Set monthly budget',
-  'menu.lastSaved': 'Last saved {ago}',
-  'menu.noRecords': 'No records yet',
+  'menu.lastSaved': 'Last entry {ago}',
+  'menu.noRecords': 'No entries yet',
   'menu.defaultName': 'Personal account',
   'menu.profileSub': 'Personal account · {theme}',
 
@@ -134,7 +136,7 @@ const en: Catalog = {
   'tile.count': 'Transactions',
   'tile.average': 'avg. {amount}',
   'section.highlights': 'Highlights',
-  'section.pendingSubs': 'Awaiting confirmation',
+  'section.pendingSubs': 'Subscriptions to confirm',
   'section.recent': 'Recent expenses',
   'recent.empty': 'No expenses yet. Add your first one with the button below.',
 
@@ -146,7 +148,7 @@ const en: Catalog = {
   'insight.topCat': 'You spent the most on {cat}: {amount} ({pct}% of the month total).',
   'insight.catUp': 'Your {cat} spending is up {amount} compared with the same point last month.',
   'insight.catDown': 'Your {cat} spending is down {amount} compared with the same point last month.',
-  'insight.weekend': 'You spend {amount} a day on weekends, {ratio}x your weekday average.',
+  'insight.weekend': 'On weekends you spend {amount} a day on average, {ratio}x your weekday average.',
   'insight.freeDays': { one: 'You had {n} day with no spending this month.', other: 'You had {n} days with no spending this month.' },
 
   // Expenses screen
@@ -169,7 +171,7 @@ const en: Catalog = {
   'expense.newTitle': 'New expense',
   'expense.editTitle': 'Edit expense',
   'expense.saveAmount': 'Save · {amount}',
-  'expense.frequent': 'Frequent',
+  'expense.frequent': 'Frequent entries',
   'expense.amountA11y': 'Amount',
   'expense.note': 'Note',
   'expense.notePlaceholder': 'Optional, e.g. Coffee and a bagel',
@@ -227,7 +229,7 @@ const en: Catalog = {
   'sub.yearly': 'Yearly',
   'sub.payDay': 'Payment day (1–31)',
   'sub.payMonth': 'Payment month',
-  'sub.expenseCategory': 'Category in expenses',
+  'sub.expenseCategory': 'Expense category',
   'sub.expenseCategoryHint': 'When you mark it as paid, it is added to your expenses in this category. It is picked automatically from the type; change it if you like.',
 
   // Budget & limits
@@ -260,11 +262,11 @@ const en: Catalog = {
   'settings.exportAll': 'Export everything to Excel',
   'settings.backup': 'Backup',
   'settings.backupHint': 'You can load a backup made in the web version here. Records that already exist are not added twice.',
-  'settings.backupMake': 'Back up',
+  'settings.backupMake': 'Create backup',
   'settings.backupRestore': 'Restore from backup',
 
   // Toasts and notifications
-  'toast.added': '{amount} {cat} added.',
+  'toast.added': '{amount} added to {cat}.',
   'toast.updated': 'Expense updated.',
   'toast.deleted': 'Expense deleted.',
   'toast.undo': 'Undo',
@@ -280,9 +282,9 @@ const en: Catalog = {
   'toast.restoreNone': 'The records in this backup already exist.',
   'toast.restoreBadFile': 'This file is not an Expense Ledger backup.',
   'toast.restoreReadFail': 'Could not read the file. Make sure you chose an Expense Ledger backup.',
-  'notif.daily': 'Logged today\'s expenses yet?',
-  'notif.subTitle': '{name} is due',
-  'notif.subBody': '{amount} is due today. Remember to confirm it in the app.',
+  'notif.daily': 'Have you logged today\'s expenses?',
+  'notif.subTitle': '{name} payment due',
+  'notif.subBody': '{amount} to pay today. Remember to confirm it in the app.',
 
   // Excel export
   'xl.sheet.expenses': 'Expenses',

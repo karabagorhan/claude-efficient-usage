@@ -3,7 +3,7 @@ import { ComponentProps, useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
-import { t as tr, upper } from './i18n';
+import { fmtPercent, t as tr, upper } from './i18n';
 import { Analysis, Insight, catIndex, catName, compact, pad, subLabel, subType, subTypeIndex } from './lib';
 import { FONTS, Theme } from './theme';
 
@@ -196,7 +196,7 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
         {/* Hesap kartı */}
         <Pressable onPress={() => onSelect('ozet')} style={({ pressed }) => [s.account, { backgroundColor: t.raised, borderColor: t.line, opacity: pressed ? 0.85 : 1 }]}>
           <LinearGradient colors={['#e4c98f', '#c9a86a', '#8a6a35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.monogram}>
-            <Text style={{ fontFamily: FONTS.display, fontSize: 17, color: '#0b0b0d' }}>HD</Text>
+            <Text style={{ fontFamily: FONTS.display, fontSize: 17, color: '#0b0b0d' }}>{tr('app.monogram')}</Text>
           </LinearGradient>
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: FONTS.display, fontSize: 18, color: t.fg }} numberOfLines={1}>{header.title}</Text>
@@ -260,7 +260,7 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
               <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <Text style={[s.secLabel, { color: t.muted }]}>{upper(budget.label)}</Text>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: budget.over ? t.warn : t.gold }}>%{budget.pct}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: budget.over ? t.warn : t.gold }}>{fmtPercent(budget.pct)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
                   <Amount text={budget.amount} style={{ fontFamily: FONTS.display, fontSize: 24, color: t.fg }} symbolColor={t.gold} />

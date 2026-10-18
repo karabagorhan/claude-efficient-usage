@@ -7,6 +7,7 @@ import type { Catalog } from './index';
 const tr: Catalog = {
   // Uygulama
   'app.name': 'Harcama Defteri',
+  'app.monogram': 'HD',
 
   // Ortak
   'common.all': 'Tümü',
@@ -30,6 +31,7 @@ const tr: Catalog = {
 
   // Tarih biçimleri ve adları
   'fmt.monthYear': '{month} {year}',
+  'fmt.percent': '%{n}',
   'fmt.dayShort': '{day} {month}',
   'fmt.dayLong': '{day} {month}, {weekday}',
   'date.today': 'Bugün',

@@ -10,7 +10,7 @@ import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackupFormatError, exportBackup, exportExcel, pickBackup } from './src/files';
-import { LanguageProvider, lower, setLanguage, t as tr, upper } from './src/i18n';
+import { LanguageProvider, fmtPercent, lower, setLanguage, t as tr, upper } from './src/i18n';
 import {
   Analysis, Expense, SUB_TYPES, Settings, Sub, addMonths, analyse, catIndex, catName, categoryCompare, dayLabel, fmtTL, fmtTL0, frequentEntries,
   insights, iso, monthLabel, monthName, monthOnly, monthlyCost, parseAmount, shortDay, subLabel, subStatus, sum, todayIso, uid, weekdayAverages,
@@ -48,7 +48,7 @@ function agoText(ts: number) {
 }
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  return parts.length ? upper(parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')) : 'HD';
+  return parts.length ? upper(parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')) : tr('app.monogram');
 }
 
 /**
@@ -115,7 +115,8 @@ function Main() {
         let prefill: { amount?: number; cat?: string } | undefined;
         try {
           const q = Linking.parse(u!).queryParams ?? {};
-          const amount = parseAmount(String(q.tutar ?? ''));
+          // Kestirme bağlantılarının biçimi (tutar=125,50) uygulama dilinden bağımsızdır: her zaman Türkçe kurallarla okunur
+          const amount = parseAmount(String(q.tutar ?? ''), 'tr');
           prefill = { amount: amount || undefined, cat: SLUG[String(q.kategori ?? '').toLowerCase()] };
         } catch {}
         setMenuOpen(false);
@@ -417,7 +418,7 @@ function Main() {
           <View style={st.subSum}>
             <View><Amount text={fmtTL(monthly)} style={st.subSumVal} symbolColor={t.gold} /><Text style={st.tileSub}>{tr('subs.monthly')}</Text></View>
             <View><Amount text={fmtTL0(monthly * 12)} style={st.subSumVal} symbolColor={t.gold} /><Text style={st.tileSub}>{tr('subs.yearly')}</Text></View>
-            {budget ? <View><Text style={st.subSumVal}>%{Math.round((monthly / budget) * 100)}</Text><Text style={st.tileSub}>{tr('subs.ofBudget')}</Text></View> : null}
+            {budget ? <View><Text style={st.subSumVal}>{fmtPercent(Math.round((monthly / budget) * 100))}</Text><Text style={st.tileSub}>{tr('subs.ofBudget')}</Text></View> : null}
           </View>
         ) : null}
         {groups.length > 1 ? (
@@ -636,7 +637,7 @@ function Tiles({ ctx }: { ctx: Ctx }) {
       const r = Math.round(((a.curSame - a.prevSame) / a.prevSame) * 100);
       tiles.push({
         label: tr('tile.vsLast'),
-        value: `${r > 0 ? '+' : r < 0 ? '−' : ''}%${Math.abs(r)}`,
+        value: `${r > 0 ? '+' : r < 0 ? '−' : ''}${fmtPercent(Math.abs(r))}`,
         sub: <Pill kind={r > 0 ? 'up' : r < 0 ? 'down' : 'flat'} label={r > 0 ? tr('tile.more') : r < 0 ? tr('tile.less') : tr('tile.same')} t={t} />,
       });
     } else {
@@ -833,7 +834,7 @@ function CatChange({ cur, prev, t }: { cur: number; prev: number; t: Theme }) {
   if (!prev) return null;
   const r = Math.round(((cur - prev) / prev) * 100);
   if (!r) return null;
-  return <Pill kind={r > 0 ? 'up' : 'down'} label={`${r > 0 ? '↑' : '↓'} %${Math.abs(r)}`} t={t} />;
+  return <Pill kind={r > 0 ? 'up' : 'down'} label={`${r > 0 ? '↑' : '↓'} ${fmtPercent(Math.abs(r))}`} t={t} />;
 }
 
 function makeStyles(t: Theme) {

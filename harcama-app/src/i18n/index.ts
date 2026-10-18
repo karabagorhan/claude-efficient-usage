@@ -88,17 +88,20 @@ export function fmtCompact(n: number) {
 }
 /** Ondalık ayracı seçili dile göre ("125,5" / "125.5"). */
 export const decimalText = (n: number) => String(n).replace('.', langInfo().decimal);
+/** Yüzde metni seçili dilin sırasıyla: Türkçe "%165", İngilizce "165%" (katalogdaki `fmt.percent`). */
+export const fmtPercent = (n: number | string) => t('fmt.percent', { n });
 
 /**
  * Kullanıcının yazdığı tutarı sayıya çevirir; geçersiz ya da sıfırsa 0.
  * İki ayraç da varsa sonuncusu ondalıktır ("1.250,50", "1,250.50").
  * Tek ayraç: birden çok kez geçiyorsa binliktir; bir kez geçiyorsa ve sonrasında tam 3 hane varsa
  * (yalnızca o dilin bin ayracıysa) binlik, aksi halde ondalıktır.
+ * `lang` verilirse seçili dil yerine o dilin kuralları kullanılır (ör. kestirme bağlantıları her zaman 'tr').
  */
-export function parseAmount(input: string): number {
+export function parseAmount(input: string, lang: Lang = current): number {
   const s = String(input).trim().replace(/[\s  ']/g, '').replace(/₺/g, '');
   if (!/^[\d.,]+$/.test(s)) return 0;
-  const li = langInfo();
+  const li = langInfo(lang);
   const lastDot = s.lastIndexOf('.');
   const lastComma = s.lastIndexOf(',');
   let normalized: string;

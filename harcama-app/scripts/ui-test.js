@@ -65,6 +65,13 @@ const KEY_LEAK = /\b(?:app|common|sheet|fab|title|fmt|date|month|monthShort|week
   const ok = (name, cond, detail = '') => { if (cond) { pass++; console.log('OK    ' + name); } else { errors.push(name + (detail ? ' — ' + detail : '')); console.log('HATA  ' + name + (detail ? ' — ' + detail : '')); } };
   const warn = (name, detail) => { warnings.push(name + ' — ' + detail); console.log('UYARI ' + name + ' — ' + detail); };
   const shot = async (n) => { if (shots) { fs.mkdirSync(shots, { recursive: true }); await page.screenshot({ path: path.join(shots, `${lang}-${n}.png`) }); } };
+  // Kaydırılan içeriğin tamamını görmek için uzun ekran görüntüsü (yalnızca --shots ile; ölçüler sonra geri alınır)
+  const tallShot = async (n) => {
+    if (!shots) return;
+    await page.setViewportSize({ width: 390, height: 3200 }); await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(shots, `${lang}-${n}-tam.png`) });
+    await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400);
+  };
 
   await page.goto(base);
   await page.evaluate((d) => localStorage.setItem('harcama-defteri:v1', JSON.stringify(d)), data(lang));
@@ -97,6 +104,9 @@ const KEY_LEAK = /\b(?:app|common|sheet|fab|title|fmt|date|month|monthShort|week
     if (r.truncated.length) warn(`[${name}] kesilen (…) metin`, [...new Set(r.truncated)].slice(0, 6).join(' | '));
     const leak = r.text.match(KEY_LEAK);
     ok(`[${name}] çevrilmemiş anahtar sızmıyor`, !leak, leak ? leak[0] : '');
+    // Yüzde işareti dilin sırasıyla: tr "%80", en "80%"
+    const pctBad = lang === 'tr' ? r.text.match(/\d%(?!\w)/) : r.text.match(/%\d/);
+    ok(`[${name}] yüzde biçimi dile uygun`, !pctBad, pctBad ? pctBad[0] : '');
     if (lang !== 'tr') {
       const trw = r.text.match(TR_WORDS), trc = r.text.match(/[ğĞıİşŞ]/);
       ok(`[${name}] Türkçe kelime kalmamış`, !trw, trw ? trw[0] : '');
@@ -109,17 +119,23 @@ const KEY_LEAK = /\b(?:app|common|sheet|fab|title|fmt|date|month|monthShort|week
   const goTo = async (n) => { await menuBtn().click(); await page.waitForTimeout(450); await page.locator('[role="menuitem"]').nth(n).click(); await page.waitForTimeout(500); };
 
   const screens = ['Özet', 'Harcama ekle', 'Harcamalar', 'Raporlar', 'Abonelikler', 'Bütçe ve limitler', 'Ayarlar'];
-  await audit('özet'); await shot('1-ozet');
+  await audit('özet'); await shot('1-ozet'); await tallShot('1-ozet');
   await menuBtn().click(); await page.waitForTimeout(500);
   await audit('menü'); await shot('2-menu');
   await page.locator('[role="menuitem"]').nth(0).click(); await page.waitForTimeout(400);
   for (const [n, name] of [[2, 'harcamalar'], [3, 'raporlar'], [4, 'abonelikler'], [5, 'bütçe'], [6, 'ayarlar']]) {
-    await goTo(n); await audit(name); await shot(`3-${name}`);
+    await goTo(n); await audit(name); await shot(`3-${name}`); await tallShot(`3-${name}`);
   }
   // Harcama formu ve abonelik formu
   await goTo(0);
   await page.getByText(/^\+\s+/).first().click(); await page.waitForTimeout(700);
   await audit('harcama formu'); await shot('4-harcama-formu');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  // Abonelik formu (Abonelikler ekranındaki "+ ..." düğmesi)
+  await goTo(4);
+  await page.getByText(/^\+\s+/).first().click(); await page.waitForTimeout(700);
+  await page.keyboard.type('Gym membership'); await page.waitForTimeout(300);
+  await audit('abonelik formu'); await shot('4-abonelik-formu'); await tallShot('4-abonelik-formu');
   await page.keyboard.press('Escape'); await page.waitForTimeout(300);
 
   // Dil değişimi: Ayarlar → dil → anında güncelleme, kalıcılık
