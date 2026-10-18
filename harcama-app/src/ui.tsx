@@ -3,7 +3,8 @@ import { ComponentProps, useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
-import { Analysis, Insight, catIndex, compact, pad, subType, subTypeIndex } from './lib';
+import { t as tr, upper } from './i18n';
+import { Analysis, Insight, catIndex, catName, compact, pad, subLabel, subType, subTypeIndex } from './lib';
 import { FONTS, Theme } from './theme';
 
 export function Chip({ label, active, color, icon, onPress, t }: { label: string; active: boolean; color?: string; icon?: IconName; onPress: () => void; t: Theme }) {
@@ -56,7 +57,7 @@ export function Button({ label, onPress, kind = 'primary', t, style, disabled }:
 }
 
 export function Label({ children, t, color }: { children: string; t: Theme; color?: string }) {
-  return <Text style={[s.label, { color: color ?? t.muted }]}>{children.toLocaleUpperCase('tr-TR')}</Text>;
+  return <Text style={[s.label, { color: color ?? t.muted }]}>{upper(children)}</Text>;
 }
 
 /** Seçili ayın günlük harcama çubukları; ortalama ve günlük bütçe kesikli çizgi. */
@@ -115,7 +116,7 @@ export function DailyChart({ a, ym, budget, selected, onSelect, t }: {
                 key={i}
                 style={{ flex: 1 }}
                 onPress={() => onSelect(`${ym}-${pad(i + 1)}`)}
-                accessibilityLabel={`${i + 1}. gün`}
+                accessibilityLabel={tr('chart.dayLabel', { day: i + 1 })}
               />
             ))}
           </View>
@@ -185,7 +186,7 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
   return (
     <View style={StyleSheet.absoluteFill}>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim, opacity: x.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}>
-        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Menüyü kapat" />
+        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={tr('menu.close')} />
       </Animated.View>
       <Animated.View
         accessibilityRole="menu"
@@ -208,7 +209,7 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 4 }} showsVerticalScrollIndicator={false}>
           {sections.map((sec) => (
             <View key={sec.title}>
-              <Text style={[s.secTitle, { color: t.muted }]}>{sec.title.toLocaleUpperCase('tr-TR')}</Text>
+              <Text style={[s.secTitle, { color: t.muted }]}>{upper(sec.title)}</Text>
               {sec.items.map((it) => {
                 const active = it.key === current;
                 const b = it.badge ? badgeStyle(it.badge) : null;
@@ -239,12 +240,12 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
 
           {pins.length ? (
             <View>
-              <Text style={[s.secTitle, { color: t.muted }]}>BU AYIN KATEGORİLERİ</Text>
+              <Text style={[s.secTitle, { color: t.muted }]}>{upper(tr('menu.topCategories'))}</Text>
               {pins.map((p) => (
                 <Pressable key={p.cat} onPress={() => onPin(p.cat)} style={({ pressed }) => [s.pin, { backgroundColor: pressed ? t.raised : 'transparent' }]}
-                  accessibilityLabel={`${p.cat}, ${p.amount}, harcamaları göster`}>
+                  accessibilityLabel={tr('menu.pinLabel', { cat: catName(p.cat), amount: p.amount })}>
                   <CatIcon cat={p.cat} t={t} size={26} />
-                  <Text style={{ flex: 1, fontSize: 15, color: t.fg }}>{p.cat}</Text>
+                  <Text style={{ flex: 1, fontSize: 15, color: t.fg }}>{catName(p.cat)}</Text>
                   <Text style={{ fontSize: 14, color: t.muted, fontVariant: ['tabular-nums'] }}>{p.amount}</Text>
                 </Pressable>
               ))}
@@ -254,11 +255,11 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
           <View style={{ flexGrow: 1, minHeight: 14 }} />
           {/* Bütçe kartı */}
           <Pressable onPress={onBudget} style={({ pressed }) => [s.budget, { backgroundColor: t.raised, borderColor: t.line, opacity: pressed ? 0.85 : 1 }]}
-            accessibilityLabel={budget ? `${budget.label}: ${budget.amount} / ${budget.total}` : 'Bütçe belirle'}>
+            accessibilityLabel={budget ? `${budget.label}: ${budget.amount} / ${budget.total}` : tr('menu.setBudget')}>
             {budget ? (
               <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <Text style={[s.secLabel, { color: t.muted }]}>{budget.label.toLocaleUpperCase('tr-TR')}</Text>
+                  <Text style={[s.secLabel, { color: t.muted }]}>{upper(budget.label)}</Text>
                   <Text style={{ fontSize: 13, fontWeight: '600', color: budget.over ? t.warn : t.gold }}>%{budget.pct}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
@@ -272,7 +273,7 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Ionicons name="wallet-outline" size={20} color={t.gold} />
-                <Text style={{ flex: 1, fontSize: 15, color: t.fg }}>Aylık bütçe belirle</Text>
+                <Text style={{ flex: 1, fontSize: 15, color: t.fg }}>{tr('menu.setBudget')}</Text>
                 <Ionicons name="chevron-forward" size={16} color={t.muted} />
               </View>
             )}
@@ -291,7 +292,7 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
               <Text style={{ fontSize: 12, color: t.muted, flexShrink: 1 }} numberOfLines={1}>{status}</Text>
             </View>
           </View>
-          <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Menüyü kapat" style={[s.close, { borderColor: t.line }]}>
+          <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel={tr('menu.close')} style={[s.close, { borderColor: t.line }]}>
             <Ionicons name="close" size={18} color={t.muted} />
           </Pressable>
         </View>

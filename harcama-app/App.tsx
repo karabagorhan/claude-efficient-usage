@@ -9,10 +9,11 @@ import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { exportBackup, exportExcel, pickBackup } from './src/files';
+import { BackupFormatError, exportBackup, exportExcel, pickBackup } from './src/files';
+import { LanguageProvider, lower, setLanguage, t as tr, upper } from './src/i18n';
 import {
-  Analysis, Expense, MONTHS, SUB_TYPES, Settings, Sub, addMonths, analyse, catIndex, categoryCompare, dayLabel, fmtTL, fmtTL0, frequentEntries,
-  insights, iso, monthLabel, monthlyCost, parseAmount, shortDay, subStatus, sum, todayIso, uid, weekdayAverages,
+  Analysis, Expense, SUB_TYPES, Settings, Sub, addMonths, analyse, catIndex, catName, categoryCompare, dayLabel, fmtTL, fmtTL0, frequentEntries,
+  insights, iso, monthLabel, monthName, monthOnly, monthlyCost, parseAmount, shortDay, subLabel, subStatus, sum, todayIso, uid, weekdayAverages,
 } from './src/lib';
 import { ensurePermission, reschedule } from './src/notify';
 import { BudgetPanel, ExpenseSheet, SettingsPanel, SubSheet } from './src/sheets';
@@ -35,21 +36,19 @@ type Screen = 'ozet' | 'harcamalar' | 'raporlar' | 'abonelikler' | 'butce' | 'ay
 type ExpenseSheetState = { key: number; initial: Expense | null; prefill?: { amount?: number; cat?: string } } | null;
 type SubSheetState = { key: number; initial: Sub | null } | null;
 
-const TITLES: Record<Screen, string> = {
-  ozet: 'Özet', harcamalar: 'Harcamalar', raporlar: 'Raporlar', abonelikler: 'Abonelikler', butce: 'Bütçe ve limitler', ayarlar: 'Ayarlar',
-};
+const screenTitle = (screen: Screen) => tr('title.' + screen);
 
 /** Son kaydın üzerinden geçen süre: "az önce", "12 dk önce", "3 sa önce", "2 gün önce". */
 function agoText(ts: number) {
   const m = Math.floor((Date.now() - ts) / 60000);
-  if (m < 1) return 'az önce';
-  if (m < 60) return `${m} dk önce`;
-  if (m < 60 * 24) return `${Math.floor(m / 60)} sa önce`;
-  return `${Math.floor(m / 1440)} gün önce`;
+  if (m < 1) return tr('ago.now');
+  if (m < 60) return tr('ago.min', { n: m });
+  if (m < 60 * 24) return tr('ago.hour', { n: Math.floor(m / 60) });
+  return tr('ago.day', { n: Math.floor(m / 1440) });
 }
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  return parts.length ? (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toLocaleUpperCase('tr-TR') : 'HD';
+  return parts.length ? upper(parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')) : 'HD';
 }
 
 /**
@@ -75,6 +74,9 @@ const SLUG: Record<string, string> = {
 function Main() {
   const insets = useSafeAreaInsets();
   const { data, update } = useAppData();
+  // Dil çizim sırasında (alt bileşenlerden önce) ayarlanır; değişince <LanguageProvider> ağacı yeniden çizdirir.
+  const lang = data?.settings.language ?? 'tr';
+  setLanguage(lang);
   const t = useTheme(data?.settings.theme);
   const st = useMemo(() => makeStyles(t), [t]);
   const [screen, setScreen] = useState<Screen>('ozet');
@@ -174,15 +176,15 @@ function Main() {
     setExpSheet(null);
     setYm(e.date.slice(0, 7));
     buzz('success');
-    toast(isNew ? `${fmtTL(e.amount)} ${e.cat} eklendi.` : 'Harcama güncellendi.');
+    toast(isNew ? tr('toast.added', { amount: fmtTL(e.amount), cat: catName(e.cat) }) : tr('toast.updated'));
   };
   const deleteExpense = (id: string) => {
     const removed = items.find((x) => x.id === id);
     update((d) => ({ ...d, items: d.items.filter((x) => x.id !== id) }));
     setExpSheet(null);
     buzz('warn');
-    toast('Harcama silindi.', removed ? {
-      label: 'Geri al',
+    toast(tr('toast.deleted'), removed ? {
+      label: tr('toast.undo'),
       run: () => update((d) => ({ ...d, items: d.items.filter((x) => x.id !== removed.id).concat([removed]) })),
     } : undefined);
   };
@@ -200,7 +202,7 @@ function Main() {
     const e: Expense = { id: uid(), amount: s.amount, cat: s.cat, note: s.name, date: iso(sst.due), ts: Date.now(), sub: s.id, period: sst.period };
     update((d) => ({ ...d, items: d.items.concat([e]) }));
     buzz('success');
-    toast(`${s.name} harcamalara eklendi.`);
+    toast(tr('toast.subAdded', { name: s.name }));
   };
   const skipSub = (s: Sub) => {
     const period = subStatus(s, items).period;
@@ -209,24 +211,24 @@ function Main() {
   const changeSettings = async (next: Settings) => {
     const turnedOn = (next.remind && !settings.remind) || (next.subRemind && !settings.subRemind);
     update((d) => ({ ...d, settings: next }));
-    if (next.budget !== settings.budget) toast(next.budget ? 'Bütçe kaydedildi.' : 'Bütçe kaldırıldı.');
+    if (next.budget !== settings.budget) toast(next.budget ? tr('toast.budgetSaved') : tr('toast.budgetRemoved'));
     if (turnedOn && !(await ensurePermission())) {
-      toast('Bildirim izni yok. iPhone Ayarlar > Expo Go > Bildirimler bölümünden açabilirsin.');
+      toast(tr('toast.noNotifPermission'));
     }
   };
   const doExport = async (which: string | null) => {
     try {
       const ok = await exportExcel(items, subs, which);
-      if (!ok) toast(which ? 'Bu ay aktarılacak harcama yok.' : 'Henüz aktarılacak harcama yok.');
+      if (!ok) toast(which ? tr('toast.exportNoMonth') : tr('toast.exportNoData'));
     } catch {
-      toast('Excel dosyası oluşturulamadı.');
+      toast(tr('toast.excelFail'));
     }
   };
   const doBackup = async () => {
     try {
       await exportBackup(data);
     } catch {
-      toast('Yedek dosyası oluşturulamadı.');
+      toast(tr('toast.backupFail'));
     }
   };
   const doRestore = async () => {
@@ -239,20 +241,20 @@ function Main() {
         added = r.added;
         return r.data;
       });
-      setTimeout(() => toast(added ? `${added} kayıt eklendi.` : 'Yedekteki kayıtlar zaten var.'), 50);
+      setTimeout(() => toast(added ? tr('toast.restored', { n: added }) : tr('toast.restoreNone')), 50);
     } catch (e) {
-      toast(e instanceof Error && e.message.includes('yedeği') ? e.message : 'Dosya okunamadı. Harcama Defteri yedeği seçtiğinden emin ol.');
+      toast(e instanceof BackupFormatError ? tr('toast.restoreBadFile') : tr('toast.restoreReadFail'));
     }
   };
 
   /* ---------- Ortak parçalar ---------- */
   const monthSwitcher = (
     <View style={st.months}>
-      <Pressable style={st.mBtn} onPress={() => changeMonth(-1)} accessibilityLabel="Önceki ay">
+      <Pressable style={st.mBtn} onPress={() => changeMonth(-1)} accessibilityLabel={tr('month.prev')}>
         <Ionicons name="chevron-back" size={20} color={t.fg} />
       </Pressable>
       <Text style={st.mLabel}>{monthLabel(ym)}</Text>
-      <Pressable style={[st.mBtn, { opacity: a.isCur ? 0.35 : 1 }]} disabled={a.isCur} onPress={() => changeMonth(1)} accessibilityLabel="Sonraki ay">
+      <Pressable style={[st.mBtn, { opacity: a.isCur ? 0.35 : 1 }]} disabled={a.isCur} onPress={() => changeMonth(1)} accessibilityLabel={tr('month.next')}>
         <Ionicons name="chevron-forward" size={20} color={t.fg} />
       </Pressable>
     </View>
@@ -263,12 +265,12 @@ function Main() {
       key={x.id}
       onPress={() => setExpSheet({ key: Date.now(), initial: x })}
       style={({ pressed }) => [st.item, i > 0 && st.topLine, pressed && { backgroundColor: t.bg }]}
-      accessibilityLabel={`${x.cat} ${fmtTL(x.amount)}, düzenle`}
+      accessibilityLabel={tr('expense.rowA11y', { cat: catName(x.cat), amount: fmtTL(x.amount) })}
     >
       <CatIcon cat={x.cat} t={t} />
       <View style={{ flex: 1 }}>
-        <Text style={st.itemCat} numberOfLines={1}>{x.note || x.cat}</Text>
-        <Text style={st.meta} numberOfLines={1}>{[x.note ? x.cat : '', showDate ? dayLabel(x.date) : '', x.sub ? 'abonelik' : ''].filter(Boolean).join(' · ') || x.cat}</Text>
+        <Text style={st.itemCat} numberOfLines={1}>{x.note || catName(x.cat)}</Text>
+        <Text style={st.meta} numberOfLines={1}>{[x.note ? catName(x.cat) : '', showDate ? dayLabel(x.date) : '', x.sub ? tr('expense.subscriptionTag') : ''].filter(Boolean).join(' · ') || catName(x.cat)}</Text>
       </View>
       <Text style={st.itemAmt}>{fmtTL(x.amount)}</Text>
       <Ionicons name="chevron-forward" size={16} color={t.muted} />
@@ -290,8 +292,8 @@ function Main() {
         {notes.length ? (
           <View style={st.card}>
             <View style={st.cardHead}>
-              <Label t={t}>Öne çıkanlar</Label>
-              {notes.length > 3 ? <Pressable onPress={() => go('raporlar')} hitSlop={8}><Text style={st.link}>Tümü</Text></Pressable> : null}
+              <Label t={t}>{tr('section.highlights')}</Label>
+              {notes.length > 3 ? <Pressable onPress={() => go('raporlar')} hitSlop={8}><Text style={st.link}>{tr('common.all')}</Text></Pressable> : null}
             </View>
             <InsightList list={notes.slice(0, 3)} t={t} />
           </View>
@@ -299,8 +301,8 @@ function Main() {
         {pending.length ? (
           <View style={st.card}>
             <View style={st.cardHead}>
-              <Label t={t}>Onay bekleyen abonelikler</Label>
-              <Pressable onPress={() => go('abonelikler')} hitSlop={8}><Text style={st.link}>Tümü</Text></Pressable>
+              <Label t={t}>{tr('section.pendingSubs')}</Label>
+              <Pressable onPress={() => go('abonelikler')} hitSlop={8}><Text style={st.link}>{tr('common.all')}</Text></Pressable>
             </View>
             {pending.map(({ s }, i) => (
               <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: s })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
@@ -309,19 +311,19 @@ function Main() {
         ) : null}
         <View style={st.card}>
           <View style={st.cardHead}>
-            <Label t={t}>Son harcamalar</Label>
-            {recent.length ? <Pressable onPress={() => go('harcamalar')} hitSlop={8}><Text style={st.link}>Tümü</Text></Pressable> : null}
+            <Label t={t}>{tr('section.recent')}</Label>
+            {recent.length ? <Pressable onPress={() => go('harcamalar')} hitSlop={8}><Text style={st.link}>{tr('common.all')}</Text></Pressable> : null}
           </View>
-          {recent.length ? <View style={st.items}>{recent.map((x, i) => expenseRow(x, i, true))}</View> : <Text style={st.meta}>Henüz harcama yok. Aşağıdaki düğmeyle ilk harcamanı ekle.</Text>}
+          {recent.length ? <View style={st.items}>{recent.map((x, i) => expenseRow(x, i, true))}</View> : <Text style={st.meta}>{tr('recent.empty')}</Text>}
         </View>
       </>
     );
   } else if (screen === 'harcamalar') {
-    const q = query.trim().toLocaleLowerCase('tr-TR');
+    const q = lower(query.trim());
     // Arama tüm aylarda yapılır; arama yokken seçili ay listelenir
     const pool = q ? items : monthItems;
     const shown = pool.filter((x) => (!filterCat || x.cat === filterCat) && (!filterDay || x.date === filterDay) &&
-      (!q || x.note.toLocaleLowerCase('tr-TR').includes(q) || x.cat.toLocaleLowerCase('tr-TR').includes(q) || fmtTL(x.amount).includes(q)));
+      (!q || lower(x.note).includes(q) || lower(x.cat).includes(q) || lower(catName(x.cat)).includes(q) || fmtTL(x.amount).includes(q)));
     const groups: Record<string, Expense[]> = {};
     shown.forEach((x) => (groups[x.date] = groups[x.date] || []).push(x));
     const days = Object.keys(groups).sort().reverse();
@@ -330,12 +332,12 @@ function Main() {
       <>
         <View style={st.search}>
           <Ionicons name="search" size={18} color={t.muted} />
-          <TextInput value={query} onChangeText={setQuery} placeholder="Not, kategori ya da tutar ara" placeholderTextColor={t.muted}
-            style={st.searchInput} returnKeyType="search" clearButtonMode="while-editing" accessibilityLabel="Harcamalarda ara" />
+          <TextInput value={query} onChangeText={setQuery} placeholder={tr('search.placeholder')} placeholderTextColor={t.muted}
+            style={st.searchInput} returnKeyType="search" clearButtonMode="while-editing" accessibilityLabel={tr('search.a11y')} />
         </View>
         {q ? null : monthSwitcher}
         <View style={st.summaryRow}>
-          <Text style={st.meta}>{q ? `Tüm aylarda ${shown.length} sonuç` : `${shown.length} işlem`}</Text>
+          <Text style={st.meta}>{q ? tr('search.results', { n: shown.length }) : tr('list.count', { n: shown.length })}</Text>
           <Amount text={fmtTL(sum(shown))} style={st.summaryVal} symbolColor={t.gold} />
         </View>
         {cats.length > 1 ? (
@@ -344,20 +346,20 @@ function Main() {
               <Pressable key={c} onPress={() => setFilterCat(filterCat === c ? null : c)}
                 style={[st.catChip, { backgroundColor: filterCat === c ? t.accentSoft : t.surface, borderColor: filterCat === c ? t.gold : t.line }]}>
                 <CatIcon cat={c} t={t} size={22} />
-                <Text style={{ color: filterCat === c ? t.gold : t.fg, fontSize: 14 }}>{c}</Text>
+                <Text style={{ color: filterCat === c ? t.gold : t.fg, fontSize: 14 }}>{catName(c)}</Text>
               </Pressable>
             ))}
           </ScrollView>
         ) : null}
         {filterDay ? (
           <View style={st.filters}>
-            <Label t={t}>Gün</Label>
+            <Label t={t}>{tr('filter.day')}</Label>
             <Pressable style={st.fchip} onPress={() => setFilterDay(null)}><Text style={st.fchipTxt}>{shortDay(filterDay)} ✕</Text></Pressable>
           </View>
         ) : null}
         {days.length ? (
           <>
-            <Text style={[st.meta, { paddingHorizontal: 4 }]}>Düzeltmek ya da silmek için harcamanın üzerine dokun.</Text>
+            <Text style={[st.meta, { paddingHorizontal: 4 }]}>{tr('list.hint')}</Text>
             {days.map((d) => {
               const its = groups[d].sort((p, q) => q.ts - p.ts);
               return (
@@ -374,9 +376,9 @@ function Main() {
         ) : (
           <View style={st.empty}>
             <Ionicons name={q ? 'search' : 'wallet-outline'} size={40} color={t.muted} />
-            <Text style={st.emptyTitle}>{q ? 'Sonuç bulunamadı' : monthItems.length ? 'Eşleşen harcama yok' : 'Bu ay harcama yok'}</Text>
+            <Text style={st.emptyTitle}>{q ? tr('empty.noResults') : monthItems.length ? tr('empty.noMatch') : tr('empty.noMonth')}</Text>
             <Text style={[st.meta, { textAlign: 'center' }]}>
-              {q ? 'Başka bir kelime dene.' : monthItems.length ? 'Filtreyi kaldırarak tüm ayı görebilirsin.' : 'Aşağıdaki düğmeyle harcama ekleyebilirsin.'}
+              {q ? tr('empty.tryOther') : monthItems.length ? tr('empty.removeFilter') : tr('empty.useButton')}
             </Text>
           </View>
         )}
@@ -413,16 +415,16 @@ function Main() {
       <>
         {subs.length ? (
           <View style={st.subSum}>
-            <View><Amount text={fmtTL(monthly)} style={st.subSumVal} symbolColor={t.gold} /><Text style={st.tileSub}>aylık</Text></View>
-            <View><Amount text={fmtTL0(monthly * 12)} style={st.subSumVal} symbolColor={t.gold} /><Text style={st.tileSub}>yıllık</Text></View>
-            {budget ? <View><Text style={st.subSumVal}>%{Math.round((monthly / budget) * 100)}</Text><Text style={st.tileSub}>bütçenin</Text></View> : null}
+            <View><Amount text={fmtTL(monthly)} style={st.subSumVal} symbolColor={t.gold} /><Text style={st.tileSub}>{tr('subs.monthly')}</Text></View>
+            <View><Amount text={fmtTL0(monthly * 12)} style={st.subSumVal} symbolColor={t.gold} /><Text style={st.tileSub}>{tr('subs.yearly')}</Text></View>
+            {budget ? <View><Text style={st.subSumVal}>%{Math.round((monthly / budget) * 100)}</Text><Text style={st.tileSub}>{tr('subs.ofBudget')}</Text></View> : null}
           </View>
         ) : null}
         {groups.length > 1 ? (
           <View style={st.card}>
             <View style={st.cardHead}>
-              <Label t={t}>Türlere göre (aylık)</Label>
-              {pendingCount ? <Pill kind="up" label={`${pendingCount} onay bekliyor`} t={t} /> : null}
+              <Label t={t}>{tr('subs.byType')}</Label>
+              {pendingCount ? <Pill kind="up" label={tr('subs.pendingCount', { n: pendingCount })} t={t} /> : null}
             </View>
             <View style={st.stack}>
               {groups.map((g) => <View key={g.tp.key} style={{ flex: g.total, backgroundColor: subTypeColor(g.tp.key, t) }} />)}
@@ -431,8 +433,8 @@ function Main() {
               <View key={g.tp.key} style={[st.catRow, i > 0 && st.topLine]}>
                 <SubTypeIcon type={g.tp.key} t={t} size={30} />
                 <View style={{ flex: 1 }}>
-                  <Text style={st.itemCat}>{g.tp.label}</Text>
-                  <Text style={st.meta}>{g.list.length} abonelik · %{Math.round((g.total / monthly) * 100)}</Text>
+                  <Text style={st.itemCat}>{subLabel(g.tp.key)}</Text>
+                  <Text style={st.meta}>{tr('subs.countShare', { n: g.list.length, pct: Math.round((g.total / monthly) * 100) })}</Text>
                 </View>
                 <Text style={st.itemAmt}>{fmtTL(g.total)}</Text>
               </View>
@@ -443,8 +445,8 @@ function Main() {
           groups.map((g) => (
             <View key={g.tp.key} style={{ gap: 6 }}>
               <View style={st.dayHead}>
-                <Label t={t}>{g.tp.label}</Label>
-                <Label t={t}>{`${fmtTL(g.total)} / ay`}</Label>
+                <Label t={t}>{subLabel(g.tp.key)}</Label>
+                <Label t={t}>{tr('subs.perMonthTotal', { amount: fmtTL(g.total) })}</Label>
               </View>
               <View style={[st.card, { paddingVertical: 6 }]}>
                 {g.list.map(({ s }, i) => (
@@ -455,10 +457,10 @@ function Main() {
           ))
         ) : (
           <View style={st.card}>
-            <Text style={st.meta}>Netflix, Spotify, telefon, spor salonu gibi düzenli ödemelerini ekle. Türlerine göre gruplanır, ödeme günü gelince burada onayını bekler.</Text>
+            <Text style={st.meta}>{tr('subs.empty')}</Text>
           </View>
         )}
-        <Button label="+ Abonelik ekle" kind="ghost" onPress={() => setSubSheet({ key: Date.now(), initial: null })} t={t} />
+        <Button label={tr('subs.add')} kind="ghost" onPress={() => setSubSheet({ key: Date.now(), initial: null })} t={t} />
       </>
     );
   } else if (screen === 'butce') {
@@ -477,7 +479,7 @@ function Main() {
           onBackup={doBackup}
           onRestore={doRestore}
           ym={ym}
-          monthName={monthLabel(ym).split(' ')[0]}
+          monthLabel={monthOnly(ym)}
           t={t}
         />
       </View>
@@ -495,31 +497,32 @@ function Main() {
   const pendingSubs = subs.filter((x) => subStatus(x, items).state === 'pending').length;
   const limitAlerts = Object.keys(settings.catBudgets).filter((c) => (byCat[c] || 0) >= settings.catBudgets[c] * 0.8).length;
   const menuSections: MenuSection[] = [
-    { title: 'Genel', items: [
-      { key: 'ozet', label: 'Özet', icon: 'grid-outline' },
-      { key: 'ekle', label: 'Harcama ekle', icon: 'add-circle-outline' },
-      { key: 'harcamalar', label: 'Harcamalar', icon: 'list-outline', badge: curItems.length ? { text: String(curItems.length), kind: 'muted' } : null },
-      { key: 'raporlar', label: 'Raporlar', icon: 'bar-chart-outline', badge: limitAlerts ? { text: String(limitAlerts), kind: 'warn' } : null },
+    { title: tr('menu.general'), items: [
+      { key: 'ozet', label: tr('menu.home'), icon: 'grid-outline' },
+      { key: 'ekle', label: tr('menu.add'), icon: 'add-circle-outline' },
+      { key: 'harcamalar', label: tr('menu.expenses'), icon: 'list-outline', badge: curItems.length ? { text: String(curItems.length), kind: 'muted' } : null },
+      { key: 'raporlar', label: tr('menu.reports'), icon: 'bar-chart-outline', badge: limitAlerts ? { text: String(limitAlerts), kind: 'warn' } : null },
     ] },
-    { title: 'Yönetim', items: [
-      { key: 'abonelikler', label: 'Abonelikler', icon: 'repeat-outline', badge: pendingSubs ? { text: String(pendingSubs), kind: 'gold' } : null },
-      { key: 'butce', label: 'Bütçe ve limitler', icon: 'wallet-outline' },
-      { key: 'ayarlar', label: 'Ayarlar', icon: 'settings-outline' },
+    { title: tr('menu.management'), items: [
+      { key: 'abonelikler', label: tr('menu.subs'), icon: 'repeat-outline', badge: pendingSubs ? { text: String(pendingSubs), kind: 'gold' } : null },
+      { key: 'butce', label: tr('menu.budget'), icon: 'wallet-outline' },
+      { key: 'ayarlar', label: tr('menu.settings'), icon: 'settings-outline' },
     ] },
   ];
   const menuPins = Object.keys(byCat).sort((p, q) => byCat[q] - byCat[p]).slice(0, 3).map((c) => ({ cat: c, amount: fmtTL0(byCat[c]) }));
   const lastTs = items.reduce((m, x) => Math.max(m, x.ts || 0), 0);
-  const curMonthName = monthLabel(curYm).split(' ')[0];
+  const curMonthName = monthOnly(curYm);
 
   return (
+    <LanguageProvider value={lang}>
     <View style={st.root}>
       <StatusBar style={t.statusBar} />
       <View style={[st.topBar, { paddingTop: insets.top + 6 }]}>
-        <Pressable onPress={() => setMenuOpen(true)} style={st.menuBtn} hitSlop={8} accessibilityLabel="Menüyü aç" accessibilityRole="button">
+        <Pressable onPress={() => setMenuOpen(true)} style={st.menuBtn} hitSlop={8} accessibilityLabel={tr('menu.open')} accessibilityRole="button">
           <Ionicons name="menu" size={24} color={t.fg} />
           {pendingSubs || limitAlerts ? <View style={[st.menuDot, { borderColor: t.bg }]} /> : null}
         </Pressable>
-        <Text style={[st.h1, { flex: 1 }]} numberOfLines={1} adjustsFontSizeToFit>{TITLES[screen]}</Text>
+        <Text style={[st.h1, { flex: 1 }]} numberOfLines={1} adjustsFontSizeToFit>{screenTitle(screen)}</Text>
       </View>
       <ScrollView ref={scrollRef} contentContainerStyle={[st.scroll, { paddingBottom: insets.bottom + (showFab ? 110 : 40) }]} keyboardShouldPersistTaps="handled">
         {body}
@@ -527,7 +530,7 @@ function Main() {
 
       {showFab ? (
         <View style={[st.fabBar, { paddingBottom: insets.bottom + 10 }]}>
-          <Button label="+  Harcama ekle" kind="primary" onPress={openAdd} t={t} style={st.fab} />
+          <Button label={tr('fab.add')} kind="primary" onPress={openAdd} t={t} style={st.fab} />
         </View>
       ) : null}
 
@@ -545,22 +548,22 @@ function Main() {
       <SideMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        header={{ title: 'Harcama Defteri', sub: `Kişisel bütçe · ${monthLabel(curYm)}` }}
+        header={{ title: tr('app.name'), sub: tr('menu.headerSub', { month: monthLabel(curYm) }) }}
         sections={menuSections}
         pins={menuPins}
         current={screen}
         onSelect={go}
         onPin={(c) => { setYm(curYm); setFilterCat(c); setFilterDay(null); setQuery(''); go('harcamalar'); }}
         budget={settings.budget ? {
-          label: `${curMonthName} bütçesi`,
+          label: tr('menu.budgetOf', { month: curMonthName }),
           pct: Math.round((curTotal / settings.budget) * 100),
           amount: fmtTL0(curTotal),
           total: fmtTL0(settings.budget),
           over: curTotal > settings.budget,
         } : null}
         onBudget={() => { go('butce'); setBudgetFocusKey(settings.budget ? 0 : Date.now()); }}
-        status={lastTs ? `Son kayıt ${agoText(lastTs)}` : 'Henüz kayıt yok'}
-        profile={{ name: settings.name || 'Kişisel hesap', sub: `Kişisel hesap · ${settings.theme === 'ivory' ? 'Fildişi' : settings.theme === 'system' ? 'Telefona göre' : 'Noir'}`, initials: initials(settings.name) }}
+        status={lastTs ? tr('menu.lastSaved', { ago: agoText(lastTs) }) : tr('menu.noRecords')}
+        profile={{ name: settings.name || tr('menu.defaultName'), sub: tr('menu.profileSub', { theme: tr(settings.theme === 'ivory' ? 'settings.themeIvory' : settings.theme === 'system' ? 'settings.themeSystem' : 'settings.themeNoir') }), initials: initials(settings.name) }}
         top={insets.top}
         bottom={insets.bottom}
         t={t}
@@ -573,6 +576,7 @@ function Main() {
         <SubSheet key={subSheet.key} visible initial={subSheet.initial} onSave={saveSub} onDelete={deleteSub} onClose={() => setSubSheet(null)} t={t} />
       ) : null}
     </View>
+    </LanguageProvider>
   );
 }
 
@@ -587,21 +591,21 @@ function Hero({ ctx, onBudget }: { ctx: Ctx; onBudget: () => void }) {
   return (
     <LinearGradient colors={t.heroGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.hero}>
       <View style={st.heroTop}>
-        <Text style={st.heroBrand}>HARCAMA DEFTERİ</Text>
-        <Text style={st.heroBrand}>{monthLabel(ym).toLocaleUpperCase('tr-TR')}</Text>
+        <Text style={st.heroBrand}>{upper(tr('app.name'))}</Text>
+        <Text style={st.heroBrand}>{upper(monthLabel(ym))}</Text>
       </View>
       <View>
-        <Text style={st.heroLabel}>{a.isCur ? 'Bugün harcanan' : 'Günlük ortalama'}</Text>
+        <Text style={st.heroLabel}>{a.isCur ? tr('hero.today') : tr('hero.avgDaily')}</Text>
         <Amount text={a.isCur ? fmtTL(sum(items.filter((x) => x.date === todayIso()))) : fmtTL(a.avg)} style={st.heroBig} symbolColor={t.heroLabel} />
       </View>
       <View style={st.heroRule} />
       <View style={st.heroRow}>
         <View>
-          <Text style={st.heroLabel}>{a.isCur ? 'Bu ay' : 'Ay toplamı'}</Text>
+          <Text style={st.heroLabel}>{a.isCur ? tr('hero.thisMonth') : tr('hero.monthTotal')}</Text>
           <Amount text={fmtTL(a.total)} style={st.heroMid} symbolColor={t.heroLabel} />
         </View>
         <Pressable onPress={onBudget} hitSlop={8} style={st.heroBudget}>
-          <Text style={st.heroBudgetTxt}>{budget ? `Bütçe ${fmtTL0(budget)}` : 'Bütçe belirle'}</Text>
+          <Text style={st.heroBudgetTxt}>{budget ? tr('hero.budget', { amount: fmtTL0(budget) }) : tr('hero.setBudget')}</Text>
         </Pressable>
       </View>
       {budget ? (
@@ -610,9 +614,9 @@ function Hero({ ctx, onBudget }: { ctx: Ctx; onBudget: () => void }) {
             <View style={[st.fill, { width: `${Math.min(100, (a.total / budget) * 100)}%`, backgroundColor: a.total > budget ? t.warn : t.heroFill }]} />
           </View>
           <View style={st.heroRow}>
-            <Text style={st.heroSmall}>{left >= 0 ? `${fmtTL0(left)} kaldı` : `${fmtTL0(-left)} aşıldı`}</Text>
+            <Text style={st.heroSmall}>{left >= 0 ? tr('hero.left', { amount: fmtTL0(left) }) : tr('hero.over', { amount: fmtTL0(-left) })}</Text>
             <Text style={st.heroSmall}>
-              {a.isCur && left > 0 ? `günde ${fmtTL0(left / (a.dim - a.elapsed + 1))} harcayabilirsin` : `%${Math.round((a.total / budget) * 100)} kullanıldı`}
+              {a.isCur && left > 0 ? tr('hero.perDay', { amount: fmtTL0(left / (a.dim - a.elapsed + 1)) }) : tr('hero.used', { pct: Math.round((a.total / budget) * 100) })}
             </Text>
           </View>
         </View>
@@ -625,28 +629,28 @@ function Tiles({ ctx }: { ctx: Ctx }) {
   const { t, st, a, monthItems, budget } = ctx;
   const tiles: { label: string; value: string; sub?: ReactNode }[] = [];
   if (!monthItems.length) {
-    ['Günlük ortalama', 'Geçen aya göre', 'En yoğun gün', a.isCur ? 'Ay sonu tahmini' : 'İşlem sayısı'].forEach((l) => tiles.push({ label: l, value: '—' }));
+    [tr('tile.avg'), tr('tile.vsLast'), tr('tile.busiest'), a.isCur ? tr('tile.projection') : tr('tile.count')].forEach((l) => tiles.push({ label: l, value: '—' }));
   } else {
-    tiles.push({ label: 'Günlük ortalama', value: fmtTL0(a.avg), sub: <Text style={st.tileSub}>{a.elapsed} güne göre</Text> });
+    tiles.push({ label: tr('tile.avg'), value: fmtTL0(a.avg), sub: <Text style={st.tileSub}>{tr('tile.avgSub', { n: a.elapsed })}</Text> });
     if (a.prevSame > 0) {
       const r = Math.round(((a.curSame - a.prevSame) / a.prevSame) * 100);
       tiles.push({
-        label: 'Geçen aya göre',
+        label: tr('tile.vsLast'),
         value: `${r > 0 ? '+' : r < 0 ? '−' : ''}%${Math.abs(r)}`,
-        sub: <Pill kind={r > 0 ? 'up' : r < 0 ? 'down' : 'flat'} label={r > 0 ? 'daha fazla' : r < 0 ? 'daha az' : 'aynı'} t={t} />,
+        sub: <Pill kind={r > 0 ? 'up' : r < 0 ? 'down' : 'flat'} label={r > 0 ? tr('tile.more') : r < 0 ? tr('tile.less') : tr('tile.same')} t={t} />,
       });
     } else {
-      tiles.push({ label: 'Geçen aya göre', value: '—', sub: <Text style={st.tileSub}>Geçen ay kayıt yok</Text> });
+      tiles.push({ label: tr('tile.vsLast'), value: '—', sub: <Text style={st.tileSub}>{tr('tile.noLast')}</Text> });
     }
-    tiles.push({ label: 'En yoğun gün', value: fmtTL0(a.perDay[a.topDay!]), sub: <Text style={st.tileSub}>{shortDay(a.topDay!)}</Text> });
+    tiles.push({ label: tr('tile.busiest'), value: fmtTL0(a.perDay[a.topDay!]), sub: <Text style={st.tileSub}>{shortDay(a.topDay!)}</Text> });
     if (a.isCur) {
       tiles.push({
-        label: 'Ay sonu tahmini',
+        label: tr('tile.projection'),
         value: fmtTL0(a.projection),
-        sub: budget ? <Pill kind={a.projection > budget ? 'up' : 'down'} label={a.projection > budget ? 'bütçeyi aşar' : 'bütçe içinde'} t={t} /> : <Text style={st.tileSub}>bu hızla giderse</Text>,
+        sub: budget ? <Pill kind={a.projection > budget ? 'up' : 'down'} label={a.projection > budget ? tr('tile.willExceed') : tr('tile.withinBudget')} t={t} /> : <Text style={st.tileSub}>{tr('tile.pace')}</Text>,
       });
     } else {
-      tiles.push({ label: 'İşlem sayısı', value: String(monthItems.length), sub: <Text style={st.tileSub}>ortalama {fmtTL0(a.total / monthItems.length)}</Text> });
+      tiles.push({ label: tr('tile.count'), value: String(monthItems.length), sub: <Text style={st.tileSub}>{tr('tile.average', { amount: fmtTL0(a.total / monthItems.length) })}</Text> });
     }
   }
   return (
@@ -667,28 +671,28 @@ function SubRow({ s, ctx, first, onEdit, onPay, onSkip }: { s: Sub; ctx: Ctx; fi
   const x = subStatus(s, items);
   return (
     <View style={[st.subWrap, !first && st.topLine]}>
-      <Pressable onPress={onEdit} style={st.subRow} accessibilityLabel={`${s.name}, düzenle`}>
+      <Pressable onPress={onEdit} style={st.subRow} accessibilityLabel={tr('sub.rowA11y', { name: s.name })}>
         <SubTypeIcon type={s.type} t={t} />
         <View style={{ flex: 1, gap: 3 }}>
           <Text style={st.itemCat}>{s.name}</Text>
           <View style={st.metaRow}>
-            <Text style={st.meta}>{s.freq === 'yearly' ? `Yıllık · ${s.day} ${MONTHS[s.month - 1]}` : `Her ay ${s.day}. gün`}</Text>
-            {x.state === 'pending' ? <Pill kind="up" label={`Bekliyor · ${shortDay(iso(x.due))}`} t={t} /> : null}
-            {x.state === 'upcoming' ? <Pill kind="flat" label={`${x.days} gün sonra`} t={t} /> : null}
+            <Text style={st.meta}>{s.freq === 'yearly' ? tr('sub.yearlyOn', { day: s.day, month: monthName(s.month - 1) }) : tr('sub.everyMonth', { day: s.day })}</Text>
+            {x.state === 'pending' ? <Pill kind="up" label={tr('sub.pendingOn', { date: shortDay(iso(x.due)) })} t={t} /> : null}
+            {x.state === 'upcoming' ? <Pill kind="flat" label={tr('sub.inDays', { n: x.days })} t={t} /> : null}
             {x.state === 'paid' || x.state === 'skipped' ? (
-              <Pill kind={x.state === 'paid' ? 'down' : 'flat'} label={`${x.state === 'paid' ? 'Ödendi' : 'Atlandı'} · sonraki ${shortDay(iso(x.next))}`} t={t} />
+              <Pill kind={x.state === 'paid' ? 'down' : 'flat'} label={tr(x.state === 'paid' ? 'sub.paidNext' : 'sub.skippedNext', { date: shortDay(iso(x.next)) })} t={t} />
             ) : null}
           </View>
         </View>
         <Text style={st.itemAmt}>
           {fmtTL(s.amount)}
-          <Text style={st.meta}>/{s.freq === 'yearly' ? 'yıl' : 'ay'}</Text>
+          <Text style={st.meta}>/{tr(s.freq === 'yearly' ? 'sub.perYear' : 'sub.perMonth')}</Text>
         </Text>
       </Pressable>
       {x.state === 'pending' ? (
         <View style={[st.subAct, { paddingLeft: 46 }]}>
-          <Button label="Ödendi olarak işaretle" onPress={onPay} t={t} style={st.smallBtn} />
-          <Button label="Bu dönemi atla" kind="ghost" onPress={onSkip} t={t} style={st.smallBtn} />
+          <Button label={tr('sub.markPaid')} onPress={onPay} t={t} style={st.smallBtn} />
+          <Button label={tr('sub.skip')} kind="ghost" onPress={onSkip} t={t} style={st.smallBtn} />
         </View>
       ) : null}
     </View>
@@ -706,7 +710,7 @@ function Reports({ ctx, notes, filterDay, onDay, onCat, onShowDay, onMonth, onEx
   // Son 6 ay (seçili ay dahil)
   const months = Array.from({ length: 6 }, (_, i) => addMonths(ym, i - 5)).map((m) => ({
     key: m,
-    label: MONTHS[+m.slice(5) - 1].slice(0, 3),
+    label: tr('monthShort.' + (+m.slice(5) - 1)),
     value: sum(items.filter((x) => x.date.slice(0, 7) === m)),
   }));
   const withData = months.filter((m) => m.value > 0);
@@ -726,52 +730,52 @@ function Reports({ ctx, notes, filterDay, onDay, onCat, onShowDay, onMonth, onEx
       {monthSwitcher}
       {notes.length ? (
         <View style={st.card}>
-          <Label t={t}>Öne çıkanlar</Label>
+          <Label t={t}>{tr('section.highlights')}</Label>
           <InsightList list={notes} t={t} />
         </View>
       ) : null}
       <View style={st.card}>
         <View style={st.cardHead}>
-          <Label t={t}>Son 6 ay</Label>
-          {avg6 ? <Text style={st.meta}>ortalama {fmtTL0(avg6)}</Text> : null}
+          <Label t={t}>{tr('reports.last6')}</Label>
+          {avg6 ? <Text style={st.meta}>{tr('tile.average', { amount: fmtTL0(avg6) })}</Text> : null}
         </View>
         <Bars data={months} selected={ym} onSelect={onMonth} t={t} />
       </View>
 
       <View style={st.card}>
         <View style={st.cardHead}>
-          <Label t={t}>Günlük harcama</Label>
+          <Label t={t}>{tr('reports.daily')}</Label>
           <View style={st.legend}>
-            <View style={st.legendItem}><View style={[st.dash, { borderColor: t.muted }]} /><Text style={st.legendTxt}>Ortalama</Text></View>
-            {budget ? <View style={st.legendItem}><View style={[st.dash, { borderColor: t.warn }]} /><Text style={st.legendTxt}>Günlük bütçe</Text></View> : null}
+            <View style={st.legendItem}><View style={[st.dash, { borderColor: t.muted }]} /><Text style={st.legendTxt}>{tr('reports.legendAvg')}</Text></View>
+            {budget ? <View style={st.legendItem}><View style={[st.dash, { borderColor: t.warn }]} /><Text style={st.legendTxt}>{tr('reports.legendBudget')}</Text></View> : null}
           </View>
         </View>
         <DailyChart a={a} ym={ym} budget={budget} selected={filterDay} onSelect={onDay} t={t} />
         {filterDay ? (
           <Pressable onPress={onShowDay} style={st.metaRow}>
-            <Text style={st.meta}>{dayLabel(filterDay)}: {fmtTL(a.perDay[filterDay] || 0)}</Text>
-            <Text style={st.link}>Harcamaları gör</Text>
+            <Text style={st.meta}>{tr('reports.dayTotal', { day: dayLabel(filterDay), amount: fmtTL(a.perDay[filterDay] || 0) })}</Text>
+            <Text style={st.link}>{tr('reports.showExpenses')}</Text>
           </Pressable>
         ) : (
-          <Text style={st.meta}>Bir güne dokunarak o günü seç.</Text>
+          <Text style={st.meta}>{tr('reports.pickDay')}</Text>
         )}
       </View>
 
       {monthItems.length ? (
         <View style={st.card}>
           <View style={st.cardHead}>
-            <Label t={t}>Haftanın günlerine göre</Label>
-            <Text style={st.meta}>gün başına ortalama</Text>
+            <Label t={t}>{tr('reports.weekday')}</Label>
+            <Text style={st.meta}>{tr('reports.perDayAvg')}</Text>
           </View>
           <Bars data={week} selected={busiest.value ? busiest.key : undefined} t={t} height={130} />
-          {busiest.value ? <Text style={st.meta}>En çok harcadığın gün: {busiest.label} (ortalama {fmtTL0(busiest.value)})</Text> : null}
+          {busiest.value ? <Text style={st.meta}>{tr('reports.busiestDay', { day: busiest.label, amount: fmtTL0(busiest.value) })}</Text> : null}
         </View>
       ) : null}
 
       <View style={st.card}>
         <View style={st.cardHead}>
-          <Label t={t}>Kategorilere göre</Label>
-          {monthItems.length ? <Label t={t}>{`${monthItems.length} işlem`}</Label> : null}
+          <Label t={t}>{tr('reports.byCategory')}</Label>
+          {monthItems.length ? <Label t={t}>{tr('list.count', { n: monthItems.length })}</Label> : null}
         </View>
         {catRows.length ? (
           <>
@@ -783,12 +787,12 @@ function Reports({ ctx, notes, filterDay, onDay, onCat, onShowDay, onMonth, onEx
                 <CatIcon cat={c} t={t} />
                 <View style={{ flex: 1, gap: 4 }}>
                   <View style={st.metaRow}>
-                    <Text style={st.itemCat}>{c}</Text>
+                    <Text style={st.itemCat}>{catName(c)}</Text>
                     <CatChange cur={cur[c] || 0} prev={prev[c] || 0} t={t} />
                   </View>
                   <Text style={st.meta}>
-                    %{Math.round((by[c] / a.total) * 100)} · {cnt[c]} işlem
-                    {settings.catBudgets[c] ? ` · limit ${fmtTL0(settings.catBudgets[c])}` : ''}
+                    {tr('reports.catLine', { pct: Math.round((by[c] / a.total) * 100), n: cnt[c] })}
+                    {settings.catBudgets[c] ? ` · ${tr('reports.limit', { amount: fmtTL0(settings.catBudgets[c]) })}` : ''}
                   </Text>
                   {settings.catBudgets[c] ? <Progress value={by[c]} max={settings.catBudgets[c]} t={t} /> : null}
                 </View>
@@ -798,20 +802,20 @@ function Reports({ ctx, notes, filterDay, onDay, onCat, onShowDay, onMonth, onEx
             ))}
           </>
         ) : (
-          <Text style={st.meta}>Bu ay henüz harcama yok.</Text>
+          <Text style={st.meta}>{tr('reports.noExpenses')}</Text>
         )}
       </View>
 
       {top.length ? (
         <View style={st.card}>
-          <Label t={t}>En büyük harcamalar</Label>
+          <Label t={t}>{tr('reports.top')}</Label>
           {top.map((x, i) => (
             <View key={x.id} style={[st.catRow, i > 0 && st.topLine]}>
               <Text style={st.rank}>{i + 1}</Text>
               <CatIcon cat={x.cat} t={t} size={30} />
               <View style={{ flex: 1 }}>
-                <Text style={st.itemCat}>{x.note || x.cat}</Text>
-                <Text style={st.meta}>{x.cat} · {shortDay(x.date)}</Text>
+                <Text style={st.itemCat}>{x.note || catName(x.cat)}</Text>
+                <Text style={st.meta}>{catName(x.cat)} · {shortDay(x.date)}</Text>
               </View>
               <Text style={st.itemAmt}>{fmtTL(x.amount)}</Text>
             </View>
@@ -819,7 +823,7 @@ function Reports({ ctx, notes, filterDay, onDay, onCat, onShowDay, onMonth, onEx
         </View>
       ) : null}
 
-      <Button label={`${monthLabel(ym).split(' ')[0]} raporunu Excel'e aktar`} kind="ghost" onPress={onExport} t={t} />
+      <Button label={tr('reports.exportMonth', { month: monthOnly(ym) })} kind="ghost" onPress={onExport} t={t} />
     </>
   );
 }

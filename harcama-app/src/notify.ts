@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { t } from './i18n';
 import { Expense, Settings, Sub, fmtTL, subStatus } from './lib';
 
 Notifications.setNotificationHandler({
@@ -30,7 +31,7 @@ export async function reschedule(settings: Settings, subs: Sub[], items: Expense
 
     if (settings.remind) {
       await Notifications.scheduleNotificationAsync({
-        content: { title: 'Harcama Defteri', body: 'Bugünkü harcamalarını girdin mi?' },
+        content: { title: t('app.name'), body: t('notif.daily') },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: settings.remindHour, minute: 0 },
       });
     }
@@ -43,7 +44,7 @@ export async function reschedule(settings: Settings, subs: Sub[], items: Expense
         const when = new Date(target.getFullYear(), target.getMonth(), target.getDate(), 10, 0);
         if (when.getTime() <= now) continue;
         await Notifications.scheduleNotificationAsync({
-          content: { title: `${s.name} ödeme günü`, body: `${fmtTL(s.amount)} bugün ödenecek. Uygulamada onaylamayı unutma.` },
+          content: { title: t('notif.subTitle', { name: s.name }), body: t('notif.subBody', { amount: fmtTL(s.amount) }) },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
         });
       }

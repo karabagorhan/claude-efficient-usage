@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { InputAccessoryView, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { CATS, Expense, MONTHS, SUB_TYPES, Settings, Sub, addDays, amountText, catIndex, dayLabel, fmtTL, guessSubType, parseAmount, subType, todayIso, uid } from './lib';
+import { LANGS, Lang, t as tr } from './i18n';
+import { CATS, Expense, SUB_TYPES, Settings, Sub, addDays, amountText, catIndex, catName, dayLabel, fmtTL, guessSubType, monthName, parseAmount, subLabel, subType, todayIso, uid } from './lib';
 import { FONTS, Theme } from './theme';
 import { Button, CatIcon, Chip, IconName, Label, catIconName, subTypeColor } from './ui';
 
@@ -18,7 +19,7 @@ function Sheet({ visible, title, onClose, action, accessoryId, children, t }: {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.surface }}>
         <View style={st.topRow}>
           <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button">
-            <Text style={{ color: t.muted, fontSize: 17 }}>Vazgeç</Text>
+            <Text style={{ color: t.muted, fontSize: 17 }}>{tr('common.cancel')}</Text>
           </Pressable>
           {action ? (
             <Pressable onPress={action.onPress} disabled={action.disabled} hitSlop={12} accessibilityRole="button"
@@ -35,8 +36,8 @@ function Sheet({ visible, title, onClose, action, accessoryId, children, t }: {
       {action && accessoryId && Platform.OS === 'ios' ? (
         <InputAccessoryView nativeID={accessoryId}>
           <View style={[st.accessory, { backgroundColor: t.raised, borderTopColor: t.line }]}>
-            <Pressable onPress={() => Keyboard.dismiss()} hitSlop={10} accessibilityLabel="Klavyeyi kapat">
-              <Text style={{ color: t.muted, fontSize: 15 }}>Klavyeyi kapat</Text>
+            <Pressable onPress={() => Keyboard.dismiss()} hitSlop={10} accessibilityLabel={tr('sheet.hideKeyboard')}>
+              <Text style={{ color: t.muted, fontSize: 15 }}>{tr('sheet.hideKeyboard')}</Text>
             </Pressable>
             <Pressable onPress={action.onPress} disabled={action.disabled} accessibilityRole="button"
               style={[st.accessorySave, { backgroundColor: t.accent, opacity: action.disabled ? 0.4 : 1 }]}>
@@ -66,7 +67,7 @@ function CatChips({ value, onChange, t }: { value: string; onChange: (c: string)
   return (
     <View style={st.chips}>
       {CATS.map((c) => (
-        <Chip key={c} label={c} active={value === c} color={t.cats[catIndex(c)]} icon={catIconName(c)} onPress={() => onChange(c)} t={t} />
+        <Chip key={c} label={catName(c)} active={value === c} color={t.cats[catIndex(c)]} icon={catIconName(c)} onPress={() => onChange(c)} t={t} />
       ))}
     </View>
   );
@@ -77,7 +78,7 @@ function DeleteButton({ onDelete, t }: { onDelete: () => void; t: Theme }) {
   const [armed, setArmed] = useState(false);
   return (
     <Button
-      label={armed ? 'Emin misin? Sil' : 'Sil'}
+      label={armed ? tr('common.confirmDelete') : tr('common.delete')}
       kind={armed ? 'danger' : 'ghost'}
       onPress={() => (armed ? onDelete() : setArmed(true))}
       t={t}
@@ -114,10 +115,10 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
   };
 
   return (
-    <Sheet visible={visible} title={initial ? 'Harcamayı düzenle' : 'Yeni harcama'} onClose={onClose} t={t}
-      accessoryId="expense-save" action={{ label: value ? `Kaydet · ${fmtTL(value)}` : 'Kaydet', onPress: save, disabled: !value }}>
+    <Sheet visible={visible} title={initial ? tr('expense.editTitle') : tr('expense.newTitle')} onClose={onClose} t={t}
+      accessoryId="expense-save" action={{ label: value ? tr('expense.saveAmount', { amount: fmtTL(value) }) : tr('common.save'), onPress: save, disabled: !value }}>
       {!initial && frequent.length ? (
-        <Field label="Sık girdiklerin" t={t}>
+        <Field label={tr('expense.frequent')} t={t}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} keyboardShouldPersistTaps="always">
             {frequent.map((f) => (
               <Pressable
@@ -135,45 +136,45 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
           </ScrollView>
         </Field>
       ) : null}
-      <Field label="Tutar (₺)" t={t}>
+      <Field label={tr('common.amountField')} t={t}>
         <TextInput
           value={amount}
           onChangeText={setAmount}
           keyboardType="decimal-pad"
-          placeholder="0,00"
+          placeholder={tr('common.amountPlaceholder')}
           placeholderTextColor={t.muted}
           autoFocus={!initial}
           inputAccessoryViewID="expense-save"
           style={inputStyle(t, true)}
-          accessibilityLabel="Tutar"
+          accessibilityLabel={tr('expense.amountA11y')}
         />
       </Field>
-      <Field label="Kategori" t={t}>
+      <Field label={tr('common.category')} t={t}>
         <CatChips value={cat} onChange={setCat} t={t} />
       </Field>
-      <Field label="Not" t={t}>
-        <TextInput value={note} onChangeText={setNote} placeholder="İsteğe bağlı, ör. Simit ve çay" placeholderTextColor={t.muted} style={inputStyle(t)}
+      <Field label={tr('expense.note')} t={t}>
+        <TextInput value={note} onChangeText={setNote} placeholder={tr('expense.notePlaceholder')} placeholderTextColor={t.muted} style={inputStyle(t)}
           inputAccessoryViewID="expense-save" returnKeyType="done" onSubmitEditing={save} />
       </Field>
-      <Field label="Tarih" t={t}>
+      <Field label={tr('expense.date')} t={t}>
         <View style={st.chips}>
-          <Chip label="Bugün" active={date === todayIso()} onPress={() => setDate(todayIso())} t={t} />
-          <Chip label="Dün" active={date === addDays(todayIso(), -1)} onPress={() => setDate(addDays(todayIso(), -1))} t={t} />
-          <Chip label="2 gün önce" active={date === addDays(todayIso(), -2)} onPress={() => setDate(addDays(todayIso(), -2))} t={t} />
+          <Chip label={tr('date.today')} active={date === todayIso()} onPress={() => setDate(todayIso())} t={t} />
+          <Chip label={tr('date.yesterday')} active={date === addDays(todayIso(), -1)} onPress={() => setDate(addDays(todayIso(), -1))} t={t} />
+          <Chip label={tr('date.twoDaysAgo')} active={date === addDays(todayIso(), -2)} onPress={() => setDate(addDays(todayIso(), -2))} t={t} />
         </View>
         <View style={[st.stepper, { backgroundColor: t.bg, borderColor: t.line }]}>
-          <Pressable onPress={() => setDate(addDays(date, -1))} hitSlop={8} style={st.stepBtn} accessibilityLabel="Önceki gün">
+          <Pressable onPress={() => setDate(addDays(date, -1))} hitSlop={8} style={st.stepBtn} accessibilityLabel={tr('date.prevDay')}>
             <Text style={[st.stepTxt, { color: t.fg }]}>‹</Text>
           </Pressable>
           <Text style={{ color: t.fg, fontSize: 16, fontWeight: '500' }}>{dayLabel(date)}</Text>
-          <Pressable onPress={() => !isToday && setDate(addDays(date, 1))} hitSlop={8} style={[st.stepBtn, { opacity: isToday ? 0.3 : 1 }]} accessibilityLabel="Sonraki gün">
+          <Pressable onPress={() => !isToday && setDate(addDays(date, 1))} hitSlop={8} style={[st.stepBtn, { opacity: isToday ? 0.3 : 1 }]} accessibilityLabel={tr('date.nextDay')}>
             <Text style={[st.stepTxt, { color: t.fg }]}>›</Text>
           </Pressable>
         </View>
       </Field>
       <View style={st.actions}>
         {initial ? <DeleteButton onDelete={() => onDelete(initial.id)} t={t} /> : null}
-        <Button label="Kaydet" onPress={save} disabled={!value} t={t} style={{ flex: 1 }} />
+        <Button label={tr('common.save')} onPress={save} disabled={!value} t={t} style={{ flex: 1 }} />
       </View>
     </Sheet>
   );
@@ -215,48 +216,48 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
   };
 
   return (
-    <Sheet visible={visible} title={initial ? 'Aboneliği düzenle' : 'Yeni abonelik'} onClose={onClose} t={t}
-      accessoryId="sub-save" action={{ label: 'Kaydet', onPress: save, disabled: !valid }}>
-      <Field label="Ad" t={t}>
-        <TextInput value={name} onChangeText={onName} placeholder="ör. Netflix, telefon faturası" placeholderTextColor={t.muted} autoFocus={!initial} style={inputStyle(t)} inputAccessoryViewID="sub-save" />
+    <Sheet visible={visible} title={initial ? tr('sub.editTitle') : tr('sub.newTitle')} onClose={onClose} t={t}
+      accessoryId="sub-save" action={{ label: tr('common.save'), onPress: save, disabled: !valid }}>
+      <Field label={tr('sub.name')} t={t}>
+        <TextInput value={name} onChangeText={onName} placeholder={tr('sub.namePlaceholder')} placeholderTextColor={t.muted} autoFocus={!initial} style={inputStyle(t)} inputAccessoryViewID="sub-save" />
       </Field>
-      <Field label="Abonelik türü" t={t}>
+      <Field label={tr('sub.type')} t={t}>
         <View style={st.chips}>
           {SUB_TYPES.map((x) => (
-            <Chip key={x.key} label={x.label} icon={x.icon as IconName} color={subTypeColor(x.key, t)} active={type === x.key} onPress={() => pickType(x.key, true)} t={t} />
+            <Chip key={x.key} label={subLabel(x.key)} icon={x.icon as IconName} color={subTypeColor(x.key, t)} active={type === x.key} onPress={() => pickType(x.key, true)} t={t} />
           ))}
         </View>
       </Field>
-      <Field label="Tutar (₺)" t={t}>
-        <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor={t.muted} style={inputStyle(t, true)} inputAccessoryViewID="sub-save" />
+      <Field label={tr('common.amountField')} t={t}>
+        <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder={tr('common.amountPlaceholder')} placeholderTextColor={t.muted} style={inputStyle(t, true)} inputAccessoryViewID="sub-save" />
       </Field>
-      <Field label="Sıklık" t={t}>
+      <Field label={tr('sub.frequency')} t={t}>
         <View style={st.chips}>
-          <Chip label="Aylık" active={freq === 'monthly'} onPress={() => setFreq('monthly')} t={t} />
-          <Chip label="Yıllık" active={freq === 'yearly'} onPress={() => setFreq('yearly')} t={t} />
+          <Chip label={tr('sub.monthly')} active={freq === 'monthly'} onPress={() => setFreq('monthly')} t={t} />
+          <Chip label={tr('sub.yearly')} active={freq === 'yearly'} onPress={() => setFreq('yearly')} t={t} />
         </View>
       </Field>
-      <Field label="Ödeme günü (1–31)" t={t}>
+      <Field label={tr('sub.payDay')} t={t}>
         <TextInput value={day} onChangeText={setDay} keyboardType="number-pad" maxLength={2} style={inputStyle(t)} inputAccessoryViewID="sub-save" />
       </Field>
       {freq === 'yearly' ? (
-        <Field label="Ödeme ayı" t={t}>
+        <Field label={tr('sub.payMonth')} t={t}>
           <View style={st.chips}>
-            {MONTHS.map((m, i) => (
-              <Chip key={m} label={m.slice(0, 3)} active={month === i + 1} onPress={() => setMonth(i + 1)} t={t} />
+            {Array.from({ length: 12 }, (_, i) => (
+              <Chip key={i} label={tr('monthShort.' + i)} active={month === i + 1} onPress={() => setMonth(i + 1)} t={t} />
             ))}
           </View>
         </Field>
       ) : null}
-      <Field label="Harcamalarda görüneceği kategori" t={t}>
+      <Field label={tr('sub.expenseCategory')} t={t}>
         <Text style={{ color: t.muted, fontSize: 13, lineHeight: 18 }}>
-          Ödendi olarak işaretlediğinde harcamalara bu kategoriyle eklenir. Türe göre otomatik seçilir, istersen değiştir.
+          {tr('sub.expenseCategoryHint')}
         </Text>
         <CatChips value={cat} onChange={(c) => { setCat(c); setCatTouched(true); }} t={t} />
       </Field>
       <View style={st.actions}>
         {initial ? <DeleteButton onDelete={() => onDelete(initial.id)} t={t} /> : null}
-        <Button label="Kaydet" onPress={save} disabled={!valid} t={t} style={{ flex: 1 }} />
+        <Button label={tr('common.save')} onPress={save} disabled={!valid} t={t} style={{ flex: 1 }} />
       </View>
     </Sheet>
   );
@@ -270,30 +271,30 @@ export function BudgetPanel({ settings, focusBudget, onChange, t }: {
   const limitTotal = Object.values(settings.catBudgets).reduce((a, b) => a + b, 0);
   return (
     <View style={{ gap: 22 }}>
-      <Field label="Aylık bütçe (₺)" t={t}>
+      <Field label={tr('budget.field')} t={t}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TextInput
             value={budget}
             onChangeText={setBudget}
             keyboardType="decimal-pad"
-            placeholder="Bütçe yok"
+            placeholder={tr('budget.none')}
             placeholderTextColor={t.muted}
             autoFocus={focusBudget}
             selectTextOnFocus
             returnKeyType="done"
             onSubmitEditing={() => onChange({ ...settings, budget: parseAmount(budget) })}
             style={[...inputStyle(t), { flex: 1, minWidth: 0 }]}
-            accessibilityLabel="Aylık bütçe"
+            accessibilityLabel={tr('budget.a11y')}
           />
-          <Button label="Kaydet" onPress={() => { Keyboard.dismiss(); onChange({ ...settings, budget: parseAmount(budget) }); }} t={t} style={{ height: 48 }} />
+          <Button label={tr('common.save')} onPress={() => { Keyboard.dismiss(); onChange({ ...settings, budget: parseAmount(budget) }); }} t={t} style={{ height: 48 }} />
         </View>
       </Field>
 
       <View style={{ gap: 0 }}>
-        <Label t={t}>Kategori limitleri (aylık)</Label>
+        <Label t={t}>{tr('budget.limitsTitle')}</Label>
         <Text style={{ color: t.muted, fontSize: 14, lineHeight: 20, paddingVertical: 6 }}>
-          Bir kategoride limitin %80'ine gelince Özet ve Raporlar'da uyarı görürsün. Boş bırakılan kategori limitsizdir.
-          {limitTotal ? ` Limitlerin toplamı ${fmtTL(limitTotal)}.` : ''}
+          {tr('budget.limitsHint')}
+          {limitTotal ? ` ${tr('budget.limitsTotal', { amount: fmtTL(limitTotal) })}` : ''}
         </Text>
         {CATS.map((c) => (
           <CatLimitRow key={c} cat={c} value={settings.catBudgets[c] || 0} t={t}
@@ -309,72 +310,79 @@ export function BudgetPanel({ settings, focusBudget, onChange, t }: {
 }
 
 /* ---------- Ayarlar ekranı: ad, görünüm, bildirimler, dışa/içe aktarma ---------- */
-export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestore, ym, monthName, t }: {
+export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestore, ym, monthLabel, t }: {
   settings: Settings;
   onChange: (s: Settings) => void;
   onExport: (ym: string | null) => void;
   onBackup: () => void;
   onRestore: () => void;
   ym: string;
-  monthName: string;
+  monthLabel: string;
   t: Theme;
 }) {
   const [name, setName] = useState(settings.name);
   const row = [st.row, { borderColor: t.line }];
   return (
     <View style={{ gap: 22 }}>
-      <Field label="Adın (menüde görünür)" t={t}>
-        <TextInput value={name} onChangeText={setName} placeholder="Kişisel hesap" placeholderTextColor={t.muted} maxLength={40}
+      <Field label={tr('settings.name')} t={t}>
+        <TextInput value={name} onChangeText={setName} placeholder={tr('settings.namePlaceholder')} placeholderTextColor={t.muted} maxLength={40}
           onEndEditing={() => name.trim() !== settings.name && onChange({ ...settings, name: name.trim() })}
-          returnKeyType="done" style={inputStyle(t)} accessibilityLabel="Ad" />
+          returnKeyType="done" style={inputStyle(t)} accessibilityLabel={tr('settings.nameA11y')} />
       </Field>
-      <Field label="Görünüm" t={t}>
+      <Field label={tr('settings.language')} t={t}>
         <View style={st.chips}>
-          <Chip label="Noir" icon="moon-outline" active={settings.theme === 'noir'} onPress={() => onChange({ ...settings, theme: 'noir' })} t={t} />
-          <Chip label="Fildişi" icon="sunny-outline" active={settings.theme === 'ivory'} onPress={() => onChange({ ...settings, theme: 'ivory' })} t={t} />
-          <Chip label="Telefona göre" icon="phone-portrait-outline" active={settings.theme === 'system'} onPress={() => onChange({ ...settings, theme: 'system' })} t={t} />
+          {LANGS.map((l) => (
+            <Chip key={l.code} label={l.native} icon="language-outline" active={settings.language === l.code} onPress={() => onChange({ ...settings, language: l.code as Lang })} t={t} />
+          ))}
+        </View>
+      </Field>
+      <Field label={tr('settings.appearance')} t={t}>
+        <View style={st.chips}>
+          <Chip label={tr('settings.themeNoir')} icon="moon-outline" active={settings.theme === 'noir'} onPress={() => onChange({ ...settings, theme: 'noir' })} t={t} />
+          <Chip label={tr('settings.themeIvory')} icon="sunny-outline" active={settings.theme === 'ivory'} onPress={() => onChange({ ...settings, theme: 'ivory' })} t={t} />
+          <Chip label={tr('settings.themeSystem')} icon="phone-portrait-outline" active={settings.theme === 'system'} onPress={() => onChange({ ...settings, theme: 'system' })} t={t} />
         </View>
       </Field>
 
       <View style={{ gap: 0 }}>
-        <Label t={t}>Bildirimler</Label>
+        <Label t={t}>{tr('settings.notifications')}</Label>
         <View style={row}>
-          <Text style={[st.rowTxt, { color: t.fg }]}>Akşam hatırlatması</Text>
+          <Text style={[st.rowTxt, { color: t.fg }]}>{tr('settings.eveningReminder')}</Text>
           <Switch value={settings.remind} onValueChange={(v) => onChange({ ...settings, remind: v })} trackColor={{ true: t.accent }} />
         </View>
         {settings.remind ? (
           <View style={row}>
-            <Text style={[st.rowTxt, { color: t.fg }]}>Saat</Text>
+            <Text style={[st.rowTxt, { color: t.fg }]}>{tr('settings.time')}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <Pressable hitSlop={10} onPress={() => onChange({ ...settings, remindHour: (settings.remindHour + 23) % 24 })} accessibilityLabel="Bir saat erken">
+              <Pressable hitSlop={10} onPress={() => onChange({ ...settings, remindHour: (settings.remindHour + 23) % 24 })} accessibilityLabel={tr('settings.hourEarlier')}>
                 <Text style={[st.stepTxt, { color: t.fg }]}>‹</Text>
               </Pressable>
               <Text style={{ color: t.fg, fontSize: 16, fontVariant: ['tabular-nums'] }}>{String(settings.remindHour).padStart(2, '0')}:00</Text>
-              <Pressable hitSlop={10} onPress={() => onChange({ ...settings, remindHour: (settings.remindHour + 1) % 24 })} accessibilityLabel="Bir saat geç">
+              <Pressable hitSlop={10} onPress={() => onChange({ ...settings, remindHour: (settings.remindHour + 1) % 24 })} accessibilityLabel={tr('settings.hourLater')}>
                 <Text style={[st.stepTxt, { color: t.fg }]}>›</Text>
               </Pressable>
             </View>
           </View>
         ) : null}
         <View style={row}>
-          <Text style={[st.rowTxt, { color: t.fg }]}>Abonelik ödeme günü uyarısı</Text>
+          <Text style={[st.rowTxt, { color: t.fg }]}>{tr('settings.subReminder')}</Text>
           <Switch value={settings.subRemind} onValueChange={(v) => onChange({ ...settings, subRemind: v })} trackColor={{ true: t.accent }} />
         </View>
       </View>
 
       <View style={{ gap: 10 }}>
-        <Label t={t}>Excel</Label>
-        <Button label={`${monthName} ayını Excel'e aktar`} kind="ghost" onPress={() => onExport(ym)} t={t} />
-        <Button label="Tümünü Excel'e aktar" kind="ghost" onPress={() => onExport(null)} t={t} />
+        <Label t={t}>{tr('settings.excel')}</Label>
+        <Button label={tr('settings.exportMonth', { month: monthLabel })} kind="ghost" onPress={() => onExport(ym)} t={t} />
+        <Button label={tr('settings.exportAll')} kind="ghost" onPress={() => onExport(null)} t={t} />
       </View>
 
       <View style={{ gap: 10 }}>
-        <Label t={t}>Yedek</Label>
+        <Label t={t}>{tr('settings.backup')}</Label>
         <Text style={{ color: t.muted, fontSize: 14, lineHeight: 20 }}>
-          Web sürümünden aldığın yedeği buradan yükleyebilirsin. Aynı kayıtlar iki kez eklenmez.
+          {tr('settings.backupHint')}
         </Text>
-        <Button label="Yedek al" kind="ghost" onPress={onBackup} t={t} />
-        <Button label="Yedekten geri yükle" kind="ghost" onPress={onRestore} t={t} />
+        <Button label={tr('settings.backupMake')} kind="ghost" onPress={onBackup} t={t} />
+        <Button label={tr('settings.backupRestore')} kind="ghost" onPress={onRestore} t={t} />
       </View>
     </View>
   );
@@ -390,17 +398,17 @@ function CatLimitRow({ cat, value, onChange, t }: { cat: string; value: number; 
     <View style={[st.row, { borderColor: t.line }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
         <CatIcon cat={cat} t={t} size={30} />
-        <Text style={[st.rowTxt, { color: t.fg }]}>{cat}</Text>
+        <Text style={[st.rowTxt, { color: t.fg }]}>{catName(cat)}</Text>
       </View>
       <TextInput
         value={text}
         onChangeText={setText}
         onEndEditing={commit}
         keyboardType="decimal-pad"
-        placeholder="Limit yok"
+        placeholder={tr('budget.limitNone')}
         placeholderTextColor={t.muted}
         style={[st.limitInput, { backgroundColor: t.bg, borderColor: t.line, color: t.fg }]}
-        accessibilityLabel={`${cat} aylık limiti`}
+        accessibilityLabel={tr('budget.limitA11y', { cat: catName(cat) })}
       />
     </View>
   );
