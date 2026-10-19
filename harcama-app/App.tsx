@@ -3,6 +3,7 @@ import { PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display/700
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts } from 'expo-font';
 import Constants from 'expo-constants';
+import { AppState } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
@@ -11,9 +12,11 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackupFormatError, exportBackup, exportExcel, pickBackup } from './src/files';
 import { LanguageProvider, fmtPercent, lower, setLanguage, t as tr, upper } from './src/i18n';
+import { FxRate, fetchCurrentRate, readCachedRate } from './src/fx';
+import { projectData } from './src/view';
 import {
   Analysis, Expense, SUB_TYPES, Settings, Sub, addMonths, analyse, catIndex, catName, categoryCompare, dayLabel, fmtTL, fmtTL0, frequentEntries,
-  insights, iso, monthLabel, monthName, monthOnly, monthlyCost, parseAmount, shortDay, subLabel, subStatus, sum, todayIso, uid, weekdayAverages,
+  insights, iso, monthLabel, monthName, monthOnly, monthlyCost, parseAmount, setDisplayCurrency, shortDay, subLabel, subStatus, sum, todayIso, uid, weekdayAverages,
 } from './src/lib';
 import { ensurePermission, reschedule } from './src/notify';
 import { BudgetPanel, ExpenseSheet, SettingsPanel, SubSheet } from './src/sheets';
@@ -73,11 +76,48 @@ const SLUG: Record<string, string> = {
 
 function Main() {
   const insets = useSafeAreaInsets();
-  const { data, update } = useAppData();
+  const { data: storedData, update } = useAppData();
+  const [fx, setFx] = useState<FxRate | null>(null);
+  const [fxStatus, setFxStatus] = useState<'loading' | 'live' | 'cached' | 'unavailable'>('loading');
+  const fxRef = useRef<FxRate | null>(null);
+  const lastRefresh = useRef(0);
+  const refreshFx = async () => {
+    try {
+      const quote = await fetchCurrentRate();
+      fxRef.current = quote;
+      setFx(quote);
+      setFxStatus('live');
+    } catch {
+      setFxStatus(fxRef.current ? 'cached' : 'unavailable');
+    }
+  };
+  useEffect(() => {
+    let running = true;
+    readCachedRate().then((cached) => {
+      if (!running) return;
+      if (cached) {
+        fxRef.current = cached;
+        setFx(cached);
+        setFxStatus('cached');
+      }
+    }).finally(() => {
+      if (running) { lastRefresh.current = Date.now(); void refreshFx(); }
+    });
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && Date.now() - lastRefresh.current > 60 * 60 * 1000) {
+        lastRefresh.current = Date.now(); void refreshFx();
+      }
+    });
+    return () => { running = false; sub.remove(); };
+  }, []);
+  const data = useMemo(() => storedData
+    ? projectData(storedData, storedData.settings.currency, fx)
+    : null, [storedData, fx]);
+  setDisplayCurrency(storedData?.settings.currency ?? 'TRY');
   // Dil çizim sırasında (alt bileşenlerden önce) ayarlanır; değişince <LanguageProvider> ağacı yeniden çizdirir.
-  const lang = data?.settings.language ?? 'tr';
+  const lang = storedData?.settings.language ?? 'tr';
   setLanguage(lang);
-  const t = useTheme(data?.settings.theme);
+  const t = useTheme(storedData?.settings.theme);
   const st = useMemo(() => makeStyles(t), [t]);
   const [screen, setScreen] = useState<Screen>('ozet');
   const [budgetFocusKey, setBudgetFocusKey] = useState(0);
@@ -143,10 +183,14 @@ function Main() {
     return () => clearTimeout(h);
   }, [data]);
 
+  if (!storedData) {
+    return <View style={[st.root, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator color={t.accent} /></View>;
+  }
   if (!data) {
     return (
-      <View style={[st.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={t.accent} />
+      <View style={[st.root, { justifyContent: 'center', alignItems: 'center', padding: 24, gap: 16 }]}>
+        <Text style={{ color: t.fg, textAlign: 'center' }}>{fxStatus === 'loading' ? tr('settings.fxLoading') : tr('settings.fxMissing')}</Text>
+        <Button label={tr('settings.fxRetry')} onPress={() => { setFxStatus('loading'); void refreshFx(); }} t={t} />
       </View>
     );
   }
@@ -199,8 +243,9 @@ function Main() {
     setSubSheet(null);
   };
   const paySub = (s: Sub) => {
-    const sst = subStatus(s, items);
-    const e: Expense = { id: uid(), amount: s.amount, cat: s.cat, note: s.name, date: iso(sst.due), ts: Date.now(), sub: s.id, period: sst.period };
+    const source = storedData.subs.find((original) => original.id === s.id) ?? s;
+    const sst = subStatus(source, storedData.items);
+    const e: Expense = { id: uid(), amount: source.amount, currency: source.currency ?? 'TRY', cat: source.cat, note: source.name, date: iso(sst.due), ts: Date.now(), sub: source.id, period: sst.period };
     update((d) => ({ ...d, items: d.items.concat([e]) }));
     buzz('success');
     toast(tr('toast.subAdded', { name: s.name }));
@@ -211,7 +256,18 @@ function Main() {
   };
   const changeSettings = async (next: Settings) => {
     const turnedOn = (next.remind && !settings.remind) || (next.subRemind && !settings.subRemind);
-    update((d) => ({ ...d, settings: next }));
+    const changedAmounts = next.budget !== settings.budget ||
+      JSON.stringify(next.catBudgets) !== JSON.stringify(settings.catBudgets);
+    update((d) => ({
+      ...d,
+      settings: {
+        ...d.settings,
+        ...next,
+        budget: changedAmounts ? next.budget : d.settings.budget,
+        catBudgets: changedAmounts ? next.catBudgets : d.settings.catBudgets,
+        budgetCurrency: changedAmounts ? settings.currency : d.settings.budgetCurrency,
+      },
+    }));
     if (next.budget !== settings.budget) toast(next.budget ? tr('toast.budgetSaved') : tr('toast.budgetRemoved'));
     if (turnedOn && !(await ensurePermission())) {
       toast(tr('toast.noNotifPermission'));
@@ -219,7 +275,7 @@ function Main() {
   };
   const doExport = async (which: string | null) => {
     try {
-      const ok = await exportExcel(items, subs, which);
+      const ok = await exportExcel(items, subs, which, settings.currency);
       if (!ok) toast(which ? tr('toast.exportNoMonth') : tr('toast.exportNoData'));
     } catch {
       toast(tr('toast.excelFail'));
@@ -227,7 +283,7 @@ function Main() {
   };
   const doBackup = async () => {
     try {
-      await exportBackup(data);
+      await exportBackup(storedData);
     } catch {
       toast(tr('toast.backupFail'));
     }
@@ -264,7 +320,7 @@ function Main() {
   const expenseRow = (x: Expense, i: number, showDate = false) => (
     <Pressable
       key={x.id}
-      onPress={() => setExpSheet({ key: Date.now(), initial: x })}
+      onPress={() => setExpSheet({ key: Date.now(), initial: storedData.items.find((original) => original.id === x.id) ?? null })}
       style={({ pressed }) => [st.item, i > 0 && st.topLine, pressed && { backgroundColor: t.bg }]}
       accessibilityLabel={tr('expense.rowA11y', { cat: catName(x.cat), amount: fmtTL(x.amount) })}
     >
@@ -306,7 +362,7 @@ function Main() {
               <Pressable onPress={() => go('abonelikler')} hitSlop={8}><Text style={st.link}>{tr('common.all')}</Text></Pressable>
             </View>
             {pending.map(({ s }, i) => (
-              <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: s })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
+              <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: storedData.subs.find((original) => original.id === s.id) ?? null })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
             ))}
           </View>
         ) : null}
@@ -481,6 +537,9 @@ function Main() {
           onRestore={doRestore}
           ym={ym}
           monthLabel={monthOnly(ym)}
+          fx={fx}
+          fxStatus={fxStatus}
+          onRefreshFx={() => { setFxStatus('loading'); void refreshFx(); }}
           t={t}
         />
       </View>
@@ -571,10 +630,10 @@ function Main() {
       />
 
       {expSheet ? (
-        <ExpenseSheet key={expSheet.key} visible initial={expSheet.initial} prefill={expSheet.prefill} frequent={frequentEntries(items)} onSave={saveExpense} onDelete={deleteExpense} onClose={() => setExpSheet(null)} t={t} />
+        <ExpenseSheet currency={settings.currency} key={expSheet.key} visible initial={expSheet.initial} prefill={expSheet.prefill} frequent={frequentEntries(items)} onSave={saveExpense} onDelete={deleteExpense} onClose={() => setExpSheet(null)} t={t} />
       ) : null}
       {subSheet ? (
-        <SubSheet key={subSheet.key} visible initial={subSheet.initial} onSave={saveSub} onDelete={deleteSub} onClose={() => setSubSheet(null)} t={t} />
+        <SubSheet currency={settings.currency} key={subSheet.key} visible initial={subSheet.initial} onSave={saveSub} onDelete={deleteSub} onClose={() => setSubSheet(null)} t={t} />
       ) : null}
     </View>
     </LanguageProvider>
