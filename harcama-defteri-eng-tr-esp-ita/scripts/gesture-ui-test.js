@@ -108,8 +108,10 @@ const data = {
   ok('Abonelikler ekranı', (await title()) === T('abonelikler'), await title());
   await drag(4, 400, 200, 400);
   ok('geri: Abonelikler → Raporlar', (await title()) === T('raporlar'), await title());
-  await drag(4, 400, 200, 400);
-  ok('geri: Raporlar → Harcamalar', (await title()) === T('harcamalar'), await title());
+  await drag(100, 300, 260, 520);
+  ok('çapraz (dikey baskın) kaydırma geri döndürmez', (await title()) === T('raporlar'), await title());
+  await drag(150, 300, 320, 300);
+  ok('geri: Raporlar → Harcamalar (ekranın ortasından kaydırarak)', (await title()) === T('harcamalar'), await title());
   await drag(4, 400, 200, 400);
   ok('geri: Harcamalar → Özet', (await title()) === T('ozet'), await title());
   await drag(4, 400, 200, 400);
@@ -117,6 +119,22 @@ const data = {
   await drag(4, 400, 200, 400);
   ok('menü açıkken kenar kaydırması ekranı değiştirmez', await menuOpen() && (await title()) === T('ozet'));
   await drag(260, 420, 60, 420);
+
+  // Yatay çip satırı kendi kaydırmasını korur; harcama satırından başlayan kaydırma satırı açmaz, geri döner
+  await goto(2);
+  const chipY = await page.evaluate((txt) => {
+    const el = Array.from(document.querySelectorAll('div,span')).find((e) => e.childNodes.length === 1 && e.firstChild.nodeType === 3 && e.textContent === txt);
+    const b = el.getBoundingClientRect(); return b.top + b.height / 2;
+  }, cat('cat.Market'));
+  await drag(120, chipY, 330, chipY);
+  ok('kategori çiplerinin üstünde kaydırma geri döndürmez', (await title()) === T('harcamalar'), await title());
+  const rowY = await page.evaluate(() => {
+    const el = Array.from(document.querySelectorAll('div,span')).find((e) => e.textContent === 'Alpha' && e.childNodes.length === 1);
+    const b = el.getBoundingClientRect(); return b.top + b.height / 2;
+  });
+  await drag(140, rowY, 330, rowY);
+  ok('harcama satırı üstünden kaydırma geri döndürür', (await title()) === T('ozet'), await title());
+  ok('satır kaydırması harcama formunu açmaz', !(await page.evaluate(() => document.body.innerText)).includes(cat('expense.editTitle')));
 
   // Hızlı kısa hareket (fling) de geri döner
   await goto(5);

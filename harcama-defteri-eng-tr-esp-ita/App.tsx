@@ -46,9 +46,12 @@ export default function App() {
   );
 }
 
-/** Geri hareketi: ekranın sol kenarındaki bu genişlikte (px) başlayıp bu kadar (px) ya da hızlıca sağa kaydırılırsa tetiklenir. */
-const EDGE = 24;
-const SWIPE_DIST = 70;
+/**
+ * Geri hareketi: sağa doğru (yatay baskın) bu kadar (px) ya da hızlıca kaydırılırsa tetiklenir. Ekranın her yerinde çalışır;
+ * ana ekranda (gidecek yer yokken) yan menüyü yalnızca sol kenardaki bu genişlikte (px) başlayan kaydırma açar.
+ */
+const EDGE = 32;
+const SWIPE_DIST = 60;
 
 type Screen = 'ozet' | 'harcamalar' | 'raporlar' | 'abonelikler' | 'butce' | 'ayarlar';
 type ExpenseSheetState = { key: number; initial: Expense | null; prefill?: { amount?: number; cat?: string } } | null;
@@ -138,8 +141,9 @@ function Main() {
    * Ekranın sol kenarından sağa kaydırma = geri (önceki ekran; ana ekranda yan menüyü açar).
    * Yan menü ve alt sayfalar da kaydırarak kapanır (yan menü: sola; alt sayfa: sol kenardan sağa). */
   const slide = useRef(new Animated.Value(0)).current;
-  const nav = useRef({ screen, history, blocked: false });
-  nav.current = { screen, history, blocked: menuOpen || !!expSheet || !!subSheet };
+  const [swiping, setSwiping] = useState(false); // geri oku yalnızca kaydırma sırasında çizilir
+  const nav = useRef({ screen, history, blocked: false, canBack: false });
+  nav.current = { screen, history, blocked: menuOpen || !!expSheet || !!subSheet, canBack: history.length > 0 || screen !== 'ozet' };
   const swipeBack = () => {
     const { screen: cur, history: hist } = nav.current;
     if (hist.length) {
@@ -155,25 +159,30 @@ function Main() {
   swipeBackRef.current = swipeBack;
   // PanResponder'ın x0/dx değerleri hareket yakalanınca sıfırlanır; bu yüzden dokunuşun başladığı yeri kendimiz tutarız
   const touchX = useRef({ start: 0, last: 0 });
+  const shouldSwipe = (pageX: number, dy: number, capture: boolean) => {
+    const dx = pageX - touchX.current.start;
+    if (nav.current.blocked || dx < 14 || dx < Math.abs(dy) * 2.2) return false;
+    return capture ? touchX.current.start <= EDGE : nav.current.canBack;
+  };
   const edgePan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponderCapture: (e) => {
         touchX.current = { start: e.nativeEvent.pageX, last: e.nativeEvent.pageX };
         return false;
       },
-      onMoveShouldSetPanResponderCapture: (e, g) => {
-        const dx = e.nativeEvent.pageX - touchX.current.start;
-        return !nav.current.blocked && touchX.current.start <= EDGE && dx > 12 && dx > Math.abs(g.dy) * 1.5;
-      },
+      // Kenardan başlayan hareket iç içe kaydırıcılardan önce yakalanır; ekranın başka yerinde yalnızca gidecek bir ekran varsa ve iç öğe (ör. yatay çipler) almadıysa
+      onMoveShouldSetPanResponderCapture: (e, g) => shouldSwipe(e.nativeEvent.pageX, g.dy, true),
+      onMoveShouldSetPanResponder: (e, g) => shouldSwipe(e.nativeEvent.pageX, g.dy, false),
+      onPanResponderGrant: () => setSwiping(true),
       onPanResponderMove: (e) => {
         touchX.current.last = e.nativeEvent.pageX;
-        slide.setValue(Math.max(0, Math.min(touchX.current.last - touchX.current.start, 160)) * 0.35);
+        slide.setValue(Math.max(0, Math.min(touchX.current.last - touchX.current.start, 140)) * 0.5);
       },
       onPanResponderRelease: (_e, g) => {
-        Animated.spring(slide, { toValue: 0, bounciness: 0, useNativeDriver: true }).start();
+        Animated.spring(slide, { toValue: 0, bounciness: 0, useNativeDriver: true }).start(() => setSwiping(false));
         if (touchX.current.last - touchX.current.start > SWIPE_DIST || g.vx > 0.6) swipeBackRef.current();
       },
-      onPanResponderTerminate: () => Animated.spring(slide, { toValue: 0, bounciness: 0, useNativeDriver: true }).start(),
+      onPanResponderTerminate: () => Animated.spring(slide, { toValue: 0, bounciness: 0, useNativeDriver: true }).start(() => setSwiping(false)),
     }),
   ).current;
 
@@ -440,6 +449,7 @@ function Main() {
           <Amount text={money(sum(shown))} style={st.summaryVal} symbolColor={t.gold} />
         </View>
         {cats.length > 1 ? (
+          <View onStartShouldSetResponderCapture={() => { touchX.current.start = 99999; return false; }}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {cats.map((c) => (
               <Pressable key={c} onPress={() => setFilterCat(filterCat === c ? null : c)}
@@ -449,6 +459,7 @@ function Main() {
               </Pressable>
             ))}
           </ScrollView>
+          </View>
         ) : null}
         {filterDay ? (
           <View style={st.filters}>
@@ -643,6 +654,15 @@ function Main() {
         </View>
       ) : null}
       </Animated.View>
+      {/* Geri hareketi sırasında kenardan beliren ok: bırakınca ne olacağını gösterir (geri ya da ana ekranda menü) */}
+      {swiping ? (
+      <Animated.View pointerEvents="none" style={[st.backHint, {
+        opacity: slide.interpolate({ inputRange: [0, 12, 30], outputRange: [0, 0.5, 1], extrapolate: 'clamp' }),
+        transform: [{ translateX: slide.interpolate({ inputRange: [0, 30], outputRange: [-46, 8], extrapolate: 'clamp' }) }],
+      }]}>
+        <Ionicons name={history.length > 0 || screen !== 'ozet' ? 'chevron-back' : 'menu'} size={22} color={t.accentFg} />
+      </Animated.View>
+      ) : null}
 
       {toastMsg ? (
         <View pointerEvents={toastAction ? 'auto' : 'none'} style={[st.toast, { bottom: insets.bottom + (showFab ? 82 : 24) }]}>
@@ -989,6 +1009,7 @@ function makeStyles(t: Theme) {
     subRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     subAct: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingLeft: 20 },
     smallBtn: { height: 38, borderRadius: 12, paddingHorizontal: 12 },
+    backHint: { position: 'absolute', left: 0, top: '45%', width: 40, height: 40, borderRadius: 20, backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
     rateNote: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 },
     metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
     topLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line },

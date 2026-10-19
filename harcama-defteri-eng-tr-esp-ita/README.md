@@ -22,9 +22,10 @@ raporlar, abonelikler, Excel/yedek, bildirimler, Noir ve Fildişi temalar) ve ta
 - **Renk kartelaları:** Ayarlar → Görünüm'de 8 vurgu rengi (şampanya, zümrüt, safir, ametist, gül, bakır, turkuaz, gümüş) ve 4 zemin tonu
   (klasik, mavi, yeşil, erik). Seçim hem koyu (Noir) hem açık (Fildişi) temada ve "Telefona göre" modunda geçerlidir; ekran anında yeniden boyanır.
   64 tema birleşiminin tamamı WCAG kontrast testinden geçer (yazı ≥ 7:1, vurgu ve özet kartı etiketleri ≥ 4.5:1). Varsayılan görünüm değişmedi.
-- **Kaydırma hareketleri:** Ekranın sol kenarından sağa kaydırınca önceki ekrana dönülür (ana ekranda yan menü açılır); yan menü sola kaydırılarak
-  kapanır (panelden ya da karartılmış alandan); alt sayfalar (harcama/abonelik formu) sol kenardan sağa kaydırılarak kapanır. Parmakla birlikte hareket eder,
-  kısa ya da yanlış yöndeki kaydırma bir şey yapmaz.
+- **Kaydırma hareketleri:** Ekranın herhangi bir yerinden sağa kaydırınca önceki ekrana dönülür (sayfa parmakla birlikte kayar, kenarda geri oku belirir);
+  ana ekranda gidecek yer olmadığı için yalnızca sol kenardan sağa kaydırma yan menüyü açar. Yan menü sola kaydırılarak kapanır (panelden ya da karartılmış
+  alandan); alt sayfalar (harcama/abonelik formu) sol kenardan sağa kaydırılarak kapanır. Yatay kaydırılan kategori çipleri kendi kaydırmasını korur; kısa,
+  dikey ağırlıklı ya da yanlış yöndeki kaydırma bir şey yapmaz.
 - **Yerelleştirme:** Sayı/ondalık ayracı, para simgesinin yeri (tr/en/zh önde `₺1.250,50`, es/it sonda `1250,50 €`), yüzde işareti, tarih ve
   saat gösterimi seçilen dile göredir; Node'un `Intl` (CLDR) çıktısıyla karşılaştırılarak test edilir.
 
