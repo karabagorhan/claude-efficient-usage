@@ -1,0 +1,14 @@
+name: Publish Spendly Expo Go Update
+
+on:
+  push:
+    branches: ['spendly-v2.1']
+
+jobs:
+  publish_update:
+    name: Publish V2.1 to main
+    type: update
+    params:
+      channel: main
+      platform: all
+      message: 'Spendly V2.1 Expo Go update'

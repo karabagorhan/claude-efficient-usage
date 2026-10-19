@@ -3,15 +3,15 @@
     "name": "Spendly",
     "slug": "spendly",
     "version": "2.1.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.karabag.harcamadefteri",
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
+      "bundleIdentifier": "com.karabag.harcamadefteri"
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +33,14 @@
       "expo-font"
     ],
     "scheme": "harcama",
-    "owner": "karabagorhan"
+    "owner": "karabagorhan",
+    "extra": {
+      "eas": {
+        "projectId": "2286a705-f49d-4747-aee3-c0166a9881ad"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2286a705-f49d-4747-aee3-c0166a9881ad"
+    }
   }
 }
