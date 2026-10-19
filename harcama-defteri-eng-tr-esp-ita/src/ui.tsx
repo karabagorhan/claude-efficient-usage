@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ComponentProps, useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Animated, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { Animated, PanResponder, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
 import { fmtPercent, getLanguage, t as tr, upper } from './i18n';
 import { contrast } from './palette';
@@ -194,6 +194,20 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
 }) {
   const x = useRef(new Animated.Value(1)).current;
   const [mounted, setMounted] = useState(open);
+  // Sola kaydırarak kapatma: parmakla birlikte kayar; yeterince uzun ya da hızlıysa kapanır, değilse geri yaylanır
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (_e, g) => g.dx < -10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderMove: (_e, g) => x.setValue(Math.min(1, Math.max(0, -g.dx / (MENU_W + 24)))),
+      onPanResponderRelease: (_e, g) => {
+        if (g.dx < -70 || g.vx < -0.6) closeRef.current();
+        else Animated.timing(x, { toValue: 0, duration: 160, useNativeDriver: true }).start();
+      },
+      onPanResponderTerminate: () => Animated.timing(x, { toValue: 0, duration: 160, useNativeDriver: true }).start(),
+    }),
+  ).current;
   useEffect(() => {
     if (open) {
       setMounted(true);
@@ -208,7 +222,7 @@ export function SideMenu({ open, onClose, header, sections, pins, current, onSel
       : b.kind === 'warn' ? { bg: t.warnSoft, fg: t.warn, border: t.warnSoft }
       : { bg: t.raised, fg: t.muted, border: t.line };
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View style={StyleSheet.absoluteFill} {...pan.panHandlers}>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim, opacity: x.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={tr('menu.close')} />
       </Animated.View>

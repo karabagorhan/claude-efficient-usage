@@ -22,6 +22,9 @@ raporlar, abonelikler, Excel/yedek, bildirimler, Noir ve Fildişi temalar) ve ta
 - **Renk kartelaları:** Ayarlar → Görünüm'de 8 vurgu rengi (şampanya, zümrüt, safir, ametist, gül, bakır, turkuaz, gümüş) ve 4 zemin tonu
   (klasik, mavi, yeşil, erik). Seçim hem koyu (Noir) hem açık (Fildişi) temada ve "Telefona göre" modunda geçerlidir; ekran anında yeniden boyanır.
   64 tema birleşiminin tamamı WCAG kontrast testinden geçer (yazı ≥ 7:1, vurgu ve özet kartı etiketleri ≥ 4.5:1). Varsayılan görünüm değişmedi.
+- **Kaydırma hareketleri:** Ekranın sol kenarından sağa kaydırınca önceki ekrana dönülür (ana ekranda yan menü açılır); yan menü sola kaydırılarak
+  kapanır (panelden ya da karartılmış alandan); alt sayfalar (harcama/abonelik formu) sol kenardan sağa kaydırılarak kapanır. Parmakla birlikte hareket eder,
+  kısa ya da yanlış yöndeki kaydırma bir şey yapmaz.
 - **Yerelleştirme:** Sayı/ondalık ayracı, para simgesinin yeri (tr/en/zh önde `₺1.250,50`, es/it sonda `1250,50 €`), yüzde işareti, tarih ve
   saat gösterimi seçilen dile göredir; Node'un `Intl` (CLDR) çıktısıyla karşılaştırılarak test edilir.
 
@@ -63,6 +66,7 @@ npx expo export --platform web --output-dir /tmp/web-out
 node scripts/ui-test.js <tr|en|es|it|zh>            # tüm ekranlar, taşma/kesilme, dil geçişi
 node scripts/currency-ui-test.js <tr|en|es|it|zh>   # kur, ana para birimi, veri bütünlüğü, çevrimdışı
 npx tsx scripts/theme-ui-test.ts <tr|en|es|it|zh>   # renk kartelaları: mod × ton × vurgu, kalıcılık
+node scripts/gesture-ui-test.js <tr|en|es|it|zh>    # kaydırma hareketleri (gerçek dokunma olaylarıyla)
 ```
 
 Testlerdeki kur değerleri yalnızca test verisidir; canlı API çağrısı testlerde taklit edilir.

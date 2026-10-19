@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fmtMoney, fmtStamp, needsRates, setMainCurrency, viewData, fromViewSettings } from './src/currency';
 import { BackupFormatError, exportBackup, exportExcel, pickBackup } from './src/files';
@@ -23,7 +23,19 @@ import { FONTS, Theme, useTheme } from './src/theme';
 import { useRates } from './src/useRates';
 import { Amount, Bars, Button, CatIcon, SubTypeIcon, subTypeColor, DailyChart, InsightList, Ionicons, Label, MenuSection, Pill, Progress, SideMenu } from './src/ui';
 
+/** Web: tarayıcının kenardan "geri git" kaydırması uygulamanın kendi geri hareketiyle çakışmasın. */
+function useWebOverscroll() {
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const el = document.createElement('style');
+    el.textContent = 'html,body{overscroll-behavior-x:none;overscroll-behavior-y:none}';
+    document.head.appendChild(el);
+    return () => { document.head.removeChild(el); };
+  }, []);
+}
+
 export default function App() {
+  useWebOverscroll();
   // Yazı tipi yüklenemezse sistem yazı tipiyle devam edilir
   const [fontsLoaded, fontError] = useFonts({ PlayfairDisplay_600SemiBold, PlayfairDisplay_700Bold });
   if (!fontsLoaded && !fontError) return null;
@@ -33,6 +45,10 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+/** Geri hareketi: ekranın sol kenarındaki bu genişlikte (px) başlayıp bu kadar (px) ya da hızlıca sağa kaydırılırsa tetiklenir. */
+const EDGE = 24;
+const SWIPE_DIST = 70;
 
 type Screen = 'ozet' | 'harcamalar' | 'raporlar' | 'abonelikler' | 'butce' | 'ayarlar';
 type ExpenseSheetState = { key: number; initial: Expense | null; prefill?: { amount?: number; cat?: string } } | null;
@@ -90,6 +106,7 @@ function Main() {
   const t = useTheme(data?.settings.theme, data?.settings.tint, data?.settings.accent);
   const st = useMemo(() => makeStyles(t), [t]);
   const [screen, setScreen] = useState<Screen>('ozet');
+  const [history, setHistory] = useState<Screen[]>([]); // geri gitmek için önceki ekranlar
   const [budgetFocusKey, setBudgetFocusKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [ym, setYm] = useState(todayIso().slice(0, 7));
@@ -117,6 +134,49 @@ function Main() {
   };
   const openAdd = () => setExpSheet({ key: Date.now(), initial: null });
 
+  /* ---------- Kaydırma hareketleri ----------
+   * Ekranın sol kenarından sağa kaydırma = geri (önceki ekran; ana ekranda yan menüyü açar).
+   * Yan menü ve alt sayfalar da kaydırarak kapanır (yan menü: sola; alt sayfa: sol kenardan sağa). */
+  const slide = useRef(new Animated.Value(0)).current;
+  const nav = useRef({ screen, history, blocked: false });
+  nav.current = { screen, history, blocked: menuOpen || !!expSheet || !!subSheet };
+  const swipeBack = () => {
+    const { screen: cur, history: hist } = nav.current;
+    if (hist.length) {
+      setScreen(hist[hist.length - 1]);
+      setHistory(hist.slice(0, -1));
+    } else if (cur !== 'ozet') setScreen('ozet');
+    else setMenuOpen(true);
+    setBudgetFocusKey(0);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+    buzz('light');
+  };
+  const swipeBackRef = useRef(swipeBack);
+  swipeBackRef.current = swipeBack;
+  // PanResponder'ın x0/dx değerleri hareket yakalanınca sıfırlanır; bu yüzden dokunuşun başladığı yeri kendimiz tutarız
+  const touchX = useRef({ start: 0, last: 0 });
+  const edgePan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponderCapture: (e) => {
+        touchX.current = { start: e.nativeEvent.pageX, last: e.nativeEvent.pageX };
+        return false;
+      },
+      onMoveShouldSetPanResponderCapture: (e, g) => {
+        const dx = e.nativeEvent.pageX - touchX.current.start;
+        return !nav.current.blocked && touchX.current.start <= EDGE && dx > 12 && dx > Math.abs(g.dy) * 1.5;
+      },
+      onPanResponderMove: (e) => {
+        touchX.current.last = e.nativeEvent.pageX;
+        slide.setValue(Math.max(0, Math.min(touchX.current.last - touchX.current.start, 160)) * 0.35);
+      },
+      onPanResponderRelease: (_e, g) => {
+        Animated.spring(slide, { toValue: 0, bounciness: 0, useNativeDriver: true }).start();
+        if (touchX.current.last - touchX.current.start > SWIPE_DIST || g.vx > 0.6) swipeBackRef.current();
+      },
+      onPanResponderTerminate: () => Animated.spring(slide, { toValue: 0, bounciness: 0, useNativeDriver: true }).start(),
+    }),
+  ).current;
+
   // Açılış bağlantısına ve sonradan gelen her bağlantıya göre formu ya da bütçe alanını aç
   useEffect(() => {
     const handle = (u: string | null) => {
@@ -135,12 +195,14 @@ function Main() {
         setMenuOpen(false);
         setExpSheet(null);
         setSubSheet(null);
+        setHistory([]);
         setScreen('butce');
         setBudgetFocusKey(Date.now());
       } else if (mode === 'ayarlar') {
         setMenuOpen(false);
         setExpSheet(null);
         setSubSheet(null);
+        setHistory([]);
         setScreen('ayarlar');
       }
     };
@@ -183,6 +245,7 @@ function Main() {
       setTimeout(openAdd, 200);
       return;
     }
+    if (key !== screen) setHistory((h) => [...h.slice(-19), screen]);
     setScreen(key as Screen);
     setBudgetFocusKey(0); // menüden Ayarlar'a girince klavye kendiliğinden açılmasın
     scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -562,6 +625,7 @@ function Main() {
     <LanguageProvider value={lang}>
     <View style={st.root}>
       <StatusBar style={t.statusBar} />
+      <Animated.View style={{ flex: 1, transform: [{ translateX: slide }] }} {...edgePan.panHandlers}>
       <View style={[st.topBar, { paddingTop: insets.top + 6 }]}>
         <Pressable onPress={() => setMenuOpen(true)} style={st.menuBtn} hitSlop={8} accessibilityLabel={tr('menu.open')} accessibilityRole="button">
           <Ionicons name="menu" size={24} color={t.fg} />
@@ -578,6 +642,7 @@ function Main() {
           <Button label={tr('fab.add')} kind="primary" onPress={openAdd} t={t} style={st.fab} />
         </View>
       ) : null}
+      </Animated.View>
 
       {toastMsg ? (
         <View pointerEvents={toastAction ? 'auto' : 'none'} style={[st.toast, { bottom: insets.bottom + (showFab ? 82 : 24) }]}>

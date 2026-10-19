@@ -1,5 +1,5 @@
-import { ReactNode, useState } from 'react';
-import { InputAccessoryView, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ReactNode, useRef, useState } from 'react';
+import { InputAccessoryView, Keyboard, PanResponder, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { CURRENCIES, Cur, OLD_MS, Rates, convert, currencyName, fmtMoney, fmtStamp, money, symbolOf, toMain } from './currency';
 import { LANGS, Lang, fmtTime, t as tr } from './i18n';
 import { CATS, Expense, SUB_TYPES, Settings, Sub, addDays, amountText, catIndex, catName, dayLabel, guessSubType, monthName, monthShortName, parseAmount, subLabel, subType, todayIso, uid } from './lib';
@@ -16,9 +16,27 @@ type SheetAction = { label: string; onPress: () => void; disabled?: boolean };
 function Sheet({ visible, title, onClose, action, accessoryId, children, t }: {
   visible: boolean; title: string; onClose: () => void; action?: SheetAction; accessoryId?: string; children: ReactNode; t: Theme;
 }) {
+  // Sol kenardan sağa kaydırma = geri (sayfayı kapatır); aşağı kaydırarak kapatma iOS'in kendi hareketidir
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const touchX = useRef({ start: 0, last: 0 });
+  const edge = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponderCapture: (e) => {
+        touchX.current = { start: e.nativeEvent.pageX, last: e.nativeEvent.pageX };
+        return false;
+      },
+      onMoveShouldSetPanResponderCapture: (e, g) => {
+        const dx = e.nativeEvent.pageX - touchX.current.start;
+        return touchX.current.start <= 24 && dx > 12 && dx > Math.abs(g.dy) * 1.5;
+      },
+      onPanResponderMove: (e) => { touchX.current.last = e.nativeEvent.pageX; },
+      onPanResponderRelease: (_e, g) => { if (touchX.current.last - touchX.current.start > 70 || g.vx > 0.6) closeRef.current(); },
+    }),
+  ).current;
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.surface }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.surface }} {...edge.panHandlers}>
         <View style={st.topRow}>
           <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button">
             <Text style={{ color: t.muted, fontSize: 17 }}>{tr('common.cancel')}</Text>
