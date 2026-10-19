@@ -102,7 +102,12 @@ let displayCurrency: Currency = 'TRY';
 export const setDisplayCurrency = (c: Currency) => { displayCurrency = c; };
 export const getDisplayCurrency = () => displayCurrency;
 export function fmtMoney(n: number, c: Currency = displayCurrency, decimals = 2) {
-  return `${n < 0 ? '−' : ''}${c === 'TRY' ? '₺' : '
+  const symbol = c === 'TRY' ? '₺' : String.fromCharCode(36);
+  return (n < 0 ? '−' : '') + symbol + fmtNumber(Math.abs(n), decimals);
+}
+export function fmtTL(n: number, decimals = 2) {
+  return fmtMoney(n, displayCurrency, decimals);
+}
 export const fmtTL0 = (n: number) => fmtTL(n, 0);
 export const compact = fmtCompact;
 /** "1.250,50", "1,250.50", "125.5", "₺ 40" gibi girdileri sayıya çevirir; geçersizse 0. */
