@@ -116,7 +116,7 @@ export const parseAmount = parseAmountI18n;
 export const amountText = decimalText;
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-export const sum = (arr: { amount: number }[]) => arr.reduce((s, x) => s + x.amount, 0);
+export const sum = (arr: { amount: number }[]) => arr.reduce((cents, x) => cents + Math.round(x.amount * 100), 0) / 100;
 
 /* ---------- Ay analizi ---------- */
 export type Analysis = {
