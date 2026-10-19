@@ -42,7 +42,8 @@
     "test:ui": "node scripts/ui-test.js",
     "test:currency": "npx -y tsx scripts/currency-test.ts",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && npm run check:i18n && npm run test:core && npm run test:currency"
+    "test:theme": "npx -y tsx scripts/theme-test.ts",
+    "test": "npm run typecheck && npm run check:i18n && npm run test:core && npm run test:currency && npm run test:theme"
   },
   "private": true
 }

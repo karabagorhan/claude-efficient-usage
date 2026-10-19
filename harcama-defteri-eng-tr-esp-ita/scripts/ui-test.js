@@ -15,7 +15,7 @@ const shotsIdx = process.argv.indexOf('--shots');
 const shots = shotsIdx > 0 ? process.argv[shotsIdx + 1] : null;
 const WEB_DIR = process.env.WEB_DIR || '/tmp/web-out';
 const PORT = 8800 + Math.floor(Math.random() * 100);
-const NATIVE = { tr: 'Türkçe', en: 'English', es: 'Español', it: 'Italiano' };
+const NATIVE = { tr: 'Türkçe', en: 'English', es: 'Español', it: 'Italiano', zh: '简体中文' };
 
 const mime = { '.html': 'text/html', '.js': 'application/javascript', '.json': 'application/json', '.css': 'text/css', '.ttf': 'font/ttf', '.png': 'image/png', '.ico': 'image/x-icon' };
 const server = http.createServer((req, res) => {
@@ -61,7 +61,7 @@ const KEY_LEAK = /\b(?:app|common|sheet|fab|title|fmt|date|month|monthShort|week
   const errors = [], warnings = [], pageErrors = [];
   // Kur sağlayıcısı taklidi (TEST yanıtı): ağ erişimi olmayan ortamlarda da sonuç değişmesin. Gerçek API çağrısı yapılmaz.
   await page.route('**/api.frankfurter.dev/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
-    body: JSON.stringify({ amount: 1, base: 'USD', date: '2026-10-16', rates: { EUR: 0.9, GBP: 0.8, TRY: 40 } }) }));
+    body: JSON.stringify({ amount: 1, base: 'USD', date: '2026-10-16', rates: { EUR: 0.9, GBP: 0.8, TRY: 40, CNY: 7 } }) }));
   page.on('pageerror', (er) => pageErrors.push(er.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource/.test(m.text())) pageErrors.push(m.text()); });
   let pass = 0;

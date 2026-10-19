@@ -308,6 +308,7 @@ const tr: Catalog = {
   'currency.USD': 'ABD Doları',
   'currency.EUR': 'Euro',
   'currency.GBP': 'İngiliz Sterlini',
+  'currency.CNY': 'Çin Yuanı',
   'settings.currency': 'Para birimi',
   'settings.currencyHint': 'Tüm tutarlar bu birimde gösterilir. Kayıtlar girildikleri birimde saklanır, kur değişince bozulmaz.',
   'rates.title': 'Döviz kurları',
@@ -327,6 +328,23 @@ const tr: Catalog = {
   'fmt.dateTime': '{day} {month} {year} {time}',
   'fmt.dateFull': '{day} {month} {year}',
   'xl.ratesNote': 'Tutarlar {cur} cinsindendir; kurlar {time} tarihinde güncellendi.',
+
+  // Renk kartelaları
+  'settings.accent': 'Vurgu rengi',
+  'settings.tint': 'Zemin tonu',
+  'settings.colorsHint': 'Seçtiğin renkler hem koyu (Noir) hem açık (Fildişi) temada geçerlidir.',
+  'accent.gold': 'Şampanya',
+  'accent.emerald': 'Zümrüt',
+  'accent.sapphire': 'Safir',
+  'accent.amethyst': 'Ametist',
+  'accent.rose': 'Gül',
+  'accent.copper': 'Bakır',
+  'accent.teal': 'Turkuaz',
+  'accent.silver': 'Gümüş',
+  'tint.classic': 'Klasik',
+  'tint.blue': 'Mavi',
+  'tint.green': 'Yeşil',
+  'tint.plum': 'Erik',
 };
 
 export default tr;

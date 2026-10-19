@@ -321,6 +321,7 @@ const es: Catalog = {
   'currency.USD': 'Dólar estadounidense',
   'currency.EUR': 'Euro',
   'currency.GBP': 'Libra esterlina',
+  'currency.CNY': 'Yuan chino',
   'settings.currency': 'Moneda',
   'settings.currencyHint': 'Todos los importes se muestran en esta moneda. Los registros se guardan en la moneda en que se introdujeron, así que los cambios de cotización no los alteran.',
   'rates.title': 'Tipos de cambio',
@@ -340,6 +341,23 @@ const es: Catalog = {
   'fmt.dateTime': '{day} {month} {year}, {time}',
   'fmt.dateFull': '{day} {month} {year}',
   'xl.ratesNote': 'Importes en {cur}; cotizaciones actualizadas el {time}.',
+
+  // Renk kartelaları
+  'settings.accent': 'Color de acento',
+  'settings.tint': 'Tono de fondo',
+  'settings.colorsHint': 'Tu elección se aplica tanto al tema oscuro (Noir) como al claro (Marfil).',
+  'accent.gold': 'Champán',
+  'accent.emerald': 'Esmeralda',
+  'accent.sapphire': 'Zafiro',
+  'accent.amethyst': 'Amatista',
+  'accent.rose': 'Rosa',
+  'accent.copper': 'Cobre',
+  'accent.teal': 'Turquesa',
+  'accent.silver': 'Plata',
+  'tint.classic': 'Clásico',
+  'tint.blue': 'Azul',
+  'tint.green': 'Verde',
+  'tint.plum': 'Ciruela',
 };
 
 export default es;

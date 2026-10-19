@@ -3,6 +3,7 @@ import en from './en';
 import es from './es';
 import it from './it';
 import tr from './tr';
+import zh from './zh';
 
 /**
  * Çoklu dil altyapısı.
@@ -14,7 +15,7 @@ import tr from './tr';
  * - Seçili dil `Settings.language` içinde kalıcı saklanır; <LanguageProvider> değiştiğinde ağaç yeniden çizilir.
  */
 
-export type Lang = 'tr' | 'en' | 'es' | 'it';
+export type Lang = 'tr' | 'en' | 'es' | 'it' | 'zh';
 export type PluralForms = { zero?: string; one?: string; two?: string; few?: string; many?: string; other: string };
 export type Entry = string | PluralForms;
 export type Catalog = Record<string, Entry>;
@@ -44,9 +45,11 @@ export const LANGS: LangInfo[] = [
   { code: 'en', native: 'English', locale: 'en-US', group: ',', decimal: '.', minGroup: 4, symbolAfter: false, hour12: true, plural: (n) => (n === 1 ? 'one' : 'other'), compact: [{ min: 1e6, div: 1e6, suffix: 'M' }, { min: 1e3, div: 1e3, suffix: 'K' }] },
   { code: 'es', native: 'Español', locale: 'es-ES', group: '.', decimal: ',', minGroup: 5, symbolAfter: true, hour12: false, plural: (n) => (n === 1 ? 'one' : 'other'), compact: [{ min: 1e6, div: 1e6, suffix: ' M' }, { min: 1e3, div: 1e3, suffix: ' mil' }] },
   { code: 'it', native: 'Italiano', locale: 'it-IT', group: '.', decimal: ',', minGroup: 5, symbolAfter: true, hour12: false, plural: (n) => (n === 1 ? 'one' : 'other'), compact: [{ min: 1e6, div: 1e6, suffix: ' Mln' }, { min: 1e3, div: 1e3, suffix: 'K' }] },
+  // Çince: 4 haneli gruplama (万 = 10 bin, 亿 = 100 milyon) yerine CLDR'nin virgüllü biçimi; kısaltmalarda 万/亿
+  { code: 'zh', native: '简体中文', locale: 'zh-CN', group: ',', decimal: '.', minGroup: 4, symbolAfter: false, hour12: false, plural: () => 'other', compact: [{ min: 1e8, div: 1e8, suffix: '亿' }, { min: 1e4, div: 1e4, suffix: '万' }] },
 ];
 
-export const CATALOGS: Record<Lang, Catalog> = { tr, en, es, it };
+export const CATALOGS: Record<Lang, Catalog> = { tr, en, es, it, zh };
 export const isLang = (v: unknown): v is Lang => typeof v === 'string' && LANGS.some((l) => l.code === v);
 
 let current: Lang = 'tr';
@@ -115,7 +118,7 @@ export const fmtPercent = (n: number | string) => t('fmt.percent', { n });
  * `lang` verilirse seçili dil yerine o dilin kuralları kullanılır (ör. kestirme bağlantıları her zaman 'tr').
  */
 export function parseAmount(input: string, lang: Lang = current): number {
-  const s = String(input).trim().replace(/[\s  ']/g, '').replace(/[₺$€£]/g, '');
+  const s = String(input).trim().replace(/[\s  ']/g, '').replace(/[₺$€£¥￥]/g, '');
   if (!/^[\d.,]+$/.test(s)) return 0;
   const li = langInfo(lang);
   const lastDot = s.lastIndexOf('.');

@@ -320,6 +320,7 @@ const en: Catalog = {
   'currency.USD': 'US Dollar',
   'currency.EUR': 'Euro',
   'currency.GBP': 'British Pound',
+  'currency.CNY': 'Chinese Yuan',
   'settings.currency': 'Currency',
   'settings.currencyHint': 'All amounts are shown in this currency. Entries are stored in the currency they were entered in, so rate changes never alter them.',
   'rates.title': 'Exchange rates',
@@ -339,6 +340,23 @@ const en: Catalog = {
   'fmt.dateTime': '{month} {day}, {year}, {time}',
   'fmt.dateFull': '{month} {day}, {year}',
   'xl.ratesNote': 'Amounts are in {cur}; rates updated {time}.',
+
+  // Renk kartelaları
+  'settings.accent': 'Accent color',
+  'settings.tint': 'Background tone',
+  'settings.colorsHint': 'Your choices apply to both the dark (Noir) and light (Ivory) themes.',
+  'accent.gold': 'Champagne',
+  'accent.emerald': 'Emerald',
+  'accent.sapphire': 'Sapphire',
+  'accent.amethyst': 'Amethyst',
+  'accent.rose': 'Rose',
+  'accent.copper': 'Copper',
+  'accent.teal': 'Teal',
+  'accent.silver': 'Silver',
+  'tint.classic': 'Classic',
+  'tint.blue': 'Blue',
+  'tint.green': 'Green',
+  'tint.plum': 'Plum',
 };
 
 export default en;

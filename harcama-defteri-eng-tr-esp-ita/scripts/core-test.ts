@@ -95,6 +95,15 @@ eq('en çok büyük', parseAmount('12,345,678,901.23'), 12345678901.23);
 eq('en fmt büyük', fmtTL(12345678901.23), '₺12,345,678,901.23');
 eq('en compact M', compact(2500000), '2.5M');
 eq('en compact <1000', compact(999), '999');
+setLanguage('zh');
+eq('zh compact <1万', compact(9999), '9999');
+eq('zh compact 万', compact(25000), '2.5万');
+eq('zh compact 亿', compact(250000000), '2.5亿');
+eq('zh yüzde', fmtPercent(165), '165%');
+eq('zh list.count', t('list.count', { n: 21 }), '21 笔');
+eq('zh tarih biçimi', [shortDay('2026-10-05'), monthLabel('2026-10')], ['10月5日', '2026年10月']);
+eq('zh amountText', amountText(125.5), '125.5');
+setLanguage('en');
 // Kestirme bağlantısı her zaman Türkçe kurallarla okunur (dil İngilizceyken de)
 eq('en dilinde tutar=1.250 → tr kuralı', parseAmount('1.250', 'tr'), 1250);
 eq('en dilinde tutar=125,50 → tr kuralı', parseAmount('125,50', 'tr'), 125.5);
@@ -129,7 +138,7 @@ for (const li of LANGS) {
   truthy(`${li.code} xlsx yazıldı`, buf.byteLength > 1000);
   for (const [k, p] of [['file.excelMonth', { ym: '2026-10' }], ['file.excelAll', { date: '2026-10-18' }], ['file.backup', { date: '2026-10-18' }]] as const) {
     const f = t(k, p);
-    truthy(`${li.code} ${k} dosya adı geçerli (${f})`, /^[A-Za-z0-9._-]+$/.test(f));
+    truthy(`${li.code} ${k} dosya adı geçerli (${f})`, /^[^\\/:*?"<>|\s]+$/.test(f) && f.length < 80);
   }
 }
 

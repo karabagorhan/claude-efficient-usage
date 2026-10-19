@@ -6,12 +6,13 @@
 import { fmtNumber, langInfo, t } from './i18n';
 import type { Expense, Settings, Sub } from './lib';
 
-export type Cur = 'TRY' | 'USD' | 'EUR' | 'GBP';
+export type Cur = 'TRY' | 'USD' | 'EUR' | 'GBP' | 'CNY';
 export const CURRENCIES: { code: Cur; symbol: string }[] = [
   { code: 'TRY', symbol: '₺' },
   { code: 'USD', symbol: '$' },
   { code: 'EUR', symbol: '€' },
   { code: 'GBP', symbol: '£' },
+  { code: 'CNY', symbol: '¥' },
 ];
 export const CUR_CODES = CURRENCIES.map((c) => c.code);
 export const isCur = (v: unknown): v is Cur => typeof v === 'string' && CUR_CODES.includes(v as Cur);
@@ -51,7 +52,7 @@ export function convert(amount: number, from: Cur, to: Cur, r: Rates) {
 export function validateRates(raw: any): Record<Cur, number> | null {
   if (!raw || typeof raw !== 'object') return null;
   const out = { USD: 1 } as Record<Cur, number>;
-  const range: Record<Cur, [number, number]> = { USD: [1, 1], EUR: [0.3, 3], GBP: [0.3, 3], TRY: [0.5, 5000] };
+  const range: Record<Cur, [number, number]> = { USD: [1, 1], EUR: [0.3, 3], GBP: [0.3, 3], TRY: [0.5, 5000], CNY: [1, 30] };
   for (const c of CUR_CODES) {
     if (c === 'USD') continue;
     const v = raw[c];
@@ -75,7 +76,7 @@ type Provider = { name: string; url: string; parse: (j: any) => { rates: unknown
 export const PROVIDERS: Provider[] = [
   {
     name: 'Frankfurter (ECB)',
-    url: 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR,GBP',
+    url: 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR,GBP,CNY',
     parse: (j) => (j && j.base === 'USD' && j.rates ? { rates: j.rates, asOf: String(j.date ?? '') } : null),
   },
   {

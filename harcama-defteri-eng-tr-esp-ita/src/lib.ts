@@ -1,6 +1,7 @@
 // Veri tipleri, tarih/para yardımcıları ve analiz hesapları.
 // Web sürümüyle (harcama-defteri.html) aynı veri biçimini kullanır; yedekler iki yönde de taşınabilir.
 import { Cur, money, money0 } from './currency';
+import type { Accent, Tint } from './palette';
 import { Lang, decimalText, fmtCompact, has, lower, parseAmount as parseAmountI18n, t } from './i18n';
 
 export type Expense = {
@@ -37,6 +38,8 @@ export type Settings = {
   subRemind: boolean;
   catBudgets: Record<string, number>; // kategori başına aylık limit (0 / yok = limitsiz)
   theme: 'noir' | 'ivory' | 'system';
+  accent: Accent; // vurgu rengi (renk kartelası)
+  tint: Tint; // zemin tonu
   name: string; // menüdeki profil satırında görünen ad
   language: Lang; // arayüz dili
   currency: Cur; // ana para birimi: tüm ekranlar bu birimde gösterir (dilden bağımsız)
@@ -228,7 +231,7 @@ export type Insight = { kind: 'warn' | 'good' | 'info'; text: string };
 
 /** Seçili ay için kısa, otomatik yorumlar. En önemlisi başta. */
 /** "Geçen aya göre en çok değişen kategori" yorumu için en az fark (ana para biriminde; ≈ 100 ₺). */
-export const MIN_CHANGE: Record<Cur, number> = { TRY: 100, USD: 3, EUR: 3, GBP: 3 };
+export const MIN_CHANGE: Record<Cur, number> = { TRY: 100, USD: 3, EUR: 3, GBP: 3, CNY: 20 };
 
 export function insights(items: Expense[], ym: string, settings: Settings): Insight[] {
   const a = analyse(items, ym);

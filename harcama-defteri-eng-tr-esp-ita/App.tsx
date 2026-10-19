@@ -57,13 +57,15 @@ function initials(name: string) {
  * Kestirme bağlantıları aynı uygulamayı açar; ne gösterileceğine açılış bağlantısına bakılarak karar verilir:
  *   ...&channel-name=ekle  → Yeni harcama formu
  *   ...&channel-name=butce → Ayarlar'daki bütçe alanı (klavye açık)
+ *   ...&channel-name=ayarlar → Ayarlar ekranı (dil, para birimi, kurlar, renkler)
  *   ...&channel-name=main  → normal açılış (Özet)
  * Uygulama arka plandan döndüğünde hiçbir şey kendiliğinden açılmaz.
  */
-function launchMode(u: string | null | undefined): 'ekle' | 'butce' | null {
+function launchMode(u: string | null | undefined): 'ekle' | 'butce' | 'ayarlar' | null {
   if (!u) return null;
   if (/[?&]channel-name=ekle\b/.test(u) || /\/--\/ekle\b/.test(u)) return 'ekle';
   if (/[?&]channel-name=butce\b/.test(u) || /\/--\/butce\b/.test(u)) return 'butce';
+  if (/[?&]channel-name=ayarlar\b/.test(u) || /\/--\/ayarlar\b/.test(u)) return 'ayarlar';
   return null;
 }
 
@@ -85,7 +87,7 @@ function Main() {
   setMainCurrency(main);
   // Saklanan kayıtlar girildikleri para biriminde kalır; ekranlar için güncel kurla ana birime çevrilmiş görünüm üretilir.
   const view = useMemo(() => (data ? viewData(data, main, rs.rates) : null), [data, main, rs.rates]);
-  const t = useTheme(data?.settings.theme);
+  const t = useTheme(data?.settings.theme, data?.settings.tint, data?.settings.accent);
   const st = useMemo(() => makeStyles(t), [t]);
   const [screen, setScreen] = useState<Screen>('ozet');
   const [budgetFocusKey, setBudgetFocusKey] = useState(0);
@@ -135,6 +137,11 @@ function Main() {
         setSubSheet(null);
         setScreen('butce');
         setBudgetFocusKey(Date.now());
+      } else if (mode === 'ayarlar') {
+        setMenuOpen(false);
+        setExpSheet(null);
+        setSubSheet(null);
+        setScreen('ayarlar');
       }
     };
     Linking.getInitialURL()

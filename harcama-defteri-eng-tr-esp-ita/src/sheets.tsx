@@ -3,8 +3,9 @@ import { InputAccessoryView, Keyboard, KeyboardAvoidingView, Modal, Platform, Pr
 import { CURRENCIES, Cur, OLD_MS, Rates, convert, currencyName, fmtMoney, fmtStamp, money, symbolOf, toMain } from './currency';
 import { LANGS, Lang, fmtTime, t as tr } from './i18n';
 import { CATS, Expense, SUB_TYPES, Settings, Sub, addDays, amountText, catIndex, catName, dayLabel, guessSubType, monthName, monthShortName, parseAmount, subLabel, subType, todayIso, uid } from './lib';
+import { ACCENTS, ACCENT_COLORS, TINTS, TINT_COLORS } from './palette';
 import { FONTS, Theme } from './theme';
-import { Button, CatIcon, Chip, IconName, Label, catIconName, subTypeColor } from './ui';
+import { Button, CatIcon, Chip, IconName, Label, Swatch, catIconName, subTypeColor } from './ui';
 
 type SheetAction = { label: string; onPress: () => void; disabled?: boolean };
 
@@ -390,6 +391,24 @@ export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestor
           <Chip label={tr('settings.themeSystem')} icon="phone-portrait-outline" active={settings.theme === 'system'} onPress={() => onChange({ ...settings, theme: 'system' })} t={t} />
         </View>
       </Field>
+      <Field label={tr('settings.accent')} t={t}>
+        <View style={st.swatches}>
+          {ACCENTS.map((a) => (
+            <Swatch key={a} fill={ACCENT_COLORS[a][t.name]} line={t.line} selected={settings.accent === a} label={tr('accent.' + a)}
+              onPress={() => onChange({ ...settings, accent: a })} t={t} />
+          ))}
+        </View>
+        <Text style={{ color: t.muted, fontSize: 13 }}>{tr('accent.' + settings.accent)}</Text>
+      </Field>
+      <Field label={tr('settings.tint')} t={t}>
+        <View style={st.swatches}>
+          {TINTS.map((k) => (
+            <Swatch key={k} fill={TINT_COLORS[k][t.name].bg} inner={TINT_COLORS[k][t.name].surface} line={t.goldLine} selected={settings.tint === k} label={tr('tint.' + k)}
+              onPress={() => onChange({ ...settings, tint: k })} t={t} />
+          ))}
+        </View>
+        <Text style={{ color: t.muted, fontSize: 13, lineHeight: 18 }}>{tr('tint.' + settings.tint)} · {tr('settings.colorsHint')}</Text>
+      </Field>
 
       <View style={{ gap: 0 }}>
         <Label t={t}>{tr('settings.notifications')}</Label>
@@ -506,6 +525,7 @@ const st = StyleSheet.create({
   input: { height: 48, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, fontSize: 17 },
   big: { height: 64, fontSize: 32, fontWeight: '700' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 4 },
   stepper: { height: 48, borderWidth: 1, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 6 },
   stepBtn: { width: 40, alignItems: 'center' },

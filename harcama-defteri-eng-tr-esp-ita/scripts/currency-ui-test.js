@@ -15,8 +15,8 @@ const path = require('path');
 const lang = process.argv[2] || 'en';
 const WEB_DIR = process.env.WEB_DIR || '/tmp/web-out';
 const PORT = 8900 + Math.floor(Math.random() * 100);
-const NATIVE = { tr: 'Türkçe', en: 'English', es: 'Español', it: 'Italiano' };
-const LOCALE = { tr: 'tr-TR', en: 'en-US', es: 'es-ES', it: 'it-IT' }[lang];
+const NATIVE = { tr: 'Türkçe', en: 'English', es: 'Español', it: 'Italiano', zh: '简体中文' };
+const LOCALE = { tr: 'tr-TR', en: 'en-US', es: 'es-ES', it: 'it-IT', zh: 'zh-CN' }[lang];
 const mime = { '.html': 'text/html', '.js': 'application/javascript', '.json': 'application/json', '.css': 'text/css', '.ttf': 'font/ttf', '.png': 'image/png', '.ico': 'image/x-icon' };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
@@ -41,7 +41,7 @@ const pad = (n) => String(n).padStart(2, '0');
 const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const today = iso(new Date());
 const ymNow = today.slice(0, 7);
-const RATES = { amount: 1, base: 'USD', date: '2026-10-16', rates: { EUR: 0.9, GBP: 0.8, TRY: 40 } };
+const RATES = { amount: 1, base: 'USD', date: '2026-10-16', rates: { EUR: 0.9, GBP: 0.8, TRY: 40, CNY: 7 } };
 
 const settings = (extra = {}) => ({ budget: 10000, remind: false, remindHour: 21, subRemind: false, catBudgets: { Market: 3000 }, theme: 'noir', name: 'Test User', language: lang, ...extra });
 const baseData = (extra = {}) => ({
@@ -103,7 +103,7 @@ const baseData = (extra = {}) => ({
     t = await s.text();
     ok('[1] ayarlarda kurlar: 1 USD = ' + money(40, 'TRY', 4), t.includes(money(40, 'TRY', 4)));
     ok('[1] ayarlarda kaynak ve kur tarihi', t.includes('Frankfurter (ECB)') && /16/.test(t));
-    ok('[1] ayarlarda 4 para birimi', ['₺ TRY', '$ USD', '€ EUR', '£ GBP'].every((c) => t.includes(c)));
+    ok('[1] ayarlarda 5 para birimi', ['₺ TRY', '$ USD', '€ EUR', '£ GBP', '¥ CNY'].every((c) => t.includes(c)));
 
     // EUR'a geç
     await s.chip('€ EUR').click(); await page.waitForTimeout(700);
@@ -133,11 +133,16 @@ const baseData = (extra = {}) => ({
     await s.goTo(0); t = await s.text();
     ok('[1] GBP: bugün ' + money(88, 'GBP'), t.includes(money(88, 'GBP')));
     await s.goTo(6);
+    await s.chip('¥ CNY').click(); await page.waitForTimeout(500);
+    await s.goTo(0); t = await s.text();
+    ok('[1] CNY: bugün ' + money(770, 'CNY'), t.includes(money(770, 'CNY')), t.slice(0, 300));
+    ok('[1] CNY: bütçe ' + money(1750, 'CNY', 0), t.includes(money(1750, 'CNY', 0)));
+    await s.goTo(6);
     await s.chip('₺ TRY').click(); await page.waitForTimeout(500);
     await s.goTo(0); t = await s.text();
     ok('[1] TRY\'ye dönünce ' + money(4400, 'TRY') + ' ve bütçe ' + money(10000, 'TRY', 0), t.includes(money(4400, 'TRY')) && t.includes(money(10000, 'TRY', 0)));
     st = await s.stored();
-    ok('[1] 4 değişiklik sonrası saklanan veri birebir aynı', JSON.stringify(st.items.map((x) => [x.amount, x.cur ?? null])) === JSON.stringify([[400, null], [100, 'USD']]) && st.settings.budget === 10000 && st.settings.budgetCur === 'TRY' && st.settings.catBudgets.Market === 3000);
+    ok('[1] 5 değişiklik sonrası saklanan veri birebir aynı', JSON.stringify(st.items.map((x) => [x.amount, x.cur ?? null])) === JSON.stringify([[400, null], [100, 'USD']]) && st.settings.budget === 10000 && st.settings.budgetCur === 'TRY' && st.settings.catBudgets.Market === 3000);
 
     // Dil ile para birimi bağımsız: EUR seçiliyken dili değiştir, para birimi aynı kalmalı
     await s.goTo(6);
@@ -162,7 +167,7 @@ const baseData = (extra = {}) => ({
     await page.locator('input').first().fill(lang === 'en' ? '10' : '10');
     await page.waitForTimeout(400);
     let t = await s.text();
-    ok('[2] form: tutar etiketi $ simgeli', t.includes('($)'), t.slice(0, 200));
+    ok('[2] form: tutar etiketi $ simgeli', t.toLocaleUpperCase(LOCALE).includes(cat('common.amountField').replace('{sym}', '$').toLocaleUpperCase(LOCALE)), t.slice(0, 200));
     ok('[2] form: dönüşüm ipucu ≈ ' + money(400, 'TRY') + ' ve kur', t.includes('≈ ' + money(400, 'TRY')) && t.includes('1 USD = ' + money(40, 'TRY', 4)), t.slice(0, 400));
     await page.getByText(cat('common.save'), { exact: true }).last().click(); await page.waitForTimeout(800);
     const st = await s.stored();
@@ -197,7 +202,7 @@ const baseData = (extra = {}) => ({
 
   /* ---------- 4. Eski kayıtlı kurlarla çevrimdışı ---------- */
   {
-    const old = { rates: { USD: 1, EUR: 0.9, GBP: 0.8, TRY: 40 }, fetchedAt: Date.now() - 3 * 864e5, asOf: '2026-10-13', provider: 'Frankfurter (ECB)' };
+    const old = { rates: { USD: 1, EUR: 0.9, GBP: 0.8, TRY: 40, CNY: 7 }, fetchedAt: Date.now() - 3 * 864e5, asOf: '2026-10-13', provider: 'Frankfurter (ECB)' };
     const s = await open('çevrimdışı', { data: baseData({ currency: 'EUR' }), rates: false, ratesCache: old });
     const { page } = s;
     let t = await s.text();

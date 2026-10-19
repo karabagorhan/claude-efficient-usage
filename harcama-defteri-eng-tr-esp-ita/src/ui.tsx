@@ -3,7 +3,8 @@ import { ComponentProps, useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
-import { fmtPercent, t as tr, upper } from './i18n';
+import { fmtPercent, getLanguage, t as tr, upper } from './i18n';
+import { contrast } from './palette';
 import { Analysis, Insight, catIndex, catName, compact, pad, subLabel, subType, subTypeIndex } from './lib';
 import { FONTS, Theme } from './theme';
 
@@ -14,6 +15,7 @@ export function Chip({ label, active, color, icon, onPress, t, disabled }: { lab
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ selected: active, disabled }}
+      aria-selected={active}
       style={({ pressed }) => [
         s.chip,
         { backgroundColor: active ? t.accent : t.bg, borderColor: active ? t.accent : t.line, opacity: disabled ? 0.4 : pressed ? 0.7 : 1 },
@@ -21,6 +23,24 @@ export function Chip({ label, active, color, icon, onPress, t, disabled }: { lab
     >
       {icon ? <Ionicons name={icon} size={16} color={active ? t.accentFg : color ?? t.fg} /> : color ? <View style={[s.chipDot, { backgroundColor: color }]} /> : null}
       <Text style={{ color: active ? t.accentFg : t.fg, fontSize: 15 }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/**
+ * Renk kartelası: yuvarlak renk örneği; seçiliyken dış halka ve onay işareti. `inner` verilirse iç daire (zemin tonlarında yüzey rengi).
+ */
+export function Swatch({ fill, inner, line, selected, label, onPress, t }: {
+  fill: string; inner?: string; line: string; selected: boolean; label: string; onPress: () => void; t: Theme;
+}) {
+  const mark = contrast(inner ?? fill, '#ffffff') > contrast(inner ?? fill, '#0b0b0d') ? '#ffffff' : '#0b0b0d';
+  return (
+    <Pressable onPress={onPress} hitSlop={4} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected }} aria-selected={selected}
+      style={({ pressed }) => ({ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: selected ? t.fg : 'transparent', opacity: pressed ? 0.7 : 1 })}>
+      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: fill, borderWidth: 1, borderColor: line, alignItems: 'center', justifyContent: 'center' }}>
+        {inner ? <View style={{ position: 'absolute', width: 20, height: 20, borderRadius: 10, backgroundColor: inner, borderWidth: StyleSheet.hairlineWidth, borderColor: line }} /> : null}
+        {selected ? <Ionicons name="checkmark" size={inner ? 14 : 20} color={mark} /> : null}
+      </View>
     </Pressable>
   );
 }
@@ -58,7 +78,8 @@ export function Button({ label, onPress, kind = 'primary', t, style, disabled }:
 }
 
 export function Label({ children, t, color }: { children: string; t: Theme; color?: string }) {
-  return <Text style={[s.label, { color: color ?? t.muted }]}>{upper(children)}</Text>;
+  // Harf aralığı Latin yazısı içindir; Çince karakterlerde aralık kapatılır
+  return <Text style={[s.label, getLanguage() === 'zh' && { letterSpacing: 0 }, { color: color ?? t.muted }]}>{upper(children)}</Text>;
 }
 
 /** Seçili ayın günlük harcama çubukları; ortalama ve günlük bütçe kesikli çizgi. */
@@ -128,13 +149,13 @@ export function DailyChart({ a, ym, budget, selected, onSelect, t }: {
 }
 
 /**
- * Tutar metni: rakamlar serif yazı tipinde, para simgesi (₺ $ € £; yazı tipinde ₺ bulunmadığı için) sistem yazı tipinde
+ * Tutar metni: rakamlar serif yazı tipinde, para simgesi (₺ $ € £ ¥; yazı tipinde ₺ bulunmadığı için) sistem yazı tipinde
  * ve daha küçük yazılır. Simge sayının önünde (₺1.250) ya da sonunda (1250 €) olabilir.
  */
 export function Amount({ text, style, symbolColor }: { text: string; style: StyleProp<TextStyle>; symbolColor?: string }) {
   const flat = StyleSheet.flatten(style) || {};
   const size = (flat.fontSize ?? 16) * 0.6;
-  const parts = text.split(/([₺$€£])/);
+  const parts = text.split(/([₺$€£¥])/);
   return (
     <Text style={[style, { fontVariant: ['lining-nums'] }]}>
       {parts.map((p, i) =>
@@ -147,7 +168,7 @@ export function Amount({ text, style, symbolColor }: { text: string; style: Styl
     </Text>
   );
 }
-const SYMBOL_SET = ['₺', '$', '€', '£'];
+const SYMBOL_SET = ['₺', '$', '€', '£', '¥'];
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 export { Ionicons };

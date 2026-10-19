@@ -63,20 +63,28 @@ eq('es 1.250', parseAmount('1.250'), 1250);
 eq('es 1250,5', parseAmount('1250,5'), 1250.5);
 eq('es 12,5', parseAmount('12,5'), 12.5);
 eq('es 1,250.50 (karışık)', parseAmount('1,250.50'), 1250.5);
+setLanguage('zh');
+eq('zh 1,250.50', parseAmount('1,250.50'), 1250.5);
+eq('zh ¥ 99.9', parseAmount('¥ 99.9'), 99.9);
+eq('zh ￥1,000', parseAmount('￥1,000'), 1000);
+eq('zh 12.5', parseAmount('12.5'), 12.5);
 setLanguage('it');
 eq('it 1.250,50 €', parseAmount('1.250,50 €'), 1250.5);
 eq('it € 99,9', parseAmount('€ 99,9'), 99.9);
 eq('it £10', parseAmount('£10'), 10);
 eq('it $ 5.5', parseAmount('$ 5.5'), 5.5);
 
-/* ===== 3. Dönüşüm hesapları (TEST kurları: 1 USD = 0.9 EUR = 0.8 GBP = 40 TRY) ===== */
-const R: Rates = { rates: { USD: 1, EUR: 0.9, GBP: 0.8, TRY: 40 }, fetchedAt: Date.UTC(2026, 9, 18, 11, 32), asOf: '2026-10-18', provider: 'test' };
+/* ===== 3. Dönüşüm hesapları (TEST kurları: 1 USD = 0.9 EUR = 0.8 GBP = 40 TRY = 7 CNY) ===== */
+const R: Rates = { rates: { USD: 1, EUR: 0.9, GBP: 0.8, TRY: 40, CNY: 7 }, fetchedAt: Date.UTC(2026, 9, 18, 11, 32), asOf: '2026-10-18', provider: 'test' };
 for (const c of CURRENCIES) near(`${c.code}→${c.code} aynı`, convert(123.45, c.code, c.code, R), 123.45);
 near('USD→TRY', convert(100, 'USD', 'TRY', R), 4000);
 near('TRY→USD', convert(4000, 'TRY', 'USD', R), 100);
 near('EUR→TRY', convert(90, 'EUR', 'TRY', R), 4000);
 near('GBP→EUR', convert(80, 'GBP', 'EUR', R), 90);
 near('TRY→GBP', convert(4000, 'TRY', 'GBP', R), 80);
+near('USD→CNY', convert(100, 'USD', 'CNY', R), 700);
+near('CNY→TRY', convert(700, 'CNY', 'TRY', R), 4000);
+near('EUR→CNY', convert(90, 'EUR', 'CNY', R), 700);
 for (const a of CURRENCIES) for (const b of CURRENCIES) {
   near(`gidiş-dönüş ${a.code}→${b.code}→${a.code}`, convert(convert(777.77, a.code, b.code, R), b.code, a.code, R), 777.77, 1e-9);
   for (const c of CURRENCIES) near(`üçgen ${a.code}→${b.code}→${c.code}`, convert(convert(500, a.code, b.code, R), b.code, c.code, R), convert(500, a.code, c.code, R), 1e-9);
@@ -87,13 +95,15 @@ eq('toMain kur yok', toMain(10, 'EUR', 'TRY', null), null);
 eq('toMain', toMain(90, 'EUR', 'TRY', R), 4000);
 
 /* ===== 4. Kur doğrulama ve çekme ===== */
-eq('validateRates geçerli', validateRates({ TRY: 40, EUR: 0.9, GBP: 0.8 }), { USD: 1, TRY: 40, EUR: 0.9, GBP: 0.8 });
-eq('validateRates eksik TRY', validateRates({ EUR: 0.9, GBP: 0.8 }), null);
-eq('validateRates sıfır', validateRates({ TRY: 0, EUR: 0.9, GBP: 0.8 }), null);
-eq('validateRates negatif', validateRates({ TRY: -4, EUR: 0.9, GBP: 0.8 }), null);
-eq('validateRates metin', validateRates({ TRY: '40', EUR: 0.9, GBP: 0.8 }), null);
-eq('validateRates NaN', validateRates({ TRY: NaN, EUR: 0.9, GBP: 0.8 }), null);
-eq('validateRates akıl dışı EUR', validateRates({ TRY: 40, EUR: 90, GBP: 0.8 }), null);
+eq('validateRates geçerli', sorted(validateRates({ TRY: 40, EUR: 0.9, GBP: 0.8, CNY: 7 })), sorted({ USD: 1, TRY: 40, EUR: 0.9, GBP: 0.8, CNY: 7 }));
+eq('validateRates CNY eksik (eski kayıt)', validateRates({ TRY: 40, EUR: 0.9, GBP: 0.8 }), null);
+eq('validateRates akıl dışı CNY', validateRates({ TRY: 40, EUR: 0.9, GBP: 0.8, CNY: 700 }), null);
+eq('validateRates eksik TRY', validateRates({ EUR: 0.9, GBP: 0.8, CNY: 7 }), null);
+eq('validateRates sıfır', validateRates({ TRY: 0, EUR: 0.9, GBP: 0.8, CNY: 7 }), null);
+eq('validateRates negatif', validateRates({ TRY: -4, EUR: 0.9, GBP: 0.8, CNY: 7 }), null);
+eq('validateRates metin', validateRates({ TRY: '40', EUR: 0.9, GBP: 0.8, CNY: 7 }), null);
+eq('validateRates NaN', validateRates({ TRY: NaN, EUR: 0.9, GBP: 0.8, CNY: 7 }), null);
+eq('validateRates akıl dışı EUR', validateRates({ TRY: 40, EUR: 90, GBP: 0.8, CNY: 7 }), null);
 eq('validateRates null', validateRates(null), null);
 eq('normalizeRates bozuk', normalizeRates({ rates: { TRY: 'x' } }), null);
 eq('normalizeRates yok', normalizeRates(undefined), null);
@@ -103,19 +113,19 @@ truthy('taze kur eski değil', !isStale(R, R.fetchedAt + 3600e3));
 truthy('6 saatten eski → yenilenir', isStale(R, R.fetchedAt + 7 * 3600e3));
 
 const ok = (body: unknown) => async () => ({ ok: true, status: 200, json: async () => body });
-const frankfurter = { amount: 1, base: 'USD', date: '2026-10-16', rates: { EUR: 0.9, GBP: 0.8, TRY: 40 } }; // api.frankfurter.dev/v1/latest biçimi
-const erApi = { result: 'success', time_last_update_unix: 1792281600, rates: { USD: 1, EUR: 0.91, GBP: 0.81, TRY: 41, JPY: 150 } }; // open.er-api.com/v6/latest/USD biçimi
+const frankfurter = { amount: 1, base: 'USD', date: '2026-10-16', rates: { CNY: 7, EUR: 0.9, GBP: 0.8, TRY: 40 } }; // api.frankfurter.dev/v1/latest biçimi
+const erApi = { result: 'success', time_last_update_unix: 1792281600, rates: { USD: 1, EUR: 0.91, GBP: 0.81, TRY: 41, CNY: 7.1, JPY: 150 } }; // open.er-api.com/v6/latest/USD biçimi
 const NOW = 1_800_000_000_000;
 (async () => {
   const seen: string[] = [];
   let r = await fetchRates(async (u) => { seen.push(u); return ok(frankfurter)(); }, NOW);
   eq('frankfurter ilk sağlayıcı', [seen.length, r.provider, r.asOf, r.fetchedAt, r.rates.TRY], [1, 'Frankfurter (ECB)', '2026-10-16', NOW, 40]);
-  truthy('ilk istek doğru adrese', seen[0].startsWith('https://api.frankfurter.dev/v1/latest?base=USD') && /TRY/.test(seen[0]));
+  truthy('ilk istek doğru adrese', seen[0].startsWith('https://api.frankfurter.dev/v1/latest?base=USD') && /TRY/.test(seen[0]) && /CNY/.test(seen[0]));
   r = await fetchRates(async (u) => (u.includes('frankfurter') ? Promise.reject(new Error('ağ yok')) : ok(erApi)()), NOW);
   eq('ilki ağ hatası → ikinci sağlayıcı', [r.provider, r.rates.TRY, r.rates.EUR, r.asOf], ['ExchangeRate-API', 41, 0.91, new Date(1792281600 * 1000).toISOString().slice(0, 10)]);
   r = await fetchRates(async (u) => (u.includes('frankfurter') ? { ok: false, status: 500, json: async () => ({}) } : ok(erApi)()), NOW);
   eq('ilki HTTP 500 → ikinci sağlayıcı', r.provider, 'ExchangeRate-API');
-  r = await fetchRates(async (u) => (u.includes('frankfurter') ? ok({ ...frankfurter, rates: { EUR: 0.9, GBP: 0.8 } })() : ok(erApi)()), NOW);
+  r = await fetchRates(async (u) => (u.includes('frankfurter') ? ok({ ...frankfurter, rates: { EUR: 0.9, GBP: 0.8, CNY: 7 } })() : ok(erApi)()), NOW);
   eq('ilki eksik veri → ikinci sağlayıcı', r.provider, 'ExchangeRate-API');
   r = await fetchRates(async (u) => (u.includes('frankfurter') ? new Promise(() => {}) : ok(erApi)()), NOW, 50);
   eq('ilki zaman aşımı → ikinci sağlayıcı', r.provider, 'ExchangeRate-API');
@@ -148,6 +158,7 @@ const NOW = 1_800_000_000_000;
   // EUR görünümü
   v = viewData(stored, 'EUR', R);
   eq('EUR görünümü', v.items.map((x) => x.amount), [9, 90, 90, 90, 0.28]);
+  eq('CNY görünümü', viewData(stored, 'CNY', R).items.map((x) => x.amount), [70, 700, 700, 700, 2.16]);
   eq('EUR bütçe', v.settings.budget, 225);
   truthy('EUR görünümünde tüm kayıtların birimi EUR', v.items.every((x) => x.cur === 'EUR') && v.settings.currency === 'EUR');
   // Saklanan veri değişmedi
@@ -204,10 +215,18 @@ const NOW = 1_800_000_000_000;
   eq('eski veri: diğer ayarlar korunur', [n.settings.budget, n.settings.theme, n.settings.name, n.settings.language, n.settings.remindHour, n.settings.catBudgets], [9000, 'ivory', 'Orhan', 'en', 20, { Market: 2500 }]);
   const lv = viewData(n, 'TRY', null);
   eq('eski veri ₺ görünümünde kur olmadan birebir', [lv.items.map((x) => x.amount), lv.subs[0].amount, lv.settings.budget, lv.settings.catBudgets], [[125.5, 40], 189.99, 9000, { Market: 2500 }]);
-  eq('eski veri her dilde kayıpsız', ['tr', 'en', 'es', 'it'].map((l) => normalize({ ...legacy, settings: { ...legacy.settings, language: l } }).settings.language), ['tr', 'en', 'es', 'it']);
+  eq('eski veri her dilde kayıpsız', ['tr', 'en', 'es', 'it', 'zh'].map((l) => normalize({ ...legacy, settings: { ...legacy.settings, language: l } }).settings.language), ['tr', 'en', 'es', 'it', 'zh']);
   const bad = normalize({ items: [{ id: 'z', amount: 5, cat: 'Market', date: '2026-10-01', cur: 'XXX' }, { id: 'y', amount: 6, cat: 'Market', date: '2026-10-01', cur: 'EUR' }], settings: { currency: 'JPY', budgetCur: 'BTC', language: 'de' } });
   eq('geçersiz para birimleri TRY\'ye düşer', [bad.items.map((x) => x.cur ?? null), bad.settings.currency, bad.settings.budgetCur, bad.settings.language], [[null, 'EUR'], 'TRY', 'TRY', 'tr']);
+  // Renk tercihleri: eski veride yok → varsayılan; geçersiz değer → varsayılan; geçerli değer korunur
+  eq('eski veri: renk varsayılanı', [n.settings.accent, n.settings.tint], ['gold', 'classic']);
+  const colors = normalize({ settings: { accent: 'teal', tint: 'plum' } }).settings;
+  eq('renk tercihi saklanır', [colors.accent, colors.tint], ['teal', 'plum']);
+  const badColors = normalize({ settings: { accent: 'neon', tint: 7 } }).settings;
+  eq('geçersiz renk varsayılana düşer', [badColors.accent, badColors.tint], ['gold', 'classic']);
+  eq('birleştirme renk tercihini ezmez', merge({ ...cur0b(), settings: { ...cur0b().settings, accent: 'rose', tint: 'blue' } }, n).data.settings.accent, 'rose');
   // Yeni sürümün kaydı yazıp geri okunca aynı
+  function cur0b(): Data { return { items: [], subs: [], settings: { ...defaultSettings } }; }
   const once = normalize(JSON.parse(JSON.stringify(stored)));
   eq('yaz-oku: kayıtlar, abonelik tutarları, ayarlar aynen', [sorted(once.items), once.subs.map((x) => [x.amount, x.cur ?? null]), sorted(once.settings)], [sorted(stored.items), [[400, null], [9.99, 'USD']], sorted(stored.settings)]);
   eq('yaz-oku: ikinci tur değişmez', sorted(normalize(JSON.parse(JSON.stringify(once)))), sorted(once));
@@ -223,12 +242,12 @@ const NOW = 1_800_000_000_000;
 
   /* ===== 7. Yorum eşikleri, bildirim ve Excel biçimi ===== */
   eq('yorum eşikleri her birim için tanımlı', CURRENCIES.every((c) => MIN_CHANGE[c.code] > 0), true);
-  for (const l of ['tr', 'en', 'es', 'it'] as Lang[]) {
+  for (const l of ['tr', 'en', 'es', 'it', 'zh'] as Lang[]) {
     setLanguage(l);
     const body = t('notif.subBody', { amount: fmtMoney(9.99, 'USD') });
     truthy(`${l} bildirim metni tutarı içerir`, body.includes(fmtMoney(9.99, 'USD')) && !/\{\w+\}/.test(body));
   }
-  eq('Excel biçimi', CURRENCIES.map((c) => excelMoneyFormat(c.code)), ['#,##0.00 "₺"', '#,##0.00 "$"', '#,##0.00 "€"', '#,##0.00 "£"']);
+  eq('Excel biçimi', CURRENCIES.map((c) => excelMoneyFormat(c.code)), ['#,##0.00 "₺"', '#,##0.00 "$"', '#,##0.00 "€"', '#,##0.00 "£"', '#,##0.00 "¥"']);
   // Yorum eşiği: 10 birimlik artış ₺ ana biriminde (eşik 100) yorum üretmez, € ana biriminde (eşik 3) üretir
   setLanguage('en');
   const mk = (cur: Cur): Settings => ({ ...defaultSettings, currency: cur, budgetCur: cur });
