@@ -12,11 +12,11 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackupFormatError, exportBackup, exportExcel, pickBackup } from './src/files';
 import { LanguageProvider, fmtPercent, lower, setLanguage, t as tr, upper } from './src/i18n';
-import { FxRate, fetchCurrentRate, readCachedRate } from './src/fx';
+import { Currency, FxRate, convert, fetchCurrentRate, readCachedRate } from './src/fx';
 import { projectData } from './src/view';
 import {
   Analysis, Expense, SUB_TYPES, Settings, Sub, addMonths, analyse, catIndex, catName, categoryCompare, dayLabel, fmtTL, fmtTL0, frequentEntries,
-  insights, iso, monthLabel, monthName, monthOnly, monthlyCost, parseAmount, setDisplayCurrency, shortDay, subLabel, subStatus, sum, todayIso, uid, weekdayAverages,
+  insights, iso, monthLabel, monthName, monthOnly, monthlyCost, fmtMoney, parseAmount, setDisplayCurrency, shortDay, subLabel, subStatus, sum, todayIso, uid, weekdayAverages,
 } from './src/lib';
 import { ensurePermission, reschedule } from './src/notify';
 import { BudgetPanel, ExpenseSheet, SettingsPanel, SubSheet } from './src/sheets';
@@ -40,6 +40,13 @@ type ExpenseSheetState = { key: number; initial: Expense | null; prefill?: { amo
 type SubSheetState = { key: number; initial: Sub | null } | null;
 
 const screenTitle = (screen: Screen) => tr('title.' + screen);
+
+/** Equivalent in the other currency at the shown reference rate, never stored as a transaction. */
+function equivalent(amount: number, currency: Currency, fx: FxRate | null): string | null {
+  const other: Currency = currency === 'TRY' ? 'USD' : 'TRY';
+  const converted = convert(amount, currency, other, fx);
+  return converted === null ? null : fmtMoney(converted, other);
+}
 
 /** Son kaydın üzerinden geçen süre: "az önce", "12 dk önce", "3 sa önce", "2 gün önce". */
 function agoText(ts: number) {
@@ -221,10 +228,11 @@ function Main() {
     setExpSheet(null);
     setYm(e.date.slice(0, 7));
     buzz('success');
-    toast(isNew ? tr('toast.added', { amount: fmtTL(e.amount), cat: catName(e.cat) }) : tr('toast.updated'));
+    const displayAmount = convert(e.amount, e.currency ?? 'TRY', settings.currency, fx);
+    toast(isNew ? tr('toast.added', { amount: displayAmount === null ? fmtMoney(e.amount, e.currency ?? 'TRY') : fmtTL(displayAmount), cat: catName(e.cat) }) : tr('toast.updated'));
   };
   const deleteExpense = (id: string) => {
-    const removed = items.find((x) => x.id === id);
+    const removed = storedData.items.find((x) => x.id === id);
     update((d) => ({ ...d, items: d.items.filter((x) => x.id !== id) }));
     setExpSheet(null);
     buzz('warn');
@@ -329,12 +337,15 @@ function Main() {
         <Text style={st.itemCat} numberOfLines={1}>{x.note || catName(x.cat)}</Text>
         <Text style={st.meta} numberOfLines={1}>{[x.note ? catName(x.cat) : '', showDate ? dayLabel(x.date) : '', x.sub ? tr('expense.subscriptionTag') : ''].filter(Boolean).join(' · ') || catName(x.cat)}</Text>
       </View>
-      <Text style={st.itemAmt}>{fmtTL(x.amount)}</Text>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={st.itemAmt}>{fmtTL(x.amount)}</Text>
+        {equivalent(x.amount, settings.currency, fx) ? <Text style={[st.meta, { fontSize: 11 }]}>≈{equivalent(x.amount, settings.currency, fx)}</Text> : null}
+      </View>
       <Ionicons name="chevron-forward" size={16} color={t.muted} />
     </Pressable>
   );
 
-  const ctx: Ctx = { t, st, a, ym, items, subs, monthItems, budget, settings };
+  const ctx: Ctx = { t, st, a, ym, items, subs, monthItems, budget, settings, fx };
   const notes = insights(items, ym, settings);
 
   let body: ReactNode = null;
@@ -395,7 +406,10 @@ function Main() {
         {q ? null : monthSwitcher}
         <View style={st.summaryRow}>
           <Text style={st.meta}>{q ? tr('search.results', { n: shown.length }) : tr('list.count', { n: shown.length })}</Text>
-          <Amount text={fmtTL(sum(shown))} style={st.summaryVal} symbolColor={t.gold} />
+          <View style={{ alignItems: 'flex-end' }}>
+            <Amount text={fmtTL(sum(shown))} style={st.summaryVal} symbolColor={t.gold} />
+            {equivalent(sum(shown), settings.currency, fx) ? <Text style={st.meta}>≈{equivalent(sum(shown), settings.currency, fx)}</Text> : null}
+          </View>
         </View>
         {cats.length > 1 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -507,7 +521,7 @@ function Main() {
               </View>
               <View style={[st.card, { paddingVertical: 6 }]}>
                 {g.list.map(({ s }, i) => (
-                  <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: s })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
+                  <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: storedData.subs.find((original) => original.id === s.id) ?? null })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
                 ))}
               </View>
             </View>
@@ -642,11 +656,11 @@ function Main() {
 
 /* ---------- Ekran parçaları ---------- */
 type Styles = ReturnType<typeof makeStyles>;
-type Ctx = { t: Theme; st: Styles; a: Analysis; ym: string; items: Expense[]; subs: Sub[]; monthItems: Expense[]; budget: number; settings: Settings };
+type Ctx = { t: Theme; st: Styles; a: Analysis; ym: string; items: Expense[]; subs: Sub[]; monthItems: Expense[]; budget: number; settings: Settings; fx: FxRate | null };
 
 /** Özet kartı: koyu metal kart görünümü, şampanya altını ayrıntılar. */
 function Hero({ ctx, onBudget }: { ctx: Ctx; onBudget: () => void }) {
-  const { t, st, a, ym, items, budget } = ctx;
+  const { t, st, a, ym, items, budget, settings, fx } = ctx;
   const left = budget - a.total;
   return (
     <LinearGradient colors={t.heroGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.hero}>
@@ -663,6 +677,7 @@ function Hero({ ctx, onBudget }: { ctx: Ctx; onBudget: () => void }) {
         <View>
           <Text style={st.heroLabel}>{a.isCur ? tr('hero.thisMonth') : tr('hero.monthTotal')}</Text>
           <Amount text={fmtTL(a.total)} style={st.heroMid} symbolColor={t.heroLabel} />
+          {equivalent(a.total, settings.currency, fx) ? <Text style={st.heroSmall}>≈{equivalent(a.total, settings.currency, fx)}</Text> : null}
         </View>
         <Pressable onPress={onBudget} hitSlop={8} style={st.heroBudget}>
           <Text style={st.heroBudgetTxt}>{budget ? tr('hero.budget', { amount: fmtTL0(budget) }) : tr('hero.setBudget')}</Text>
