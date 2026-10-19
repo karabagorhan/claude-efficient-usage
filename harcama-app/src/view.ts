@@ -1,5 +1,6 @@
-import { convert, Currency, FxRate } from './fx';
-import { Data } from './store';
+import { convert } from './fx-math';
+import type { Currency, FxRate } from './fx-math';
+import type { Data } from './store';
 
 export function projectData(data: Data, target: Currency, fx: FxRate | null): Data | null {
   const items = [];
