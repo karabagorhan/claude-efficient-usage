@@ -126,19 +126,19 @@ export function DailyChart({ a, ym, budget, selected, onSelect, t }: {
   );
 }
 
-/**
- * Tutar metni: rakamlar serif yazı tipinde, ₺ işareti (yazı tipinde bulunmadığı için) sistem yazı tipinde
- * ve daha küçük yazılır.
- */
+/** Display TRY and USD symbols using the system font. */
 export function Amount({ text, style, symbolColor }: { text: string; style: StyleProp<TextStyle>; symbolColor?: string }) {
   const flat = StyleSheet.flatten(style) || {};
   const size = (flat.fontSize ?? 16) * 0.6;
-  const parts = text.split(/([₺$])/g);
+  const usd = String.fromCharCode(36);
+  const parts = text.split(/([₺\x24])/g);
   return (
     <Text style={[style, { fontVariant: ['lining-nums'] }]}>
       {parts.map((p, i) => (
         <Text key={i}>
-          {p === '₺' || p === '
+          {p === '₺' || p === usd
+            ? <Text style={{ fontFamily: 'System', fontSize: size, fontWeight: '400', color: symbolColor ?? flat.color, letterSpacing: 0 }}>{p}</Text>
+            : p}
         </Text>
       ))}
     </Text>
