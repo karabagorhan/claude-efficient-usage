@@ -32,6 +32,17 @@
       "expo-font"
     ],
     "scheme": "harcama",
-    "owner": "karabagorhans-team"
+    "owner": "karabagorhans-team",
+    "extra": {
+      "eas": {
+        "projectId": "065165d8-42b7-447e-9960-e8263cf7d992"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/065165d8-42b7-447e-9960-e8263cf7d992"
+    }
   }
 }

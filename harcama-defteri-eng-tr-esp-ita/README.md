@@ -33,13 +33,18 @@ Eski kayıtlar para birimi taşımadığı için TRY sayılır. Aynı cihazda ay
 ## Bağımsız çalıştırma
 
 `app.json` bu proje için ayrıdır (slug `harcama-defteri-eng-tr-esp-ita`, paket kimliği `com.karabag.harcamadefteri.global`);
-eski projenin EAS kimliği ve güncelleme adresi kaldırıldı, böylece eski uygulamanın güncellemeleri etkilenmez.
+eski projenin EAS kimliği kullanılmaz, böylece eski uygulamanın güncellemeleri etkilenmez.
+
+Bu proje için ayrı bir EAS projesi oluşturuldu (`karabagorhans-team/harcama-defteri-eng-tr-esp-ita`) ve `main` dalına yayınlandı.
+Expo Go'da açmak için (iPhone'da Safari'ye ya da Notlar'a yapıştırıp dokun):
+
+`exp://u.expo.dev/065165d8-42b7-447e-9960-e8263cf7d992?runtime-version=1.0.0&channel-name=main`
+
+Yeniden yayınlamak: `npx eas-cli@latest update --branch main --environment production --message "..."`.
 
 ```bash
 npm install
 npx expo start            # Expo Go
-npx eas-cli@latest init   # (isteğe bağlı) bu proje için yeni EAS kimliği
-npx eas-cli@latest update:configure && npx eas-cli@latest update --branch main
 ```
 
 Kestirme bağlantıları (`harcama://ekle?tutar=125,50&kategori=market`) aynen çalışır; tutar her zaman Türkçe kurallarla okunur ve ana para
