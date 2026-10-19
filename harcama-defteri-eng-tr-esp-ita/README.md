@@ -51,6 +51,12 @@ Diğer açılış bağlantıları: `…&channel-name=ekle` (yeni harcama formu),
 
 Yeniden yayınlamak: `npx eas-cli@latest update --branch main --environment production --message "..."`.
 
+**v2.1 demo projesi (`karabagorhans-team/harcama-defteri-v21`):** Aynı kod bu projeye de yayınlanır. Kopyada `app.json` içinde
+`slug` → `harcama-defteri-v21`, `version` → `2.1.0` (runtime 2.1.0), `name` → `Harcama Defteri v2.1`,
+`projectId` ve `updates.url` → `5819feb7-cc4b-4513-ba3e-bd904459c04d` yapılıp `main`, `ekle`, `butce`, `ayarlar` kanallarına
+`eas update --channel <kanal>` ile yayınlanır. Kalıcı bağlantılar (her yayında aynı kalır):
+`exp://u.expo.dev/5819feb7-cc4b-4513-ba3e-bd904459c04d?runtime-version=2.1.0&channel-name=main` (`…=ekle`, `…=butce`, `…=ayarlar`).
+
 ```bash
 npm install
 npx expo start            # Expo Go
