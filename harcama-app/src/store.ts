@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 import { isLang } from './i18n';
+import { isCurrency } from './fx';
 import { CATS, Expense, SUB_TYPES, Settings, Sub, guessSubType } from './lib';
 
 // Tüm veriler telefonda tek bir kayıt olarak tutulur (internet gerekmez).
@@ -8,8 +9,15 @@ const KEY = 'harcama-defteri:v1';
 
 export type Data = { items: Expense[]; subs: Sub[]; settings: Settings };
 
-export const defaultSettings: Settings = { budget: 0, remind: false, remindHour: 21, subRemind: true, catBudgets: {}, theme: 'noir', name: 'Orhan Karabağ', language: 'tr' };
+export const defaultSettings: Settings = { budget: 0, remind: false, remindHour: 21, subRemind: true, catBudgets: {}, theme: 'noir', name: '', language: 'tr', currency: 'TRY', budgetCurrency: 'TRY' };
 const empty: Data = { items: [], subs: [], settings: defaultSettings };
+
+const validMoney = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0 && v < 1e12;
+function validDate(v: unknown) {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(v + 'T00:00:00Z');
+  return Number.isFinite(d.getTime()) && d.toISOString().slice(0, 10) === v;
+}
 
 function num(v: unknown, d = 0) {
   return typeof v === 'number' && isFinite(v) ? v : d;
@@ -21,10 +29,11 @@ function str(v: unknown, d = '') {
 /** Dışarıdan gelen (yedek dosyası, eski kayıt) veriyi güvenli biçime getirir. */
 export function normalize(raw: any): Data {
   const items: Expense[] = (Array.isArray(raw?.items) ? raw.items : [])
-    .filter((x: any) => x && typeof x.amount === 'number' && /^\d{4}-\d{2}-\d{2}$/.test(str(x.date)))
+    .filter((x: any) => x && validMoney(x.amount) && validDate(x.date))
     .map((x: any) => ({
       id: str(x.id) || Math.random().toString(36).slice(2),
       amount: x.amount,
+      currency: isCurrency(x.currency) ? x.currency : 'TRY',
       cat: CATS.includes(x.cat) ? x.cat : 'Diğer',
       note: str(x.note),
       date: x.date,
@@ -32,11 +41,12 @@ export function normalize(raw: any): Data {
       ...(x.sub ? { sub: str(x.sub), period: str(x.period) } : {}),
     }));
   const subs: Sub[] = (Array.isArray(raw?.subs) ? raw.subs : [])
-    .filter((s: any) => s && typeof s.amount === 'number' && str(s.name))
+    .filter((s: any) => s && validMoney(s.amount) && str(s.name))
     .map((s: any) => ({
       id: str(s.id) || 'sub_' + Math.random().toString(36).slice(2),
       name: s.name,
       amount: s.amount,
+      currency: isCurrency(s.currency) ? s.currency : 'TRY',
       day: Math.min(31, Math.max(1, num(s.day, 1))),
       freq: s.freq === 'yearly' ? 'yearly' : 'monthly',
       month: Math.min(12, Math.max(1, num(s.month, 1))),
@@ -46,15 +56,17 @@ export function normalize(raw: any): Data {
     }));
   const st = raw?.settings ?? {};
   const settings: Settings = {
-    budget: num(st.budget ?? raw?.budget),
+    budget: validMoney(st.budget ?? raw?.budget) ? (st.budget ?? raw?.budget) : 0,
     remind: st.remind === true,
     remindHour: Math.min(23, Math.max(0, num(st.remindHour, 21))),
     subRemind: st.subRemind !== false,
     theme: st.theme === 'ivory' || st.theme === 'system' ? st.theme : 'noir',
-    name: typeof st.name === 'string' ? st.name.slice(0, 40) : 'Orhan Karabağ',
+    name: typeof st.name === 'string' ? st.name.slice(0, 40) : '',
     language: isLang(st.language) ? st.language : 'tr',
+    currency: isCurrency(st.currency) ? st.currency : 'TRY',
+    budgetCurrency: isCurrency(st.budgetCurrency) ? st.budgetCurrency : 'TRY',
     catBudgets: Object.fromEntries(
-      CATS.filter((c) => typeof st.catBudgets?.[c] === 'number' && st.catBudgets[c] > 0).map((c) => [c, st.catBudgets[c] as number]),
+      CATS.filter((c) => validMoney(st.catBudgets?.[c])).map((c) => [c, st.catBudgets[c] as number]),
     ),
   };
   return { items, subs, settings };
@@ -70,7 +82,7 @@ export function merge(cur: Data, incoming: Data): { data: Data; added: number } 
     data: {
       items: cur.items.concat(newItems),
       subs: cur.subs.concat(newSubs),
-      settings: { ...cur.settings, budget: cur.settings.budget || incoming.settings.budget, catBudgets: { ...incoming.settings.catBudgets, ...cur.settings.catBudgets } },
+      settings: { ...cur.settings, budget: cur.settings.budget || (incoming.settings.budgetCurrency === cur.settings.budgetCurrency ? incoming.settings.budget : 0), catBudgets: { ...(incoming.settings.budgetCurrency === cur.settings.budgetCurrency ? incoming.settings.catBudgets : {}), ...cur.settings.catBudgets } },
     },
     added: newItems.length + newSubs.length,
   };

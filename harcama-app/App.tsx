@@ -3,6 +3,7 @@ import { PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display/700
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts } from 'expo-font';
 import Constants from 'expo-constants';
+import { AppState } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
@@ -11,9 +12,11 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackupFormatError, exportBackup, exportExcel, pickBackup } from './src/files';
 import { LanguageProvider, fmtPercent, lower, setLanguage, t as tr, upper } from './src/i18n';
+import { Currency, FxRate, convert, fetchCurrentRate, readCachedRate } from './src/fx';
+import { projectData } from './src/view';
 import {
   Analysis, Expense, SUB_TYPES, Settings, Sub, addMonths, analyse, catIndex, catName, categoryCompare, dayLabel, fmtTL, fmtTL0, frequentEntries,
-  insights, iso, monthLabel, monthName, monthOnly, monthlyCost, parseAmount, shortDay, subLabel, subStatus, sum, todayIso, uid, weekdayAverages,
+  insights, iso, monthLabel, monthName, monthOnly, monthlyCost, fmtMoney, parseAmount, setDisplayCurrency, shortDay, subLabel, subStatus, sum, todayIso, uid, weekdayAverages,
 } from './src/lib';
 import { ensurePermission, reschedule } from './src/notify';
 import { BudgetPanel, ExpenseSheet, SettingsPanel, SubSheet } from './src/sheets';
@@ -37,6 +40,13 @@ type ExpenseSheetState = { key: number; initial: Expense | null; prefill?: { amo
 type SubSheetState = { key: number; initial: Sub | null } | null;
 
 const screenTitle = (screen: Screen) => tr('title.' + screen);
+
+/** Equivalent in the other currency at the shown reference rate, never stored as a transaction. */
+function equivalent(amount: number, currency: Currency, fx: FxRate | null): string | null {
+  const other: Currency = currency === 'TRY' ? 'USD' : 'TRY';
+  const converted = convert(amount, currency, other, fx);
+  return converted === null ? null : fmtMoney(converted, other);
+}
 
 /** Son kaydın üzerinden geçen süre: "az önce", "12 dk önce", "3 sa önce", "2 gün önce". */
 function agoText(ts: number) {
@@ -73,11 +83,48 @@ const SLUG: Record<string, string> = {
 
 function Main() {
   const insets = useSafeAreaInsets();
-  const { data, update } = useAppData();
+  const { data: storedData, update } = useAppData();
+  const [fx, setFx] = useState<FxRate | null>(null);
+  const [fxStatus, setFxStatus] = useState<'loading' | 'live' | 'cached' | 'unavailable'>('loading');
+  const fxRef = useRef<FxRate | null>(null);
+  const lastRefresh = useRef(0);
+  const refreshFx = async () => {
+    try {
+      const quote = await fetchCurrentRate();
+      fxRef.current = quote;
+      setFx(quote);
+      setFxStatus('live');
+    } catch {
+      setFxStatus(fxRef.current ? 'cached' : 'unavailable');
+    }
+  };
+  useEffect(() => {
+    let running = true;
+    readCachedRate().then((cached) => {
+      if (!running) return;
+      if (cached) {
+        fxRef.current = cached;
+        setFx(cached);
+        setFxStatus('cached');
+      }
+    }).finally(() => {
+      if (running) { lastRefresh.current = Date.now(); void refreshFx(); }
+    });
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && Date.now() - lastRefresh.current > 60 * 60 * 1000) {
+        lastRefresh.current = Date.now(); void refreshFx();
+      }
+    });
+    return () => { running = false; sub.remove(); };
+  }, []);
+  const data = useMemo(() => storedData
+    ? projectData(storedData, storedData.settings.currency, fx)
+    : null, [storedData, fx]);
+  setDisplayCurrency(storedData?.settings.currency ?? 'TRY');
   // Dil çizim sırasında (alt bileşenlerden önce) ayarlanır; değişince <LanguageProvider> ağacı yeniden çizdirir.
-  const lang = data?.settings.language ?? 'tr';
+  const lang = storedData?.settings.language ?? 'tr';
   setLanguage(lang);
-  const t = useTheme(data?.settings.theme);
+  const t = useTheme(storedData?.settings.theme);
   const st = useMemo(() => makeStyles(t), [t]);
   const [screen, setScreen] = useState<Screen>('ozet');
   const [budgetFocusKey, setBudgetFocusKey] = useState(0);
@@ -143,10 +190,14 @@ function Main() {
     return () => clearTimeout(h);
   }, [data]);
 
+  if (!storedData) {
+    return <View style={[st.root, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator color={t.accent} /></View>;
+  }
   if (!data) {
     return (
-      <View style={[st.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={t.accent} />
+      <View style={[st.root, { justifyContent: 'center', alignItems: 'center', padding: 24, gap: 16 }]}>
+        <Text style={{ color: t.fg, textAlign: 'center' }}>{fxStatus === 'loading' ? tr('settings.fxLoading') : tr('settings.fxMissing')}</Text>
+        <Button label={tr('settings.fxRetry')} onPress={() => { setFxStatus('loading'); void refreshFx(); }} t={t} />
       </View>
     );
   }
@@ -177,10 +228,11 @@ function Main() {
     setExpSheet(null);
     setYm(e.date.slice(0, 7));
     buzz('success');
-    toast(isNew ? tr('toast.added', { amount: fmtTL(e.amount), cat: catName(e.cat) }) : tr('toast.updated'));
+    const displayAmount = convert(e.amount, e.currency ?? 'TRY', settings.currency, fx);
+    toast(isNew ? tr('toast.added', { amount: displayAmount === null ? fmtMoney(e.amount, e.currency ?? 'TRY') : fmtTL(displayAmount), cat: catName(e.cat) }) : tr('toast.updated'));
   };
   const deleteExpense = (id: string) => {
-    const removed = items.find((x) => x.id === id);
+    const removed = storedData.items.find((x) => x.id === id);
     update((d) => ({ ...d, items: d.items.filter((x) => x.id !== id) }));
     setExpSheet(null);
     buzz('warn');
@@ -199,8 +251,9 @@ function Main() {
     setSubSheet(null);
   };
   const paySub = (s: Sub) => {
-    const sst = subStatus(s, items);
-    const e: Expense = { id: uid(), amount: s.amount, cat: s.cat, note: s.name, date: iso(sst.due), ts: Date.now(), sub: s.id, period: sst.period };
+    const source = storedData.subs.find((original) => original.id === s.id) ?? s;
+    const sst = subStatus(source, storedData.items);
+    const e: Expense = { id: uid(), amount: source.amount, currency: source.currency ?? 'TRY', cat: source.cat, note: source.name, date: iso(sst.due), ts: Date.now(), sub: source.id, period: sst.period };
     update((d) => ({ ...d, items: d.items.concat([e]) }));
     buzz('success');
     toast(tr('toast.subAdded', { name: s.name }));
@@ -211,7 +264,18 @@ function Main() {
   };
   const changeSettings = async (next: Settings) => {
     const turnedOn = (next.remind && !settings.remind) || (next.subRemind && !settings.subRemind);
-    update((d) => ({ ...d, settings: next }));
+    const changedAmounts = next.budget !== settings.budget ||
+      JSON.stringify(next.catBudgets) !== JSON.stringify(settings.catBudgets);
+    update((d) => ({
+      ...d,
+      settings: {
+        ...d.settings,
+        ...next,
+        budget: changedAmounts ? next.budget : d.settings.budget,
+        catBudgets: changedAmounts ? next.catBudgets : d.settings.catBudgets,
+        budgetCurrency: changedAmounts ? settings.currency : d.settings.budgetCurrency,
+      },
+    }));
     if (next.budget !== settings.budget) toast(next.budget ? tr('toast.budgetSaved') : tr('toast.budgetRemoved'));
     if (turnedOn && !(await ensurePermission())) {
       toast(tr('toast.noNotifPermission'));
@@ -219,7 +283,7 @@ function Main() {
   };
   const doExport = async (which: string | null) => {
     try {
-      const ok = await exportExcel(items, subs, which);
+      const ok = await exportExcel(items, subs, which, settings.currency);
       if (!ok) toast(which ? tr('toast.exportNoMonth') : tr('toast.exportNoData'));
     } catch {
       toast(tr('toast.excelFail'));
@@ -227,7 +291,7 @@ function Main() {
   };
   const doBackup = async () => {
     try {
-      await exportBackup(data);
+      await exportBackup(storedData);
     } catch {
       toast(tr('toast.backupFail'));
     }
@@ -264,7 +328,7 @@ function Main() {
   const expenseRow = (x: Expense, i: number, showDate = false) => (
     <Pressable
       key={x.id}
-      onPress={() => setExpSheet({ key: Date.now(), initial: x })}
+      onPress={() => setExpSheet({ key: Date.now(), initial: storedData.items.find((original) => original.id === x.id) ?? null })}
       style={({ pressed }) => [st.item, i > 0 && st.topLine, pressed && { backgroundColor: t.bg }]}
       accessibilityLabel={tr('expense.rowA11y', { cat: catName(x.cat), amount: fmtTL(x.amount) })}
     >
@@ -273,12 +337,15 @@ function Main() {
         <Text style={st.itemCat} numberOfLines={1}>{x.note || catName(x.cat)}</Text>
         <Text style={st.meta} numberOfLines={1}>{[x.note ? catName(x.cat) : '', showDate ? dayLabel(x.date) : '', x.sub ? tr('expense.subscriptionTag') : ''].filter(Boolean).join(' · ') || catName(x.cat)}</Text>
       </View>
-      <Text style={st.itemAmt}>{fmtTL(x.amount)}</Text>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={st.itemAmt}>{fmtTL(x.amount)}</Text>
+        {equivalent(x.amount, settings.currency, fx) ? <Text style={[st.meta, { fontSize: 11 }]}>≈{equivalent(x.amount, settings.currency, fx)}</Text> : null}
+      </View>
       <Ionicons name="chevron-forward" size={16} color={t.muted} />
     </Pressable>
   );
 
-  const ctx: Ctx = { t, st, a, ym, items, subs, monthItems, budget, settings };
+  const ctx: Ctx = { t, st, a, ym, items, subs, monthItems, budget, settings, fx };
   const notes = insights(items, ym, settings);
 
   let body: ReactNode = null;
@@ -306,7 +373,7 @@ function Main() {
               <Pressable onPress={() => go('abonelikler')} hitSlop={8}><Text style={st.link}>{tr('common.all')}</Text></Pressable>
             </View>
             {pending.map(({ s }, i) => (
-              <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: s })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
+              <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: storedData.subs.find((original) => original.id === s.id) ?? null })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
             ))}
           </View>
         ) : null}
@@ -339,7 +406,10 @@ function Main() {
         {q ? null : monthSwitcher}
         <View style={st.summaryRow}>
           <Text style={st.meta}>{q ? tr('search.results', { n: shown.length }) : tr('list.count', { n: shown.length })}</Text>
-          <Amount text={fmtTL(sum(shown))} style={st.summaryVal} symbolColor={t.gold} />
+          <View style={{ alignItems: 'flex-end' }}>
+            <Amount text={fmtTL(sum(shown))} style={st.summaryVal} symbolColor={t.gold} />
+            {equivalent(sum(shown), settings.currency, fx) ? <Text style={st.meta}>≈{equivalent(sum(shown), settings.currency, fx)}</Text> : null}
+          </View>
         </View>
         {cats.length > 1 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -451,7 +521,7 @@ function Main() {
               </View>
               <View style={[st.card, { paddingVertical: 6 }]}>
                 {g.list.map(({ s }, i) => (
-                  <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: s })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
+                  <SubRow key={s.id} s={s} ctx={ctx} first={i === 0} onEdit={() => setSubSheet({ key: Date.now(), initial: storedData.subs.find((original) => original.id === s.id) ?? null })} onPay={() => paySub(s)} onSkip={() => skipSub(s)} />
                 ))}
               </View>
             </View>
@@ -481,6 +551,9 @@ function Main() {
           onRestore={doRestore}
           ym={ym}
           monthLabel={monthOnly(ym)}
+          fx={fx}
+          fxStatus={fxStatus}
+          onRefreshFx={() => { setFxStatus('loading'); void refreshFx(); }}
           t={t}
         />
       </View>
@@ -571,10 +644,10 @@ function Main() {
       />
 
       {expSheet ? (
-        <ExpenseSheet key={expSheet.key} visible initial={expSheet.initial} prefill={expSheet.prefill} frequent={frequentEntries(items)} onSave={saveExpense} onDelete={deleteExpense} onClose={() => setExpSheet(null)} t={t} />
+        <ExpenseSheet currency={settings.currency} key={expSheet.key} visible initial={expSheet.initial} prefill={expSheet.prefill} frequent={frequentEntries(items)} onSave={saveExpense} onDelete={deleteExpense} onClose={() => setExpSheet(null)} t={t} />
       ) : null}
       {subSheet ? (
-        <SubSheet key={subSheet.key} visible initial={subSheet.initial} onSave={saveSub} onDelete={deleteSub} onClose={() => setSubSheet(null)} t={t} />
+        <SubSheet currency={settings.currency} key={subSheet.key} visible initial={subSheet.initial} onSave={saveSub} onDelete={deleteSub} onClose={() => setSubSheet(null)} t={t} />
       ) : null}
     </View>
     </LanguageProvider>
@@ -583,11 +656,11 @@ function Main() {
 
 /* ---------- Ekran parçaları ---------- */
 type Styles = ReturnType<typeof makeStyles>;
-type Ctx = { t: Theme; st: Styles; a: Analysis; ym: string; items: Expense[]; subs: Sub[]; monthItems: Expense[]; budget: number; settings: Settings };
+type Ctx = { t: Theme; st: Styles; a: Analysis; ym: string; items: Expense[]; subs: Sub[]; monthItems: Expense[]; budget: number; settings: Settings; fx: FxRate | null };
 
 /** Özet kartı: koyu metal kart görünümü, şampanya altını ayrıntılar. */
 function Hero({ ctx, onBudget }: { ctx: Ctx; onBudget: () => void }) {
-  const { t, st, a, ym, items, budget } = ctx;
+  const { t, st, a, ym, items, budget, settings, fx } = ctx;
   const left = budget - a.total;
   return (
     <LinearGradient colors={t.heroGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.hero}>
@@ -604,6 +677,7 @@ function Hero({ ctx, onBudget }: { ctx: Ctx; onBudget: () => void }) {
         <View>
           <Text style={st.heroLabel}>{a.isCur ? tr('hero.thisMonth') : tr('hero.monthTotal')}</Text>
           <Amount text={fmtTL(a.total)} style={st.heroMid} symbolColor={t.heroLabel} />
+          {equivalent(a.total, settings.currency, fx) ? <Text style={st.heroSmall}>≈{equivalent(a.total, settings.currency, fx)}</Text> : null}
         </View>
         <Pressable onPress={onBudget} hitSlop={8} style={st.heroBudget}>
           <Text style={st.heroBudgetTxt}>{budget ? tr('hero.budget', { amount: fmtTL0(budget) }) : tr('hero.setBudget')}</Text>

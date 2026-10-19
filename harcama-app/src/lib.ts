@@ -1,10 +1,12 @@
 // Veri tipleri, tarih/para yardımcıları ve analiz hesapları.
 // Web sürümüyle (harcama-defteri.html) aynı veri biçimini kullanır; yedekler iki yönde de taşınabilir.
+import type { Currency } from './fx-math';
 import { Lang, decimalText, fmtCompact, fmtNumber, has, lower, parseAmount as parseAmountI18n, t } from './i18n';
 
 export type Expense = {
   id: string;
   amount: number;
+  currency?: Currency;
   cat: string;
   note: string;
   date: string; // YYYY-MM-DD
@@ -17,6 +19,7 @@ export type Sub = {
   id: string;
   name: string;
   amount: number;
+  currency?: Currency;
   day: number;
   freq: 'monthly' | 'yearly';
   month: number; // yıllık aboneliklerde 1-12
@@ -34,6 +37,8 @@ export type Settings = {
   theme: 'noir' | 'ivory' | 'system';
   name: string; // menüdeki profil satırında görünen ad
   language: Lang; // arayüz dili
+  currency: Currency;
+  budgetCurrency?: Currency;
 };
 
 /** Kategori kimlikleri veride bu sabit adlarla saklanır (yedekler uyumlu kalsın); ekranda `catName` ile çevrilir. */
@@ -93,8 +98,15 @@ export function dayLabel(s: string) {
 }
 
 /* ---------- Para ---------- */
+let displayCurrency: Currency = 'TRY';
+export const setDisplayCurrency = (c: Currency) => { displayCurrency = c; };
+export const getDisplayCurrency = () => displayCurrency;
+export function fmtMoney(n: number, c: Currency = displayCurrency, decimals = 2) {
+  const symbol = c === 'TRY' ? '₺' : String.fromCharCode(36);
+  return (n < 0 ? '−' : '') + symbol + fmtNumber(Math.abs(n), decimals);
+}
 export function fmtTL(n: number, decimals = 2) {
-  return `${n < 0 ? '−' : ''}₺${fmtNumber(Math.abs(n), decimals)}`;
+  return fmtMoney(n, displayCurrency, decimals);
 }
 export const fmtTL0 = (n: number) => fmtTL(n, 0);
 export const compact = fmtCompact;
@@ -104,7 +116,7 @@ export const parseAmount = parseAmountI18n;
 export const amountText = decimalText;
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-export const sum = (arr: { amount: number }[]) => arr.reduce((s, x) => s + x.amount, 0);
+export const sum = (arr: { amount: number }[]) => arr.reduce((cents, x) => cents + Math.round(x.amount * 100), 0) / 100;
 
 /* ---------- Ay analizi ---------- */
 export type Analysis = {

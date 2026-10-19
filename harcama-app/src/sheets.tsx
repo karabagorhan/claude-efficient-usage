@@ -1,7 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { InputAccessoryView, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { LANGS, Lang, t as tr } from './i18n';
-import { CATS, Expense, SUB_TYPES, Settings, Sub, addDays, amountText, catIndex, catName, dayLabel, fmtTL, guessSubType, monthName, parseAmount, subLabel, subType, todayIso, uid } from './lib';
+import { LANGS, Lang, fmtNumber, langInfo, t as tr } from './i18n';
+import { Currency, FxRate } from './fx';
+import { CATS, Expense, SUB_TYPES, Settings, Sub, addDays, amountText, catIndex, catName, dayLabel, fmtMoney, fmtTL, guessSubType, monthName, parseAmount, subLabel, subType, todayIso, uid } from './lib';
 import { FONTS, Theme } from './theme';
 import { Button, CatIcon, Chip, IconName, Label, catIconName, subTypeColor } from './ui';
 
@@ -87,16 +88,18 @@ function DeleteButton({ onDelete, t }: { onDelete: () => void; t: Theme }) {
 }
 
 /* ---------- Harcama ekle / düzenle ---------- */
-export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave, onDelete, onClose, t }: {
+export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave, onDelete, onClose, currency, t }: {
   visible: boolean;
   initial: Expense | null;
   prefill?: { amount?: number; cat?: string };
   frequent?: { cat: string; note: string; amount: number }[];
+  currency: Currency;
   onSave: (e: Expense) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
   t: Theme;
 }) {
+  const entryCurrency = initial?.currency ?? currency;
   const [amount, setAmount] = useState(initial ? amountText(initial.amount) : prefill?.amount ? amountText(prefill.amount) : '');
   const [cat, setCat] = useState(initial?.cat ?? prefill?.cat ?? CATS[0]);
   const [note, setNote] = useState(initial?.note ?? '');
@@ -106,7 +109,7 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
 
   const save = () => {
     if (!value) return;
-    const e: Expense = { id: initial?.id ?? uid(), amount: value, cat, note: note.trim(), date, ts: initial?.ts ?? Date.now() };
+    const e: Expense = { id: initial?.id ?? uid(), amount: value, currency: entryCurrency, cat, note: note.trim(), date, ts: initial?.ts ?? Date.now() };
     if (initial?.sub) {
       e.sub = initial.sub;
       e.period = initial.period;
@@ -116,7 +119,7 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
 
   return (
     <Sheet visible={visible} title={initial ? tr('expense.editTitle') : tr('expense.newTitle')} onClose={onClose} t={t}
-      accessoryId="expense-save" action={{ label: value ? tr('expense.saveAmount', { amount: fmtTL(value) }) : tr('common.save'), onPress: save, disabled: !value }}>
+      accessoryId="expense-save" action={{ label: value ? tr('expense.saveAmount', { amount: fmtMoney(value, entryCurrency) }) : tr('common.save'), onPress: save, disabled: !value }}>
       {!initial && frequent.length ? (
         <Field label={tr('expense.frequent')} t={t}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} keyboardShouldPersistTaps="always">
@@ -136,7 +139,7 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
           </ScrollView>
         </Field>
       ) : null}
-      <Field label={tr('common.amountField')} t={t}>
+      <Field label={`${tr('common.amountField')} (${entryCurrency})`} t={t}>
         <TextInput
           value={amount}
           onChangeText={setAmount}
@@ -181,9 +184,10 @@ export function ExpenseSheet({ visible, initial, prefill, frequent = [], onSave,
 }
 
 /* ---------- Abonelik ekle / düzenle ---------- */
-export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
-  visible: boolean; initial: Sub | null; onSave: (s: Sub) => void; onDelete: (id: string) => void; onClose: () => void; t: Theme;
+export function SubSheet({ visible, initial, onSave, onDelete, onClose, currency, t }: {
+  visible: boolean; initial: Sub | null; currency: Currency; onSave: (s: Sub) => void; onDelete: (id: string) => void; onClose: () => void; t: Theme;
 }) {
+  const entryCurrency = initial?.currency ?? currency;
   const [name, setName] = useState(initial?.name ?? '');
   const [amount, setAmount] = useState(initial ? amountText(initial.amount) : '');
   const [freq, setFreq] = useState<Sub['freq']>(initial?.freq ?? 'monthly');
@@ -212,7 +216,7 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
   };
   const save = () => {
     if (!valid) return;
-    onSave({ id: initial?.id ?? 'sub_' + uid(), name: name.trim(), amount: value, day: d, freq, month: freq === 'yearly' ? month : 0, cat, type, skip: initial?.skip ?? '' });
+    onSave({ id: initial?.id ?? 'sub_' + uid(), name: name.trim(), amount: value, currency: entryCurrency, day: d, freq, month: freq === 'yearly' ? month : 0, cat, type, skip: initial?.skip ?? '' });
   };
 
   return (
@@ -228,7 +232,7 @@ export function SubSheet({ visible, initial, onSave, onDelete, onClose, t }: {
           ))}
         </View>
       </Field>
-      <Field label={tr('common.amountField')} t={t}>
+      <Field label={`${tr('common.amountField')} (${entryCurrency})`} t={t}>
         <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder={tr('common.amountPlaceholder')} placeholderTextColor={t.muted} style={inputStyle(t, true)} inputAccessoryViewID="sub-save" />
       </Field>
       <Field label={tr('sub.frequency')} t={t}>
@@ -310,7 +314,7 @@ export function BudgetPanel({ settings, focusBudget, onChange, t }: {
 }
 
 /* ---------- Ayarlar ekranı: ad, görünüm, bildirimler, dışa/içe aktarma ---------- */
-export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestore, ym, monthLabel, t }: {
+export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestore, ym, monthLabel, fx, fxStatus, onRefreshFx, t }: {
   settings: Settings;
   onChange: (s: Settings) => void;
   onExport: (ym: string | null) => void;
@@ -318,6 +322,9 @@ export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestor
   onRestore: () => void;
   ym: string;
   monthLabel: string;
+  fx: FxRate | null;
+  fxStatus: 'loading' | 'live' | 'cached' | 'unavailable';
+  onRefreshFx: () => void;
   t: Theme;
 }) {
   const [name, setName] = useState(settings.name);
@@ -336,6 +343,30 @@ export function SettingsPanel({ settings, onChange, onExport, onBackup, onRestor
           ))}
         </View>
       </Field>
+      <Field label={tr('settings.currency')} t={t}>
+        <View style={st.chips}>
+          {(['TRY', 'USD'] as Currency[]).map((c) => (
+            <Chip key={c} label={c === 'TRY' ? 'TRY (₺)' : 'USD ($)'} active={settings.currency === c}
+              onPress={() => { if (fx || c === settings.currency) onChange({ ...settings, currency: c }); }} t={t} />
+          ))}
+        </View>
+      </Field>
+      <View style={{ gap: 7 }}>
+        <Label t={t}>{tr('settings.fxTitle')}</Label>
+        {fx ? (
+          <>
+            <Text style={{ color: t.fg, fontSize: 16 }}>{tr('settings.fxLine', { rate: fmtNumber(fx.rate, 4) })}</Text>
+            <Text style={{ color: t.muted, fontSize: 12 }}>{tr('settings.fxSource', { source: fx.source, date: fx.date })}</Text>
+            <Text style={{ color: t.muted, fontSize: 12 }}>{tr('settings.fxFetched', { date: new Date(fx.fetchedAt).toLocaleString(langInfo().locale) })}</Text>
+          </>
+        ) : null}
+        <Text style={{ color: fxStatus === 'unavailable' || fxStatus === 'cached' ? t.warn : t.muted, fontSize: 12 }}>
+          {fxStatus === 'loading' ? tr('settings.fxLoading') : fxStatus === 'cached' ? tr('settings.fxCached') :
+            fxStatus === 'unavailable' ? tr('settings.fxUnavailable') : tr('settings.fxNoLive')}
+        </Text>
+        {fxStatus !== 'live' ? <Text style={{ color: t.muted, fontSize: 12 }}>{tr('settings.fxNoLive')}</Text> : null}
+        <Button label={tr('settings.fxRetry')} kind="ghost" onPress={onRefreshFx} t={t} />
+      </View>
       <Field label={tr('settings.appearance')} t={t}>
         <View style={st.chips}>
           <Chip label={tr('settings.themeNoir')} icon="moon-outline" active={settings.theme === 'noir'} onPress={() => onChange({ ...settings, theme: 'noir' })} t={t} />
