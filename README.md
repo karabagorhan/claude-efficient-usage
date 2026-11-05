@@ -13,6 +13,7 @@ Amaç:
 - `prompts/` : Hazır prompt şablonları
 - `examples/` : Excel, Word, PowerPoint ve kodlama örnekleri
 - `checklists/` : Kullanım öncesi ve sonrası kontroller
+- `.claude/skills/dogal-yazim/` : Metinleri yapay zekâ kalıplarından arındıran yazım skill'i (Claude Code bu klasörü otomatik yükler). Gerçek yazı örneklerinizi `ornekler.md` dosyasına ekleyerek üslubu kendinize yaklaştırabilirsiniz.
 
 ## Temel İlkeler
 
