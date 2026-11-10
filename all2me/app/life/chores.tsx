@@ -163,7 +163,7 @@ function TasksTab() {
                     <Txt variant="bodyBold" numberOfLines={2}>
                       {choreName(c, lang)}
                     </Txt>
-                    <Txt variant="small" color={st === 'overdue' ? th.coral : th.textDim} weight={st === 'overdue' ? '700' : undefined} numberOfLines={1}>
+                    <Txt variant="small" color={st === 'overdue' ? th.coral : th.textDim} weight={st === 'overdue' ? '700' : undefined}>
                       {statusText(t, lang, c.state, c.diff, c.due)} · {t('life.chores.every', { n: c.every })}
                     </Txt>
                   </View>

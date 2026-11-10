@@ -2,7 +2,8 @@
  * Okul bildirimleri (grup 'study'). Her değişiklikte grubun tamamı yeniden kurulur:
  * öğe bazında 1 gün önce + aynı sabah (yalnız gelecek anlar), haftalık planlama Pazar 20:00.
  */
-import { translate } from '../../i18n';
+import { fmtTime, translate } from '../../i18n';
+import { useSettings } from '../../store/settings';
 import { scheduleGroup, type NotifItem } from '../../lib/notifications';
 import { routes } from '../../lib/routes';
 import { useStudy } from '../../store/slices/study';
@@ -21,7 +22,7 @@ export function buildStudyNotifs(items: StudyItem[], settings: StudySettings, no
     for (const { it, kind, date } of all.slice(0, MAX_ITEM_NOTIFS)) {
       out.push({
         title: `${TYPE_META[it.type].emoji} ${it.title}`,
-        body: translate(kind === 'dayBefore' ? 'study.notif.dayBefore' : 'study.notif.morning', { time: it.time ?? '23:59' }),
+        body: translate(kind === 'dayBefore' ? 'study.notif.dayBefore' : 'study.notif.morning', { time: fmtTime(it.time ?? '23:59', useSettings.getState().lang) }),
         url: routes.studyItem(it.id),
         trigger: { kind: 'date', date },
       });

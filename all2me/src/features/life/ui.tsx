@@ -162,7 +162,7 @@ export function HBar({ emoji, label, value, max, color }: { emoji?: string; labe
   const pct = max > 0 ? Math.max(0.04, value / max) : 0;
   return (
     <Row gap={10} style={{ marginVertical: 5 }}>
-      <View style={{ width: 104, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <View style={{ width: 128, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         {emoji ? <Txt size={16}>{emoji}</Txt> : null}
         <Txt variant="small" numberOfLines={1} style={{ flex: 1 }}>
           {label}
