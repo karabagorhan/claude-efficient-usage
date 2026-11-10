@@ -117,10 +117,10 @@ export default function DrinkScreen() {
         <View>
           <DropFill value={total / goalMl} size={190} />
           <View style={{ position: 'absolute', left: 0, right: 0, top: 80, alignItems: 'center' }}>
-            <Txt variant="display" color={total / goalMl > 0.45 ? '#fff' : th.text}>
+            <Txt variant="display" color={total / goalMl > 0.6 ? '#fff' : th.text}>
               {fromMl(total, units)}
             </Txt>
-            <Txt variant="small" color={total / goalMl > 0.3 ? '#ffffffdd' : undefined} dim={total / goalMl <= 0.3}>
+            <Txt variant="small" color={total / goalMl > 0.5 ? '#ffffffdd' : undefined} dim={total / goalMl <= 0.5}>
               {unit}
             </Txt>
           </View>
