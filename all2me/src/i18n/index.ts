@@ -13,7 +13,9 @@ import alarm from './locales/alarm';
 import common from './locales/common';
 import drink from './locales/drink';
 import duel from './locales/duel';
+import growth from './locales/growth';
 import inspire from './locales/inspire';
+import life from './locales/life';
 import love from './locales/love';
 import meditate from './locales/meditate';
 import mood from './locales/mood';
@@ -29,6 +31,7 @@ import settings from './locales/settings';
 import sleep from './locales/sleep';
 import soundscape from './locales/soundscape';
 import streak from './locales/streak';
+import study from './locales/study';
 import tabs from './locales/tabs';
 import task from './locales/task';
 import timer from './locales/timer';
@@ -41,7 +44,7 @@ export * from './types';
 export * from './dates';
 
 const NAMESPACES: Record<string, NamespaceFile> = {
-  alarm, common, drink, duel, inspire, love, meditate, mood, motivation, newtask, onboarding, planner, points,
+  alarm, common, drink, duel, growth, inspire, life, study, love, meditate, mood, motivation, newtask, onboarding, planner, points,
   profile, reflection, routine, settings, sleep, soundscape, streak, tabs, task, timer, toast, tools, wheel, workout,
 };
 

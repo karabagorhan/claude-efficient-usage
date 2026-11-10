@@ -1,6 +1,35 @@
-// Ad alanı: 'love'. Sahibi ilgili ekran ajanı. Biçim için docs/CONTRACTS.md §4.
-// Anahtarlar: t('love.<anahtar>'). tr ve en ağaçları aynı anahtarlara sahip olmalı.
+// Ad alanı: 'love' — Kendimi Sevmenin 100 Yolu.
 export default {
-  tr: {},
-  en: {},
+  tr: {
+    title: 'Kendimi Sevmenin 100 Yolu',
+    cardOf: '{{i}} / {{n}}',
+    doneToday: 'Bugün yaptım ✓',
+    doneMark: 'Yaptım ✓',
+    undo: 'İşareti kaldır',
+    random: 'Rastgele kart',
+    prev: 'Önceki',
+    next: 'Sonraki',
+    counter: '{{n}} / {{total}} yapıldı',
+    viewDeck: 'Kartlar',
+    viewGrid: 'Izgara',
+    doneOn: '{{day}} tarihinde yapıldı',
+    wellDone: 'Güzel! Kendine bir iyilik yaptın 💜',
+    allDone: 'Hepsini tamamladın! 🎉',
+  },
+  en: {
+    title: '100 Ways to Love Myself',
+    cardOf: '{{i}} of {{n}}',
+    doneToday: 'Did it today ✓',
+    doneMark: 'Done ✓',
+    undo: 'Remove mark',
+    random: 'Random card',
+    prev: 'Previous',
+    next: 'Next',
+    counter: '{{n}} of {{total}} done',
+    viewDeck: 'Cards',
+    viewGrid: 'Grid',
+    doneOn: 'Done on {{day}}',
+    wellDone: 'Lovely! You did something kind for yourself 💜',
+    allDone: 'You completed them all! 🎉',
+  },
 };

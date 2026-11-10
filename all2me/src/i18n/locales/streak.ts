@@ -1,6 +1,41 @@
-// Ad alanı: 'streak'. Sahibi ilgili ekran ajanı. Biçim için docs/CONTRACTS.md §4.
-// Anahtarlar: t('streak.<anahtar>'). tr ve en ağaçları aynı anahtarlara sahip olmalı.
+// Ad alanı: 'streak'. Seri ekranı.
 export default {
-  tr: {},
-  en: {},
+  tr: {
+    title: 'Seri',
+    unit: 'günlük seri',
+    banner: {
+      zero: 'Bugün tek bir görev tamamla, serin başlasın.',
+      low: 'İyi başlangıç! Yarın da devam et.',
+      mid: 'Ritmi yakaladın. Zinciri kırma!',
+      good: 'Bir haftayı geçtin, harikasın!',
+      great: 'İstikrar işe yarıyor. Parlamaya devam.',
+      epic: 'Efsane gidiyorsun. Bu seri bir alışkanlık artık.',
+    },
+    calendar: 'Seri Takvimi',
+    prev: 'Önceki ay',
+    next: 'Sonraki ay',
+    longest: 'En uzun seri',
+    totalDays: 'Toplam aktif gün',
+    days: '{{n}} gün',
+    rule: 'Bir günün serisi için o gün en az 1 görev tamamlaman yeterli.',
+  },
+  en: {
+    title: 'Streak',
+    unit: 'day streak',
+    banner: {
+      zero: 'Complete one task today to start your streak.',
+      low: 'Nice start! Come back tomorrow.',
+      mid: 'You found your rhythm. Don’t break the chain!',
+      good: 'Over a week in. You’re doing great!',
+      great: 'Consistency pays off. Keep shining.',
+      epic: 'Legendary run. This streak is a habit now.',
+    },
+    calendar: 'Streak Calendar',
+    prev: 'Previous month',
+    next: 'Next month',
+    longest: 'Longest streak',
+    totalDays: 'Total active days',
+    days: '{{n}} days',
+    rule: 'Completing at least 1 task on a day keeps your streak going.',
+  },
 };

@@ -7,7 +7,7 @@ export type Slot = 'morning' | 'afternoon' | 'evening' | 'anytime';
 export type PastelKey = 'blue' | 'green' | 'purple' | 'mint' | 'peach' | 'pink' | 'yellow';
 export const PASTEL_KEYS: readonly PastelKey[] = ['blue', 'green', 'purple', 'mint', 'peach', 'pink', 'yellow'];
 /** Bir araca bağlı görev: araç kullanıldığında görev otomatik tamamlanır. */
-export type HabitLink = 'drink' | 'mood' | 'reflection';
+export type HabitLink = 'drink' | 'mood' | 'reflection' | 'smoke' | 'meal' | 'chore' | 'study' | 'growth';
 /** İki dilli içerik. */
 export interface Loc {
   tr: string;

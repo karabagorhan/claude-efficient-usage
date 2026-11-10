@@ -54,4 +54,14 @@ export const routes = {
   /** Zamanlayıcı bir göreve bağlı açılabilir */
   timer: (p: { habitId?: string; minutes?: number } = {}) => `/tools/timer${qs(p)}`,
   reflectionWrite: (topicId?: string) => `/tools/reflection-write${qs({ topicId })}`,
+  /** Yaşam takibi: merkez ve alt takipçiler */
+  life: (name: 'hub' | 'smoke' | 'meals' | 'chores' = 'hub') => (name === 'hub' ? '/life' : `/life/${name}`),
+  /** Okul / yüksek lisans */
+  study: () => '/study',
+  studyCourse: (id: string) => `/study/course/${encodeURIComponent(id)}`,
+  /** id = öğe id veya 'new'; yeni öğede courseId/type ön dolu */
+  studyItem: (id: string, p: { courseId?: string; type?: string } = {}) => `/study/item/${encodeURIComponent(id)}${qs(p)}`,
+  /** İş ve kişisel gelişim */
+  growth: () => '/growth',
+  growthGoal: (id: string) => `/growth/goal/${encodeURIComponent(id)}`,
 } as const;

@@ -1,6 +1,30 @@
-// Ad alanı: 'soundscape'. Sahibi ilgili ekran ajanı. Biçim için docs/CONTRACTS.md §4.
-// Anahtarlar: t('soundscape.<anahtar>'). tr ve en ağaçları aynı anahtarlara sahip olmalı.
 export default {
-  tr: {},
-  en: {},
+  tr: {
+    title: 'Ses Ortamı',
+    intro: 'Dokunarak çal ya da durdur. En çok {{n}} sesi karıştırabilirsin.',
+    playing: 'Çalıyor',
+    volume: 'Ses düzeyi',
+    sleepTimer: 'Uyku zamanlayıcısı',
+    sleepOff: 'Kapalı',
+    sleepIn: '{{time}} sonra duracak',
+    stopAll: 'Hepsini durdur',
+    nowPlaying: '{{n}} ses çalıyor',
+    nothing: 'Çalan ses yok',
+    webNote: 'Web önizlemede tarayıcı sesi otomatik çalmayabilir.',
+    synth: 'Sesler cihazda sentezlenmiş, telifsiz döngülerdir.',
+  },
+  en: {
+    title: 'Soundscapes',
+    intro: 'Tap to play or stop. You can mix up to {{n}} sounds.',
+    playing: 'Playing',
+    volume: 'Volume',
+    sleepTimer: 'Sleep timer',
+    sleepOff: 'Off',
+    sleepIn: 'Stops in {{time}}',
+    stopAll: 'Stop all',
+    nowPlaying: '{{n}} sounds playing',
+    nothing: 'Nothing playing',
+    webNote: 'In the web preview the browser may block autoplay.',
+    synth: 'Sounds are royalty-free loops synthesized by script.',
+  },
 };

@@ -157,3 +157,78 @@ Ekranda "yapay zekâ" iddiası yok; adı "Akıllı planlayıcı".
 - `git add/commit/push` yapma. Yönetici (ana oturum) toplar.
 - İşin sonunda `npx tsc --noEmit` çalıştır; **kendi dosyalarındaki** hataları sıfırla.
 - Rapor: ne yazdın, ne doğrulandı, ne doğrulanmadı / eksik kaldı. Çalıştırmadığın şeyi "çalışıyor" diye yazma.
+
+## 6. Ek: Yaşam takibi (kullanıcı isteği, 2026-11-10)
+
+Amaç: gündelik bir kişinin yapması gereken tüm aktiviteleri **takip**, **motivasyon** ve **hatırlatma** ile desteklemek.
+Her takipçide üç katman olmalı: (1) hızlı kayıt (tek dokunuş), (2) ilerleme/istatistik + teşvik mesajları ve kilometre
+taşları, (3) yerel bildirim hatırlatıcıları (kendi bildirim grubu; ayarlardan kapatılabilir). Puan: bağlı görev
+(`link`) tamamlanınca normal puan; görev dışı başarılar `awardBonus({group, perDay})` ile küçük bonus
+(tek seferde en çok 50). Tüm veri cihazda (dilim); partnerle senkron yalnız çekirdek veride.
+
+Rotalar (kayıtlı, `routes.life(..)`, `routes.study()`, `routes.growth()`): `/life` (merkez), `/life/smoke`,
+`/life/meals`, `/life/chores`, `/study`, `/study/course/[id]`, `/study/item/[id]` (modal; `id`=öğe ya da `new`,
+`courseId?`, `type?`), `/growth`, `/growth/goal/[id]` (modal; `id`=hedef ya da `new`).
+Bağlı görev türleri: `smoke | meal | chore | study | growth` (ActivityKind'de de var).
+Ad alanları: `life` (merkez, sigara, yemek, ev işleri), `study`, `growth`.
+
+### 6.1 Yaşam merkezi `/life`
+Bugünün özeti kartları: sigara (bugün x / limit), yemek (bu hafta ev yemeği / fast food), ev işleri (bugün/gecikmiş),
+okul (en yakın teslimler — `useStudySummary()`), gelişim (`useGrowthSummary()`); her kart ilgili ekrana gider.
+Üstte günün teşvik mesajı (ilerlemeye göre seçilir).
+
+### 6.2 Sigara azaltma `/life/smoke`
+- Kurulum: başlangıç günlük adet, paket fiyatı + paketteki adet (para birimi dile göre ₺ / $, değiştirilebilir),
+  hedef (ör. 5/gün ya da 0), azaltma planı: limit her N günde 1 azalır (önizlemeli takvim).
+- Bugün: adet / limit halkası, son sigaradan beri geçen süre (canlı), "Bir sigara içtim" (tetikleyici etiketi
+  isteğe bağlı: stres, kahve, yemek sonrası, sosyal, sıkıntı, alışkanlık, alkol), geri al.
+- "İstek geldi, içmedim": 5 dakikalık erteleme sayacı + nefes egzersizine bağlantı; direnince küçük bonus
+  (`group:'smoke'`, günde en çok 5).
+- Günü kapatma: limitte kalındıysa "Bugün limitimde kaldım" → `completeLinked('smoke')` (akşam 18:00 sonrası ya da
+  ertesi gün 03:00'a kadar).
+- İstatistik: 7/30 gün grafik (limit çizgisiyle), içilmeyen sigara ve biriken para (başlangıca göre), limitte kalma
+  serisi, tetikleyici dağılımı, en zor saatler. Kilometre taşları (para ve seri). Tıbbi iddia yok; medicalNote.
+- Hatırlatıcılar (grup `smoke`): gün içi destek mesajları (seçilen saatler), akşam kapanış hatırlatıcısı.
+
+### 6.3 Ev yemeği / fast food `/life/meals`
+- Öğün kaydı: kahvaltı / öğle / akşam / ara öğün × tür: ev yemeği 🏠, dışarıda sağlıklı 🥗, fast food 🍔, atlandı;
+  isteğe bağlı not ve tutar.
+- Haftalık hedef: fast food en çok N, ev yemeği en az M. Haftalık ızgara (7 gün × öğün renkli), fast food'suz gün
+  serisi, aylık fast food harcaması.
+- Haftalık menü planlayıcı (7 gün × öğle/akşam) + en az 30 hızlı ev yemeği fikri (iki dilli, süre etiketiyle) +
+  menüden alışveriş listesi (onay kutulu).
+- Ev yemeği kaydı → `completeLinked('meal')`.
+- Hatırlatıcılar (grup `meals`): akşam yemeği planı (ör. 17:00), haftalık hazırlık günü (ör. Pazar 18:00).
+
+### 6.4 Ev işleri `/life/chores`
+- Tekrarlı işler: aralık (gün) + son yapılma → durum: gecikmiş / bugün / yakında. Alanlara göre (Mutfak, Banyo,
+  Yatak odası, Salon, Genel, Çamaşır). Varsayılan en az 18 iş (çamaşır yıka, as/kurut, katla-yerleştir, ütü,
+  bulaşık yıka / makineyi çalıştır, makineyi boşalt, çöp, süpürge, paspas, banyo, tezgâh, buzdolabı, çarşaf, toz,
+  bitki sulama…). Ekle/düzenle/sil.
+- Çamaşır döngüsü ve bulaşık makinesi akışı: adım adım (Yıka → As/Kurut → Katla → Yerleştir), makine süresi için
+  sayaç + bitince bildirim.
+- Bir iş yapıldı → son yapılma güncellenir, `completeLinked('chore')`, küçük bonus (`group:'chore'`, günde en çok 6).
+- Haftalık temizlik puanı/ilerlemesi, en çok ertelenen işler. Hatırlatıcı (grup `chores`): günlük kontrol saati.
+- Not: ev işleri şimdilik yalnız bu cihazda; partnerle paylaşılan iş listesi sonraki sürüm.
+
+### 6.5 Okul / yüksek lisans `/study`
+- Dersler: ad, kod, hoca, renk, ders günleri/saatleri, dönem.
+- Öğeler (ders altında ya da derssiz): tür = ödev, makale okuma, makale/rapor yazma, sınav, sunum, proje,
+  tez bölümü; teslim tarihi (+saat), durum (yapılacak / devam / bitti / teslim edildi), öncelik, tahmini saat,
+  alt görev listesi, notlar. Makale okumada: yazarlar, yıl, DOI/link, sayfa x/y, okuma geçişi (1-2-3), özet notu.
+- Tez: kilometre taşları (konu, öneri, literatür, yöntem, veri, analiz, yazım, savunma) hedef tarih + ilerleme.
+- Pano: yaklaşan teslimler (geri sayım, gecikmiş kırmızı), bu haftanın yükü, okuma listesi ilerlemesi, haftalık
+  çalışma süresi (zamanlayıcı etiketleri Ders/Ödev/Makale) ve haftalık çalışma hedefi, "Odaklan" → zamanlayıcı.
+- Öğe tamamlanınca bonus (`group:'study'`, günde en çok 5; tür ağırlıklı), alt görev/çalışma kaydında
+  `completeLinked('study')`.
+- Hatırlatıcılar (grup `study`): teslimden 1 gün önce ve aynı sabah (öğe bazında ayarlanır), haftalık planlama
+  (Pazar akşamı).
+
+### 6.6 İş ve kişisel gelişim `/growth`
+- Hedefler: başlık, alan (Kariyer, İş, Beceri, Okuma, Sağlık, Finans, Kişisel), neden, hedef tarih, ölçülebilir
+  ilerleme (sayısal hedef + birim ya da kilometre taşı listesi), haftalık check-in.
+- "Bugünün 3 önemli işi": iş günü için 3 öncelik, tamamlanmayanları ertesi güne taşı.
+- Öğrenme listesi: kitap / kurs / sertifika — ilerleme (sayfa/ders), durum.
+- Haftalık değerlendirme: iyi giden, engeller, gelecek hafta (Cuma) — geçmiş kayıtlar.
+- Bonus `group:'growth'`; 3 önemli işin tamamı ya da hedef adımı → `completeLinked('growth')`.
+- Hatırlatıcılar (grup `growth`): sabah 3 önemli iş planlama, Cuma haftalık değerlendirme.

@@ -1,6 +1,111 @@
-// Ad alanı: 'onboarding'. Sahibi ilgili ekran ajanı. Biçim için docs/CONTRACTS.md §4.
-// Anahtarlar: t('onboarding.<anahtar>'). tr ve en ağaçları aynı anahtarlara sahip olmalı.
+// Ad alanı: 'onboarding'. Akış: dil → profil → sorular → sonuç → öneriler → partner → kutlama.
 export default {
-  tr: {},
-  en: {},
+  tr: {
+    step: '{{n}}/{{total}}',
+    lang: {
+      title: 'Dilini seç',
+      hint: 'Uygulama hemen bu dile geçer. Sonra Ayarlar’dan değiştirebilirsin.',
+      tr: 'Türkçe',
+      en: 'English',
+    },
+    profile: {
+      title: 'Seni tanıyalım',
+      hint: 'Partnerin seni bu adla ve avatarla görecek.',
+      nameLabel: 'Adın',
+      namePlaceholder: 'Adını yaz',
+      avatar: 'Avatar',
+      color: 'Renk',
+    },
+    yes: 'Evet, hadi!',
+    no: 'Hayır',
+    q: {
+      organize: 'Gününü düzene sokmak ister misin?',
+      habits: 'İyi alışkanlıklar kazanmak ister misin?',
+      sleep: 'Daha iyi uyumak ister misin?',
+      focus: 'Daha odaklı olmak ister misin?',
+      move: 'Biraz daha hareketli olmak ister misin?',
+      smoke: 'Sigarayı azaltmak ister misin?',
+      goals: 'Okul/iş hedeflerini takip etmek ister misin?',
+    },
+    result: {
+      title: 'Kendimizi tanıdıkça en iyi hâlimize yaklaşırız',
+      metric: {
+        selfControl: 'Öz-denetim',
+        concentration: 'Konsantrasyon',
+        productivity: 'Üretkenlik',
+        energy: 'Enerji',
+      },
+      level: { low: 'Geliştirilebilir', mid: 'İyi', high: 'Harika' },
+      note: 'Bu bir tanı ya da test sonucu değil; cevaplarından çıkan kısa bir özet. Birlikte geliştirelim.',
+    },
+    tasks: {
+      title: 'Sana önerdiklerimiz',
+      hint: 'Cevaplarına göre seçtik. İstediklerini işaretle, sonra dilediğini değiştirebilirsin.',
+      addN: '{{n}} görevi ekle',
+      none: 'Görev eklemeden devam et',
+    },
+    pair: {
+      title: 'Partnerini ekle',
+      hint: 'All2Me iki kişiyle daha keyifli: puan topla, günlük ve haftalık yarış. İstersen sonra da eşleşebilirsin.',
+    },
+    done: {
+      title: 'Çok iyi bir başlangıç!',
+      hint: 'Harika iş çıkardın. Rutinin seni bekliyor.',
+      cta: 'Haydi başlayalım',
+    },
+  },
+  en: {
+    step: '{{n}}/{{total}}',
+    lang: {
+      title: 'Choose your language',
+      hint: 'The app switches right away. You can change it later in Settings.',
+      tr: 'Türkçe',
+      en: 'English',
+    },
+    profile: {
+      title: 'Let’s get to know you',
+      hint: 'Your partner will see you with this name and avatar.',
+      nameLabel: 'Your name',
+      namePlaceholder: 'Type your name',
+      avatar: 'Avatar',
+      color: 'Color',
+    },
+    yes: 'Sure! Let’s go!',
+    no: 'No',
+    q: {
+      organize: 'Do you want to organize your day?',
+      habits: 'Do you want to build good habits?',
+      sleep: 'Do you want to sleep better?',
+      focus: 'Do you want to be more focused?',
+      move: 'Do you want to move a little more?',
+      smoke: 'Do you want to cut down on smoking?',
+      goals: 'Do you want to track your school/work goals?',
+    },
+    result: {
+      title: 'The better we know ourselves, the closer we get to our best',
+      metric: {
+        selfControl: 'Self-control',
+        concentration: 'Concentration',
+        productivity: 'Productivity',
+        energy: 'Energy',
+      },
+      level: { low: 'Could be better', mid: 'Good', high: 'Great' },
+      note: 'This is not a diagnosis or a test result, just a quick summary of your answers. Let’s improve it together.',
+    },
+    tasks: {
+      title: 'Picked for you',
+      hint: 'Chosen from your answers. Tick the ones you like; you can change everything later.',
+      addN: 'Add {{n}} tasks',
+      none: 'Continue without tasks',
+    },
+    pair: {
+      title: 'Add your partner',
+      hint: 'All2Me is more fun with two: collect points and race daily and weekly. You can also pair later.',
+    },
+    done: {
+      title: 'A very good start!',
+      hint: 'Well done. Your routine is waiting.',
+      cta: 'Let’s begin',
+    },
+  },
 };

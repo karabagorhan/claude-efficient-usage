@@ -54,7 +54,7 @@ export interface BadgeRec {
 }
 
 /** Rozetleri besleyen araç etkinlikleri. Araç ekranları `logActivity(kind)` çağırır. */
-export type ActivityKind = 'mood' | 'reflection' | 'focus' | 'meditate' | 'workout' | 'drink' | 'sleep' | 'love';
+export type ActivityKind = 'mood' | 'reflection' | 'focus' | 'meditate' | 'workout' | 'drink' | 'sleep' | 'love' | 'smoke' | 'meal' | 'chore' | 'study' | 'growth';
 
 export type Toast = Msg & { emoji?: string };
 

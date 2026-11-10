@@ -97,6 +97,15 @@ export default function RootLayout() {
           <Stack.Screen name="tools/alarm" />
           <Stack.Screen name="tools/mood" options={modal} />
           <Stack.Screen name="tools/love" />
+          <Stack.Screen name="life/index" />
+          <Stack.Screen name="life/smoke" />
+          <Stack.Screen name="life/meals" />
+          <Stack.Screen name="life/chores" />
+          <Stack.Screen name="study/index" />
+          <Stack.Screen name="study/course/[id]" />
+          <Stack.Screen name="study/item/[id]" options={modal} />
+          <Stack.Screen name="growth/index" />
+          <Stack.Screen name="growth/goal/[id]" options={modal} />
         </Stack.Protected>
         <Stack.Protected guard={!ready}>
           <Stack.Screen name="onboarding" />

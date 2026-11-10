@@ -1,6 +1,122 @@
-// Ad alanı: 'routine'. Sahibi ilgili ekran ajanı. Biçim için docs/CONTRACTS.md §4.
-// Anahtarlar: t('routine.<anahtar>'). tr ve en ağaçları aynı anahtarlara sahip olmalı.
+// Ad alanı: 'routine' — Rutin sekmesi ve Harekete Geç ekranı (routine.action.*).
 export default {
-  tr: {},
-  en: {},
+  tr: {
+    streakLabel: '{{n}} günlük seri',
+    todayPts: 'Bugünkü puan: {{n}}',
+    prevWeek: 'Önceki hafta',
+    nextWeek: 'Sonraki hafta',
+    addTask: 'Yeni görev ekle',
+    readOnlyFuture: 'Gelecek günler yalnızca görüntülenir',
+    backfill: {
+      title: 'Unuttum hakkın var',
+      body: 'Dünkü bir görevi %70 puanla tamamlayabilirsin. Haftada bir kez.',
+    },
+    duel: {
+      title: 'Bugünkü yarış',
+      you: 'Sen',
+      leadYou: 'Öndesin! 💪',
+      leadPartner: '{{name}} önde',
+      tie: 'Başa baş',
+      pts: '{{n}} puan',
+      addPartner: 'Partner ekle',
+      addPartnerBody: 'Birlikte puan topla, yarış',
+    },
+    progress: {
+      title: 'Günlük ilerleme',
+      count: '{{done}}/{{total}} görev',
+      allDone: 'Bugünlük hepsi tamam! 🎉',
+      none: 'Bu gün için görev yok',
+      pastDay: 'Geçmiş gün',
+    },
+    weekly: {
+      title: 'Haftalık hedefler',
+      count: 'Bu hafta {{done}}/{{n}}',
+    },
+    partner: {
+      title: '{{name}} bugün',
+      titleDay: '{{name}} · {{day}}',
+      empty: 'Partnerin için görev görünmüyor',
+    },
+    nudge: {
+      nudge: '{{name}} seni dürttü 👉',
+      cheer: '{{name}} seni tebrik etti 🎉',
+      dismiss: 'Tamam',
+    },
+    empty: {
+      title: 'İlk görevini ekle',
+      body: 'Küçük başla: bir görev seç, gününü şekillendir.',
+      cta: 'Görev ekle',
+    },
+    doneNote: 'Dokun: geri al',
+    // Harekete Geç ekranı
+    action: {
+      title: 'Harekete geçme zamanı!',
+      bonusLabel: 'Bonus görev',
+      points: '+{{n}} puan',
+      earned: '+{{n}} puan kazandın!',
+      alreadyDone: 'Bunu bugün zaten tamamladın.',
+      missing: 'Bu görev bulunamadı.',
+      cap: 'Bugünkü bonus sınırı doldu.',
+      wellDone: 'Aferin! 🎉',
+    },
+  },
+  en: {
+    streakLabel: '{{n}}-day streak',
+    todayPts: 'Points today: {{n}}',
+    prevWeek: 'Previous week',
+    nextWeek: 'Next week',
+    addTask: 'Add a new task',
+    readOnlyFuture: 'Future days are view-only',
+    backfill: {
+      title: 'You have a forgot-it pass',
+      body: 'Complete one of yesterday’s tasks for 70% of the points. Once a week.',
+    },
+    duel: {
+      title: 'Today’s duel',
+      you: 'You',
+      leadYou: 'You’re ahead! 💪',
+      leadPartner: '{{name}} is ahead',
+      tie: 'Neck and neck',
+      pts: '{{n}} pts',
+      addPartner: 'Add a partner',
+      addPartnerBody: 'Collect points together and compete',
+    },
+    progress: {
+      title: 'Daily progress',
+      count: '{{done}}/{{total}} tasks',
+      allDone: 'All done for today! 🎉',
+      none: 'No tasks for this day',
+      pastDay: 'Past day',
+    },
+    weekly: {
+      title: 'Weekly goals',
+      count: 'This week {{done}}/{{n}}',
+    },
+    partner: {
+      title: '{{name}} today',
+      titleDay: '{{name}} · {{day}}',
+      empty: 'No tasks to show for your partner',
+    },
+    nudge: {
+      nudge: '{{name}} nudged you 👉',
+      cheer: '{{name}} cheered you on 🎉',
+      dismiss: 'Got it',
+    },
+    empty: {
+      title: 'Add your first task',
+      body: 'Start small: pick a task and shape your day.',
+      cta: 'Add a task',
+    },
+    doneNote: 'Tap to undo',
+    action: {
+      title: 'Time to take action!',
+      bonusLabel: 'Bonus task',
+      points: '+{{n}} pts',
+      earned: 'You earned +{{n}} pts!',
+      alreadyDone: 'You already completed this today.',
+      missing: 'This task could not be found.',
+      cap: 'Today’s bonus limit is reached.',
+      wellDone: 'Well done! 🎉',
+    },
+  },
 };
