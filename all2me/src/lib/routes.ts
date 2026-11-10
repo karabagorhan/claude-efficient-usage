@@ -57,7 +57,7 @@ export const routes = {
   ) => `/tools/${name}`,
   /** Zamanlayıcı bir göreve bağlı açılabilir */
   timer: (p: { habitId?: string; minutes?: number } = {}) => `/tools/timer${qs(p)}`,
-  reflectionWrite: (topicId?: string) => `/tools/reflection-write${qs({ topicId })}`,
+  reflectionWrite: (topicId?: string, entryId?: string) => `/tools/reflection-write${qs({ topicId, entryId })}`,
   /** Yaşam takibi: merkez ve alt takipçiler */
   life: (name: 'hub' | 'smoke' | 'meals' | 'chores' = 'hub') => (name === 'hub' ? '/life' : `/life/${name}`),
   /** Okul / yüksek lisans */

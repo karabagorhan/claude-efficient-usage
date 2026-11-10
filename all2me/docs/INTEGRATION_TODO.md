@@ -16,3 +16,4 @@
 - [ ] Görev düzenleyici (`app/task/[id].tsx`): `difficulty` URL parametresini oku; new-task önerileri zorluğu `routes.createTask({difficulty})` ile geçsin.
 - [ ] Rutin selamı TR'de iki satır düzeltmesi sonrası yeniden görüntü.
 - [x] task.link.* yeni bağlantı adları (yönetici ekledi), shots.mjs sorgu parametreli rota düzeltmesi, routes.linkTarget.
+- [ ] reflection.tsx: elle kurulan '/tools/reflection-write?entryId=' yerine routes.reflectionWrite(undefined, id) kullan; EN /tools başlık düzeltmesi sonrası yeniden görüntü.
