@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+shots/
+*.log
+.env
+.env*.local
+*.tsbuildinfo
+/ios
+/android
+.DS_Store
+
+# ajan önizleme çıktıları
+dist-*/

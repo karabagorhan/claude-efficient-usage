@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "All2Me",
+    "slug": "all2me",
+    "scheme": "all2me",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.all2me"
+    },
+    "android": {
+      "package": "app.all2me",
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F7FF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#F7F7FF"
+        }
+      ],
+      "expo-notifications",
+      "expo-audio",
+      "expo-localization",
+      "expo-asset"
+    ]
+  }
+}
