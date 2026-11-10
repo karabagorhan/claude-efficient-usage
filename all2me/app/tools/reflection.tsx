@@ -90,7 +90,7 @@ export default function ReflectionScreen() {
           return (
             <Card
               key={e.id}
-              onPress={() => router.push(`/tools/reflection-write?entryId=${encodeURIComponent(e.id)}` as never)}
+              onPress={() => router.push(routes.reflectionWrite(undefined, e.id))}
               style={{ marginTop: 12 }}
             >
               <Row gap={12} style={{ alignItems: 'flex-start' }}>

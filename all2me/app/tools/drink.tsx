@@ -8,6 +8,7 @@ import { DropFill } from '../../src/features/tools/DropFill';
 import { fromMl, goalStep, quickAmounts, toMl } from '../../src/features/tools/units';
 import { DAYS_SHORT, fmtTime, useLang, useT } from '../../src/i18n';
 import { scheduleGroup } from '../../src/lib/notifications';
+import { buildDrinkNotifs } from '../../src/lib/reminders';
 import { routes } from '../../src/lib/routes';
 import { myHabits, useCore } from '../../src/store/core';
 import { useSettings } from '../../src/store/settings';
@@ -80,20 +81,7 @@ export default function DrinkScreen() {
 
   const applyReminder = async (r: DrinkReminder) => {
     useDrink.getState().setReminder(r);
-    if (r === 0) {
-      await scheduleGroup('drink', []);
-      return;
-    }
-    const items = [];
-    for (let h = 9; h <= 21; h += r) {
-      items.push({
-        title: t('drink.reminder.notifTitle'),
-        body: t('drink.reminder.notifBody'),
-        url: routes.tool('drink'),
-        trigger: { kind: 'daily' as const, hour: h, minute: 0 },
-      });
-    }
-    await scheduleGroup('drink', items);
+    await scheduleGroup('drink', buildDrinkNotifs(r));
   };
   useEffect(() => {
     // dil değişince bildirim metinleri güncellensin

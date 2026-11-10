@@ -64,6 +64,12 @@ export const BADGES: BadgeDef[] = [
   b('breath10', '🌬️', 'bronze', 'Derin Nefes', 'Deep Breath', '10 meditasyon / nefes seansı bitir', 'Finish 10 meditation / breathing sessions'),
   b('daystreak7', '📅', 'silver', 'Bir Hafta Boyunca', 'All Week Long', '7 gün art arda en az bir görev', 'At least one task 7 days in a row'),
   b('wheel10', '🎡', 'bronze', 'Çarkçı', 'Wheel Spinner', '10 çark görevi tamamla', 'Complete 10 wheel tasks'),
+  // Yaşam takibi
+  b('smoke7', '🚭', 'silver', 'Limitte 7 Gün', '7 Days on Limit', 'Sigarada 7 günü limitinde kapat', 'Close 7 days within your smoking limit'),
+  b('nofast7', '🥦', 'bronze', 'Ev Lezzeti', 'Home Flavor', 'Öğün kaydettiğin 7 günü fast food’suz geçir', 'Log meals on 7 days without fast food'),
+  b('chores20', '🧹', 'bronze', 'Ev Kahramanı', 'Home Hero', '20 ev işi tamamla', 'Complete 20 chores'),
+  b('study10', '🎓', 'silver', 'Çalışkan', 'Hard Worker', '10 okul öğesini bitir', 'Finish 10 school items'),
+  b('goal1', '🎯', 'bronze', 'Hedef Avcısı', 'Goal Getter', 'İlk gelişim hedefini tamamla', 'Complete your first growth goal'),
 ];
 
 export const TIER_COLOR: Record<Tier, string> = {

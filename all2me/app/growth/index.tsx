@@ -116,12 +116,7 @@ function Today({ goTab }: { goTab: (t: Tab) => void }) {
   const add = () => {
     if (addTop(text)) setText('');
   };
-  const focus = () => {
-    try {
-      (useTimer.getState() as { setTag?: (x: 'work') => void }).setTag?.('work');
-    } catch {}
-    router.push(routes.timer({ minutes: 25 }));
-  };
+  const focus = () => router.push(routes.timer({ minutes: 25, tag: 'work' }));
 
   return (
     <View>

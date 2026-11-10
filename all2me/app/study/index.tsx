@@ -161,13 +161,7 @@ function Board({ onAdd, goTab }: { onAdd: () => void; goTab: (t: Tab) => void })
   const nextMs = thesis.find((m) => !m.done);
   const list = showAll ? d.open : d.open.slice(0, 6);
 
-  const focus = () => {
-    try {
-      const st = useTimer.getState() as { setTag?: (x: StudyTimerTag) => void };
-      st.setTag?.(tag);
-    } catch {}
-    router.push(routes.timer({ minutes: 25 }));
-  };
+  const focus = () => router.push(routes.timer({ minutes: 25, tag }));
 
   if (!items.length && !Object.keys(courses).length) {
     return (

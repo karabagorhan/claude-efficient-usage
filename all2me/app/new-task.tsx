@@ -131,7 +131,7 @@ export default function NewTask() {
             title={title}
             right={added(isAdded) as any}
             onPress={() =>
-              router.push(routes.createTask({ title, icon: s.icon, pastel: pastelFor(i), slot: s.slot, kind: s.kind, target: s.target, source: 'newtask:suggest' }))
+              router.push(routes.createTask({ title, icon: s.icon, pastel: pastelFor(i), slot: s.slot, kind: s.kind, target: s.target, difficulty: s.difficulty, source: 'newtask:suggest' }))
             }
           />
         );

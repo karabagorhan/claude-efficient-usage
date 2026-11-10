@@ -77,7 +77,10 @@ export const useGrowth = create<GrowthState>()(
         next = { ...next, doneDay: complete ? (prev?.doneDay ?? dayKeyOf()) : undefined };
         set((s) => ({ goals: { ...s.goals, [next.id]: next } }));
         const was = prev ? !!prev.doneDay : false;
-        if (!was && complete) award(`growth:goal:${next.id}`, GROWTH_POINTS.goal, 'growth.bonus.goal', '🏆');
+        if (!was && complete) {
+          useCore.getState().logActivity('goalDone');
+          award(`growth:goal:${next.id}`, GROWTH_POINTS.goal, 'growth.bonus.goal', '🏆');
+        }
         else if (was && !complete) useCore.getState().revokeBonus(`growth:goal:${next.id}`);
         const step =
           prev &&

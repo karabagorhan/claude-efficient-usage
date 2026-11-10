@@ -6,6 +6,7 @@ import { Card, EmptyState, Header, PillButton, Row, Screen, SectionHeader, Txt, 
 import { getCategory, getTemplate, needsMedicalNote, PALETTES, similarTo, type TemplateItem } from '../../src/data/inspire';
 import { FavHeart, TemplateCard } from '../../src/features/inspire/TemplateCard';
 import { DAYS_SHORT, L, useLang, useT } from '../../src/i18n';
+import { routes } from '../../src/lib/routes';
 import { useCore, type HabitDraft } from '../../src/store/core';
 import { GUTTER, pastelFor, radius, useTheme } from '../../src/theme';
 
@@ -136,7 +137,7 @@ export default function InspireDetail() {
       <SectionHeader title={t('inspire.detail.similar')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -GUTTER }} contentContainerStyle={{ paddingHorizontal: GUTTER, gap: 12 }}>
         {similarTo(tpl).map((s) => (
-          <TemplateCard key={s.id} tpl={s} width={cardW} onPress={() => router.push(`/inspire/${s.id}`)} />
+          <TemplateCard key={s.id} tpl={s} width={cardW} onPress={() => router.push(routes.inspireTemplate(s.id))} />
         ))}
       </ScrollView>
     </Screen>

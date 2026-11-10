@@ -51,6 +51,7 @@ export function smokeResist(): { ok: boolean; capped: boolean } {
 export function smokeCloseDay() {
   const day = dayKeyOf();
   useSmoke.getState().closeDay(day);
+  useCore.getState().logActivity('smokeOk', day);
   const c = useCore.getState().completeLinked('smoke', day);
   completedToast(c, 'life.smoke.toast.closed');
   if (!c) useCore.getState().pushToast('life.smoke.toast.closedNoTask');
@@ -64,6 +65,7 @@ export function mealLog(p: { slot: MealSlot; kind: MealKind; note?: string; amou
     useCore.getState().logActivity('meal', day);
     useMeals.getState().markActivity(day);
   }
+  if (p.kind === 'fast') useCore.getState().logActivity('fastFood', day);
   if (p.kind === 'home') {
     const c = useCore.getState().completeLinked('meal', day);
     completedToast(c, 'life.meals.toast.homeDone');
@@ -86,6 +88,7 @@ export function choreDone(id: string): boolean {
     perDay: BONUS.chore.perDay,
     dayKey: day,
   });
+  core.logActivity('choreDone', day);
   if (s.activityDay !== day) {
     core.logActivity('chore', day);
     useChores.getState().markActivity(day);

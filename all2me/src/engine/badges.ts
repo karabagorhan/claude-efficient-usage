@@ -22,6 +22,17 @@ export interface BadgeContext {
   paired: boolean;
   wins: { day: number; week: number; month: number };
   comeback: boolean;
+  /** Yaşam takibi (çekirdek `activity` sayaçları + bonus olaylarından; dilimler import edilmez) */
+  /** Sigarada limitinde kapatılan gün sayısı */
+  smokeLimitDays?: number;
+  /** Öğün kaydı olup fast food olmayan (kapanmış) gün sayısı */
+  fastFoodFreeDays?: number;
+  /** Yapılan ev işi sayısı */
+  choresDone?: number;
+  /** Biten okul öğesi sayısı */
+  studyItemsDone?: number;
+  /** Tamamlanan gelişim hedefi sayısı */
+  goalsDone?: number;
 }
 
 export function userTotals(events: PointEvent[]) {
@@ -86,6 +97,11 @@ export function evaluateBadges(c: BadgeContext): string[] {
   add(c.breathSessions >= 10, 'breath10');
   add(c.dayStreak >= 7, 'daystreak7');
   add(c.wheelTasks >= 10, 'wheel10');
+  add((c.smokeLimitDays ?? 0) >= 7, 'smoke7');
+  add((c.fastFoodFreeDays ?? 0) >= 7, 'nofast7');
+  add((c.choresDone ?? 0) >= 20, 'chores20');
+  add((c.studyItemsDone ?? 0) >= 10, 'study10');
+  add((c.goalsDone ?? 0) >= 1, 'goal1');
   return earned;
 }
 

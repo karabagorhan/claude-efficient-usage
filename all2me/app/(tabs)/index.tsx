@@ -13,6 +13,7 @@ import { addDays, weekStartKey } from '../../src/engine/dates';
 import { currentStreak, isPlannedOn } from '../../src/engine/points';
 import type { Habit, Slot } from '../../src/engine/types';
 import { DuelCard } from '../../src/features/routine/DuelCard';
+import { LifeStrip } from '../../src/features/routine/LifeStrip';
 import { WeekStrip } from '../../src/features/routine/WeekStrip';
 import { fmtDay, useLang, useT } from '../../src/i18n';
 import { completionId } from '../../src/lib/id';
@@ -125,7 +126,8 @@ export default function ScreenRoutine() {
       return;
     }
     if (isToday) {
-      if (h.link === 'drink' || h.link === 'mood' || h.link === 'reflection') return void router.push(routes.tool(h.link));
+      // bağlı görev: ilgili aracı / takipçiyi aç (oradaki kayıt görevi tamamlar); elle tamamlama onay dairesiyle
+      if (h.link) return void router.push(routes.linkTarget(h.link));
       if (h.kind === 'timer') return void router.push(routes.timer({ habitId: h.id, minutes: h.target }));
       if (h.kind === 'counter' && h.target) {
         const core = useCore.getState();
@@ -258,6 +260,7 @@ export default function ScreenRoutine() {
         {/* Yarış kartı */}
         <View style={{ height: 16 }} />
         <DuelCard me={me} partner={partner} myPts={myPts} partnerPts={partnerPts} />
+        {isToday ? <LifeStrip day={todayKey} /> : null}
 
         {!hasAny ? (
           <EmptyState

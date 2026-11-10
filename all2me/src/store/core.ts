@@ -54,7 +54,17 @@ export interface BadgeRec {
 }
 
 /** Rozetleri besleyen araç etkinlikleri. Araç ekranları `logActivity(kind)` çağırır. */
-export type ActivityKind = 'mood' | 'reflection' | 'focus' | 'meditate' | 'workout' | 'drink' | 'sleep' | 'love' | 'smoke' | 'meal' | 'chore' | 'study' | 'growth';
+export type ActivityKind =
+  | 'mood' | 'reflection' | 'focus' | 'meditate' | 'workout' | 'drink' | 'sleep' | 'love'
+  | 'smoke' | 'meal' | 'chore' | 'study' | 'growth'
+  /** gün sigara limitinde kapatıldı (günler kümesi önemli) */
+  | 'smokeOk'
+  /** fast food kaydı olan gün */
+  | 'fastFood'
+  /** her yapılan ev işi (sayaç önemli) */
+  | 'choreDone'
+  /** tamamlanan gelişim hedefi (sayaç önemli) */
+  | 'goalDone';
 
 export type Toast = Msg & { emoji?: string };
 
@@ -183,6 +193,13 @@ export interface CoreState {
 }
 
 const now = () => Date.now();
+
+/** Öğün kaydı olan ama fast food kaydı olmayan, kapanmış (bugünden önceki) günler. */
+export function fastFoodFreeDays(act: CoreState['activity'], todayKey: string): number {
+  const fast = act.fastFood?.days ?? {};
+  return Object.keys(act.meal?.days ?? {}).filter((d) => d < todayKey && !fast[d]).length;
+}
+
 export const today = () => dayKeyOf(new Date());
 
 const initial = {
@@ -635,6 +652,14 @@ export const useCore = create<CoreState>()(
             paired: Boolean(s.pairId && s.partner),
             wins,
             comeback: events.some((e) => e.id.startsWith('comeback:')),
+            smokeLimitDays: Object.keys(act.smokeOk?.days ?? {}).length,
+            fastFoodFreeDays: fastFoodFreeDays(act, today()),
+            choresDone: act.choreDone?.count ?? 0,
+            studyItemsDone: events.filter((e) => e.type === 'bonus' && e.group === 'study' && (e.refId ?? '').startsWith('study:item:')).length,
+            goalsDone: Math.max(
+              act.goalDone?.count ?? 0,
+              events.filter((e) => e.type === 'bonus' && e.group === 'growth' && (e.refId ?? '').startsWith('growth:goal:')).length,
+            ),
           });
           for (const id of earned) {
             if (have.has(id)) continue;

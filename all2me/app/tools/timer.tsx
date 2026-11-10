@@ -8,6 +8,7 @@ import { dayKeyOf } from '../../src/engine/dates';
 import { StatTile, fmtClock, useNow } from '../../src/features/toolsb';
 import { useT } from '../../src/i18n';
 import { cancelOne, scheduleOne } from '../../src/lib/notifications';
+import { routes } from '../../src/lib/routes';
 import { isDone, today, useCore } from '../../src/store/core';
 import { TIMER_TAGS, minutesByTagOf, useTimer, type TimerTag } from '../../src/store/slices/timer';
 import { radius, useTheme } from '../../src/theme';
@@ -21,7 +22,7 @@ type Stage = 'work' | 'break' | 'long';
 export default function TimerScreen() {
   const t = useT();
   const th = useTheme();
-  const params = useLocalSearchParams<{ habitId?: string; minutes?: string }>();
+  const params = useLocalSearchParams<{ habitId?: string; minutes?: string; tag?: string }>();
   const habitId = typeof params.habitId === 'string' && params.habitId ? params.habitId : undefined;
   const habit = useCore((s) => (habitId ? s.habits[habitId] : undefined));
   const habitDone = useCore((s) => (habitId ? isDone(s, habitId, today()) : false));
@@ -33,6 +34,11 @@ export default function TimerScreen() {
   const setLast = useTimer((s) => s.setLast);
   const tag = useTimer((s) => s.lastTag);
   const setTag = useTimer((s) => s.setTag);
+  const paramTag = typeof params.tag === 'string' && (TIMER_TAGS as readonly string[]).includes(params.tag) ? (params.tag as TimerTag) : undefined;
+  // rota etiketi (okul/gelişim "Odaklan") seçili etiketi belirler
+  useEffect(() => {
+    if (paramTag) setTag(paramTag);
+  }, [paramTag, setTag]);
 
   const paramMin = Number(params.minutes);
   const habitMin = habit?.kind === 'timer' && habit.target ? habit.target : undefined;
@@ -72,7 +78,7 @@ export default function TimerScreen() {
         title: t(`timer.notif${last ? 'Focus' : key}Title`),
         body: t(`timer.notif${last ? 'Focus' : key}Body`),
         trigger: { kind: 'date', date: new Date(at) },
-        url: '/tools/timer',
+        url: routes.tool('timer'),
       });
     },
     [cancelNotif, t],

@@ -121,6 +121,7 @@ export default function TaskEditor() {
       target: Number(one(params.target)) || undefined,
       link: pick(one(params.link), LINKS),
       source: one(params.source),
+      difficulty: pick(one(params.difficulty), DIFFS),
     };
     return {
       title: h?.title ?? p.title ?? '',
@@ -133,7 +134,7 @@ export default function TaskEditor() {
       mode: (h?.schedule.weeklyQuota ? 'quota' : h?.schedule.days?.length ? 'days' : 'daily') as 'daily' | 'days' | 'quota',
       days: (h?.schedule.days ?? []) as Weekday[],
       quota: h?.schedule.weeklyQuota ?? 3,
-      difficulty: (h?.difficulty ?? 'easy') as Difficulty,
+      difficulty: (h?.difficulty ?? p.difficulty ?? 'easy') as Difficulty,
       reminder: h?.reminderTime ?? '',
       due: h?.dueTime ?? '',
       isPrivate: h?.isPrivate ?? false,

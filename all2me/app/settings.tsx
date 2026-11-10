@@ -1,12 +1,13 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Platform, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { Card, Header, PillButton, Row, Screen, Segmented, Txt } from '../src/components/ui';
 import { fmtTime, tErr, useLang, useT } from '../src/i18n';
 import { syncNow, useSyncStatus } from '../src/lib/sync';
+import { routes } from '../src/lib/routes';
 import { useCore } from '../src/store/core';
+import { resetAllData } from '../src/store/resetAll';
 import { useSettings, type ThemePref, type Units } from '../src/store/settings';
 import { useTheme } from '../src/theme';
 import type { Lang } from '../src/i18n';
@@ -39,16 +40,11 @@ export default function SettingsScreen() {
   const resetAll = async () => {
     setBusy(true);
     try {
-      const keys = await AsyncStorage.getAllKeys();
-      const mine = keys.filter((k) => k.startsWith('all2me-'));
-      if (mine.length) await AsyncStorage.multiRemove(mine);
-    } catch {}
-    useCore.getState().resetAll();
-    useSettings.getState().resetSettings();
-    setBusy(false);
-    setConfirm(false);
-    // Web'de bellekteki diğer dilimler de temizlensin diye sayfa yenilenir; cihazda kök koruma onboarding'e döner.
-    if (Platform.OS === 'web') setTimeout(() => (globalThis as any).location?.assign?.('/'), 300);
+      await resetAllData();
+    } finally {
+      setBusy(false);
+      setConfirm(false);
+    }
   };
 
   const syncText =
@@ -146,7 +142,7 @@ export default function SettingsScreen() {
               small
               kind="outline"
               label={pairId ? tr('settings.partner.manage') : tr('settings.partner.add')}
-              onPress={() => router.push('/pairing')}
+              onPress={() => router.push(routes.pairing())}
             />
             {pairId ? <PillButton style={{ flex: 1 }} small icon="sync" label={tr('settings.sync.now')} onPress={() => void syncNow()} /> : null}
           </View>

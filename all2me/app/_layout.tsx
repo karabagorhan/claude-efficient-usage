@@ -5,11 +5,12 @@
 import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastHost } from '../src/components/ToastHost';
 import { onNotificationOpen, rescheduleReminders } from '../src/lib/notifications';
+import { cancelAllReminders, resyncAllReminders } from '../src/lib/reminders';
 import { startSync } from '../src/lib/sync';
 import { myHabits, useCore } from '../src/store/core';
 import { useSettings } from '../src/store/settings';
@@ -33,6 +34,17 @@ function Boot() {
     if (!me) return;
     void rescheduleReminders(myHabits(useCore.getState()));
   }, [me?.id, habits, notif, lang]);
+
+  // Bildirim ana anahtarı ya da dil değişince diğer bütün gruplar: kapalıysa hepsi iptal, açıksa
+  // (yeni dilde) yeniden kurulur. İlk açılışta dokunulmaz (planlı bildirimler zaten cihazda).
+  const prev = useRef<{ notif: boolean; lang: string } | null>(null);
+  useEffect(() => {
+    const p = prev.current;
+    prev.current = { notif, lang };
+    if (!me || !p || (p.notif === notif && p.lang === lang)) return;
+    if (!notif) void cancelAllReminders();
+    else void resyncAllReminders();
+  }, [me?.id, notif, lang]);
 
   useEffect(() => {
     if (!me) return;

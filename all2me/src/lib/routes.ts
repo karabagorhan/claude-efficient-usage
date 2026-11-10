@@ -55,8 +55,8 @@ export const routes = {
   tool: (
     name: 'timer' | 'drink' | 'sleep' | 'reflection' | 'meditate' | 'workout' | 'motivation' | 'soundscape' | 'alarm' | 'mood' | 'love',
   ) => `/tools/${name}`,
-  /** Zamanlayıcı bir göreve bağlı açılabilir */
-  timer: (p: { habitId?: string; minutes?: number } = {}) => `/tools/timer${qs(p)}`,
+  /** Zamanlayıcı bir göreve bağlı açılabilir; `tag` çalışma etiketini seçer (focus|lesson|homework|article|work) */
+  timer: (p: { habitId?: string; minutes?: number; tag?: 'focus' | 'lesson' | 'homework' | 'article' | 'work' } = {}) => `/tools/timer${qs(p)}`,
   reflectionWrite: (topicId?: string, entryId?: string) => `/tools/reflection-write${qs({ topicId, entryId })}`,
   /** Yaşam takibi: merkez ve alt takipçiler */
   life: (name: 'hub' | 'smoke' | 'meals' | 'chores' = 'hub') => (name === 'hub' ? '/life' : `/life/${name}`),

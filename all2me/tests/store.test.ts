@@ -142,6 +142,34 @@ assert.ok(!S().activeDays().has(addDays(t0, -3)));
 for (let i = 0; i < 10; i++) S().logActivity('focus');
 assert.ok(S().badges[`${ME}:focus10`], 'odak rozeti');
 
+// ---- yaşam takibi rozetleri (dilim import etmeden: activity + bonus grupları) ----
+const has = (id: string) => Boolean(S().badges[`${ME}:${id}`]);
+for (let i = 1; i <= 6; i++) S().logActivity('smokeOk', addDays(t0, -i));
+S().logActivity('smokeOk', addDays(t0, -1)); // aynı gün iki kez sayılmaz
+assert.ok(!has('smoke7'), 'limitte 6 gün yetmez');
+S().logActivity('smokeOk', t0);
+assert.ok(has('smoke7'), 'limitte 7 gün rozeti');
+
+// fast food'suz gün: öğün kaydı var, fast food yok, bugünden önce
+for (let i = 1; i <= 8; i++) S().logActivity('meal', addDays(t0, -i));
+S().logActivity('fastFood', addDays(t0, -2));
+S().logActivity('meal', t0); // bugün sayılmaz (gün kapanmadı)
+assert.ok(has('nofast7'), "fast food'suz 7 gün rozeti (8 kayıtlı gün - 1 fast food)");
+
+for (let i = 0; i < 19; i++) S().logActivity('choreDone');
+assert.ok(!has('chores20'), '19 ev işi yetmez');
+S().logActivity('choreDone');
+assert.ok(has('chores20'), '20 ev işi rozeti');
+
+// okul: bonus olayları (refId study:item:*) sayılır; günlük tavan için farklı günlere yay
+for (let i = 0; i < 10; i++) S().awardBonus({ id: `study:item:s${i}`, points: 10, group: 'study', perDay: 5, dayKey: addDays(t0, -Math.floor(i / 5)) });
+S().awardBonus({ id: 'study:milestone:x', points: 40, group: 'study', perDay: 50 });
+assert.ok(has('study10'), '10 okul öğesi rozeti');
+
+assert.ok(!has('goal1'), 'hedef rozeti henüz yok');
+S().awardBonus({ id: 'growth:goal:g1', points: 30, group: 'growth', perDay: 5 });
+assert.ok(has('goal1'), 'ilk hedef rozeti (bonus olayından)');
+
 // ---- arşiv ----
 S().archiveHabit('hW');
 assert.equal(myHabits(S()).some((h: any) => h.id === 'hW'), false);

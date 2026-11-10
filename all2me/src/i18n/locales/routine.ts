@@ -48,6 +48,15 @@ export default {
       cta: 'Görev ekle',
     },
     doneNote: 'Dokun: geri al',
+    life: {
+      label: 'Yaşam takibi özeti',
+      dueToday: 'Bugün: {{title}}',
+      dueTomorrow: 'Yarın: {{title}}',
+      dueIn: '{{n}} gün: {{title}}',
+      overdue: '{{n}} gecikmiş teslim',
+      smoke: 'Sigara {{n}}/{{limit}}',
+      chores: '{{n}} gecikmiş ev işi',
+    },
     // Harekete Geç ekranı
     action: {
       title: 'Harekete geçme zamanı!',
@@ -108,6 +117,15 @@ export default {
       cta: 'Add a task',
     },
     doneNote: 'Tap to undo',
+    life: {
+      label: 'Life tracking summary',
+      dueToday: 'Today: {{title}}',
+      dueTomorrow: 'Tomorrow: {{title}}',
+      dueIn: 'In {{n}} days: {{title}}',
+      overdue: '{{n}} overdue',
+      smoke: 'Smokes {{n}}/{{limit}}',
+      chores: '{{n}} overdue chores',
+    },
     action: {
       title: 'Time to take action!',
       bonusLabel: 'Bonus task',

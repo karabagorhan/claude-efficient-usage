@@ -2,7 +2,8 @@
  * Yerel bildirim yardımcıları. Her özellik kendi GRUBUNU kullanır; bir grubu yeniden kurmak
  * diğer grupların bildirimlerine dokunmaz. ASLA cancelAllScheduledNotificationsAsync çağırma.
  *
- * Gruplar (sahipleri): 'habit' (çekirdek, bu dosya), 'drink', 'sleep', 'alarm', 'timer', 'mood'.
+ * Gruplar (sahipleri): 'habit' (çekirdek, bu dosya), 'drink', 'sleep', 'alarm', 'timer', 'mood',
+ * 'smoke', 'meals', 'chores', 'study', 'growth'. Hepsini yeniden kurmak: src/lib/reminders.ts.
  * Bildirim `url` verisi taşıyorsa dokununca o rotaya gidilir (app/_layout.tsx).
  */
 import * as Notifications from 'expo-notifications';
@@ -12,6 +13,9 @@ import { translate } from '../i18n';
 import { useSettings } from '../store/settings';
 
 export type NotifGroup = 'habit' | 'drink' | 'sleep' | 'alarm' | 'timer' | 'mood' | (string & {});
+
+/** Uygulamanın kullandığı tüm bildirim grupları. */
+export const NOTIF_GROUPS: NotifGroup[] = ['habit', 'drink', 'sleep', 'alarm', 'timer', 'mood', 'smoke', 'meals', 'chores', 'study', 'growth'];
 
 export type NotifTrigger =
   /** Her gün HH:MM */
@@ -91,6 +95,19 @@ export async function cancelGroup(group: NotifGroup): Promise<void> {
     const all = await Notifications.getAllScheduledNotificationsAsync();
     for (const n of all) {
       if ((n.content.data as any)?.group === group) await Notifications.cancelScheduledNotificationAsync(n.identifier);
+    }
+  } catch {}
+}
+
+/** Birden çok grubu tek geçişte iptal eder (ör. bildirimler kapatılınca ya da veriler sıfırlanınca). */
+export async function cancelGroups(groups: NotifGroup[]): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const set = new Set<string>(groups);
+    const all = await Notifications.getAllScheduledNotificationsAsync();
+    for (const n of all) {
+      const g = (n.content.data as any)?.group;
+      if (typeof g === 'string' && set.has(g)) await Notifications.cancelScheduledNotificationAsync(n.identifier);
     }
   } catch {}
 }
