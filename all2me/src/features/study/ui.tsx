@@ -175,10 +175,13 @@ export function ToggleRow({ label, sub, value, onChange }: { label: string; sub?
 }
 
 /** Küçük büyük harfli bölüm etiketi (form içinde). */
-export function Label({ children, style }: { children: React.ReactNode; style?: object }) {
+export function Label({ children, style }: { children: string; style?: object }) {
+  const lang = useLang();
+  // Türkçe büyük harf: i → İ, ı → I (textTransform yerel ayarı bilmez)
+  const text = lang === 'tr' ? children.replace(/i/g, 'İ').replace(/ı/g, 'I').toUpperCase() : children.toUpperCase();
   return (
-    <Txt variant="small" weight="700" dim style={[{ marginTop: 18, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }, style]}>
-      {children}
+    <Txt variant="small" weight="700" dim style={[{ marginTop: 18, marginBottom: 8, letterSpacing: 0.5 }, style]}>
+      {text}
     </Txt>
   );
 }

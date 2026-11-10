@@ -220,7 +220,7 @@ function Board({ onAdd, goTab }: { onAdd: () => void; goTab: (t: Tab) => void })
             </Txt>
           </View>
           <Txt variant="h3" color={d.weekMin >= goalMin ? t.success : t.purple}>
-            {`%${Math.min(999, Math.round((d.weekMin / Math.max(1, goalMin)) * 100))}`}
+            {tr('study.pct', { n: Math.min(999, Math.round((d.weekMin / Math.max(1, goalMin)) * 100)) })}
           </Txt>
         </Row>
         <View style={{ marginTop: 10, marginBottom: 14 }}>
@@ -333,7 +333,7 @@ function Courses() {
             {todays.map(({ c, s }, i) => (
               <Row key={`${c.id}${i}`} gap={12} style={{ paddingVertical: 6 }}>
                 <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.pastel[c.pastel], borderWidth: 1, borderColor: t.border }} />
-                <Txt variant="bodyBold" style={{ width: 120 }}>{`${fmtTime(s.start, lang)}–${fmtTime(s.end, lang)}`}</Txt>
+                <Txt variant="bodyBold" style={{ minWidth: 100 }}>{`${fmtTime(s.start, lang)}–${fmtTime(s.end, lang)}`}</Txt>
                 <Txt style={{ flex: 1 }} numberOfLines={1}>
                   {c.name}
                 </Txt>
@@ -428,7 +428,7 @@ function Reading() {
     <View>
       <Card style={{ marginTop: 8 }}>
         <Row gap={16}>
-          <RingGauge value={totals.total ? totals.read / totals.total : 0} size={84} stroke={10} color={t.purple} label={`%${totals.total ? Math.round((totals.read / totals.total) * 100) : 0}`} />
+          <RingGauge value={totals.total ? totals.read / totals.total : 0} size={84} stroke={10} color={t.purple} label={tr('study.pct', { n: totals.total ? Math.round((totals.read / totals.total) * 100) : 0 })} />
           <View style={{ flex: 1 }}>
             <Txt variant="h3">{tr('study.reading.summary', { n: totals.papers, done: totals.finished })}</Txt>
             <Txt dim>{tr('study.reading.pages', { a: totals.read, b: totals.total })}</Txt>
@@ -489,7 +489,7 @@ function Thesis() {
     <View>
       <Card bg={t.pastel.yellow} style={{ marginTop: 8 }}>
         <Row gap={16}>
-          <RingGauge value={avg} size={96} stroke={11} color={t.orange} track={t.card} label={`%${Math.round(avg * 100)}`} />
+          <RingGauge value={avg} size={96} stroke={11} color={t.orange} track={t.card} label={tr('study.pct', { n: Math.round(avg * 100) })} />
           <View style={{ flex: 1 }}>
             <Txt variant="small" color={t.onPastel}>
               {tr('study.thesis.overall', { a: doneN, b: thesis.length })}
@@ -573,11 +573,11 @@ function MilestoneRow({ m, first, last, current, editing, onEdit }: { m: ThesisM
             <View style={{ flex: 1 }}>
               <Bar value={m.done ? 1 : m.progress / 100} color={m.done ? t.success : t.orange} />
             </View>
-            <Txt variant="small" weight="700" style={{ width: 40, textAlign: 'right' }}>{`%${m.done ? 100 : m.progress}`}</Txt>
+            <Txt variant="small" weight="700" style={{ width: 40, textAlign: 'right' }}>{tr('study.pct', { n: m.done ? 100 : m.progress })}</Txt>
           </Row>
-          <Row gap={8} style={{ marginTop: 10 }}>
-            <Chip label="−10" onPress={() => save({ id: m.id, progress: Math.max(0, m.progress - 10) })} />
-            <Chip label="+10" onPress={() => save({ id: m.id, progress: m.progress + 10 })} />
+          <Row gap={8} style={{ marginTop: 10, minHeight: 36 }}>
+            {!m.done ? <Chip label="−10" onPress={() => save({ id: m.id, progress: Math.max(0, m.progress - 10) })} /> : null}
+            {!m.done ? <Chip label="+10" onPress={() => save({ id: m.id, progress: m.progress + 10 })} /> : null}
             <View style={{ flex: 1 }} />
             <CheckCircle done={m.done} onPress={() => save({ id: m.id, done: !m.done })} />
           </Row>

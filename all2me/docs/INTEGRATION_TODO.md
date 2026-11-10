@@ -17,3 +17,4 @@
 - [ ] Rutin selamı TR'de iki satır düzeltmesi sonrası yeniden görüntü.
 - [x] task.link.* yeni bağlantı adları (yönetici ekledi), shots.mjs sorgu parametreli rota düzeltmesi, routes.linkTarget.
 - [ ] reflection.tsx: elle kurulan '/tools/reflection-write?entryId=' yerine routes.reflectionWrite(undefined, id) kullan; EN /tools başlık düzeltmesi sonrası yeniden görüntü.
+- [ ] Zamanlayıcı rotasına `tag` parametresi (routes.timer({tag})) — okul/gelişim Odaklan bunu kullansın; şu an setTag ile.

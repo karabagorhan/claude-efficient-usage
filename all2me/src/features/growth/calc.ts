@@ -28,15 +28,16 @@ export function avgProgress(goals: Goal[]): number {
   return goals.reduce((a, g) => a + goalProgress(g), 0) / goals.length;
 }
 
+export const TOP_MAX = 3;
+
 export const learnProgress = (l: LearnItem): number => (l.status === 'done' ? 1 : l.total > 0 ? Math.min(1, l.current / l.total) : 0);
 
 export const top3Done = (list: TopTask[] | undefined): { done: number; total: number; all: boolean } => {
   const total = list?.length ?? 0;
   const done = list?.filter((x) => x.done).length ?? 0;
-  return { done, total, all: total > 0 && done === total };
+  // "3 önemli işin tamamı": üç iş yazılmış ve hepsi bitmiş olmalı
+  return { done, total, all: total >= TOP_MAX && done === total };
 };
-
-export const TOP_MAX = 3;
 
 /**
  * Taşıma önerisi: bugünden önceki en yakın (en çok `lookback` gün) günün tamamlanmamış işleri.
@@ -80,7 +81,7 @@ export const weekTopDays = (tops: Record<string, TopTask[]>, days: string[]): bo
 /** Teşvik anahtarı. */
 export function growthCheerKey(p: { top: { done: number; total: number }; activeGoals: number }): string {
   if (p.top.total === 0) return 'growth.cheer.plan';
-  if (p.top.done === p.top.total) return 'growth.cheer.allDone';
+  if (p.top.done === p.top.total) return p.top.total >= TOP_MAX ? 'growth.cheer.allDone' : 'growth.cheer.addMore';
   if (p.top.done > 0) return 'growth.cheer.going';
   return 'growth.cheer.start';
 }

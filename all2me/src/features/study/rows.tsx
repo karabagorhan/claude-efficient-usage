@@ -29,7 +29,7 @@ export function DeadlineRow({
   const stripe = t.pastel[course?.pastel ?? TYPE_META[item.type].pastel];
   const sub = [
     !hideCourse && course ? (course.code || course.name) : null,
-    tr(`study.type.${item.type}`),
+    tr(`study.typeShort.${item.type}`),
     item.estHours ? tr('study.hoursShort', { n: item.estHours }) : null,
     item.subtasks.length ? `${item.subtasks.filter((s) => s.done).length}/${item.subtasks.length}` : null,
   ]
@@ -143,9 +143,9 @@ export function TypePicker({ visible, onClose, onPick }: { visible: boolean; onC
           <Txt dim style={{ marginBottom: 16 }}>
             {tr('study.add.body')}
           </Txt>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 14 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 }}>
             {ITEM_TYPES.map((ty) => (
-              <IconTile key={ty} emoji={TYPE_META[ty].emoji} label={tr(`study.type.${ty}`)} pastel={TYPE_META[ty].pastel} size={64} onPress={() => onPick(ty)} style={{ width: '25%' }} />
+              <IconTile key={ty} emoji={TYPE_META[ty].emoji} label={tr(`study.typeShort.${ty}`)} pastel={TYPE_META[ty].pastel} size={64} onPress={() => onPick(ty)} style={{ width: '25%' }} />
             ))}
           </View>
           <PillButton label={tr('common.btn.cancel')} kind="outline" onPress={onClose} style={{ marginTop: 20 }} />

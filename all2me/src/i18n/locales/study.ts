@@ -12,6 +12,15 @@ export default {
       project: 'Proje',
       thesis: 'Tez bölümü',
     },
+    typeShort: {
+      homework: 'Ödev',
+      reading: 'Okuma',
+      writing: 'Yazma',
+      exam: 'Sınav',
+      presentation: 'Sunum',
+      project: 'Proje',
+      thesis: 'Tez',
+    },
     typePlural: {
       homework: 'Ödevler',
       reading: 'Okumalar',
@@ -26,6 +35,7 @@ export default {
     priority: { low: 'Düşük', med: 'Orta', high: 'Yüksek' },
     tag: { lesson: 'Ders', homework: 'Ödev', article: 'Makale' },
     hoursShort: '{{n}} sa',
+    pct: '%{{n}}',
     dur: { h: '{{h}} sa', m: '{{m}} dk', hm: '{{h}} sa {{m}} dk' },
     cd: {
       noDate: 'Tarihsiz',
@@ -235,6 +245,15 @@ export default {
       project: 'Project',
       thesis: 'Thesis chapter',
     },
+    typeShort: {
+      homework: 'Assignment',
+      reading: 'Reading',
+      writing: 'Writing',
+      exam: 'Exam',
+      presentation: 'Talk',
+      project: 'Project',
+      thesis: 'Thesis',
+    },
     typePlural: {
       homework: 'Assignments',
       reading: 'Readings',
@@ -249,6 +268,7 @@ export default {
     priority: { low: 'Low', med: 'Medium', high: 'High' },
     tag: { lesson: 'Class', homework: 'Assignment', article: 'Paper' },
     hoursShort: '{{n}} h',
+    pct: '{{n}}%',
     dur: { h: '{{h}} h', m: '{{m}} min', hm: '{{h}} h {{m}} min' },
     cd: {
       noDate: 'No date',

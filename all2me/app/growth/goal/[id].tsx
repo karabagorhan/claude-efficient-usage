@@ -119,7 +119,7 @@ function GoalForm({ existing, area }: { existing?: Goal; area?: string }) {
           <Txt variant="bodyBold" color={t.onPastel}>
             {tr('growth.goal.progress')}
           </Txt>
-          <Txt variant="bodyBold" color={t.onPastel}>{`%${pct}`}</Txt>
+          <Txt variant="bodyBold" color={t.onPastel}>{tr('study.pct', { n: pct })}</Txt>
         </Row>
         <Bar value={pct / 100} color={t.primary} bg={t.card} />
       </Card>

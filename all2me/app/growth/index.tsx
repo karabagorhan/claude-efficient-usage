@@ -288,7 +288,7 @@ function GoalCard({ g, compact }: { g: Goal; compact?: boolean }) {
         <Txt variant="small" weight="700" color={t.onPastel}>
           {measure}
         </Txt>
-        <Txt variant="small" weight="800" color={t.onPastel}>{`%${pct}`}</Txt>
+        <Txt variant="small" weight="800" color={t.onPastel}>{tr('study.pct', { n: pct })}</Txt>
       </Row>
       <Bar value={pct / 100} color={done ? t.success : t.primary} bg={t.card} />
       {!compact && !done ? (
@@ -351,7 +351,7 @@ function Learning() {
   const [adding, setAdding] = useState(false);
   const groups = useMemo(() => {
     const all = Object.values(learning).sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
-    return LEARN_STATUSES.map((st) => ({ st, list: all.filter((l) => l.status === st) })).filter((g) => g.list.length);
+    return (['active', 'planned', 'done'] as const).map((st) => ({ st, list: all.filter((l) => l.status === st) })).filter((g) => g.list.length);
   }, [learning]);
   const empty = !groups.length;
   const add = () => {
@@ -425,7 +425,7 @@ function LearnCard({ l }: { l: LearnItem }) {
         <Txt variant="small" weight="700" color={t.onPastel}>
           {l.total ? `${l.current} / ${l.total} ${unit}` : `${l.current} ${unit}`}
         </Txt>
-        <Txt variant="small" weight="800" color={t.onPastel}>{`%${Math.round(learnProgress(l) * 100)}`}</Txt>
+        <Txt variant="small" weight="800" color={t.onPastel}>{tr('study.pct', { n: Math.round(learnProgress(l) * 100) })}</Txt>
       </Row>
       <Bar value={learnProgress(l)} color={l.status === 'done' ? t.success : t.primary} bg={t.card} />
       {l.status !== 'done' ? (

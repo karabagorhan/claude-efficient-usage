@@ -2,7 +2,7 @@
 export default {
   tr: {
     title: 'Gelişim',
-    tab: { today: 'Bugün', goals: 'Hedefler', learn: 'Öğrenme', review: 'Değerlendirme' },
+    tab: { today: 'Bugün', goals: 'Hedefler', learn: 'Öğrenme', review: 'Haftalık' },
     area: {
       career: 'Kariyer',
       work: 'İş',
@@ -22,6 +22,7 @@ export default {
       start: 'İlk işe başla — gerisi akar. 🚀',
       going: 'İyi gidiyorsun, kalanları da bitir! 💪',
       allDone: 'Bugünün 3 önemli işi tamam! 🎉',
+      addMore: 'Yazdıkların bitti! Bir önemli iş daha ekleyip üçü tamamla. ✨',
     },
     top: {
       title: 'Bugünün 3 önemli işi',
@@ -93,7 +94,7 @@ export default {
     review: {
       title: 'Haftalık değerlendirme',
       friday: 'Bugün değerlendirme günü! 🗓️',
-      stats: 'Bu hafta: {{a}} gün 3 önemli işin tamamı · {{b}} hedef tamamlandı · {{c}} check-in',
+      stats: 'Bu hafta: 3 önemli işin tamamı {{a}} gün · {{b}} hedef tamamlandı · {{c}} check-in',
       good: 'İyi giden',
       goodPh: 'Bu hafta neler iyi gitti?',
       blockers: 'Engeller',
@@ -146,6 +147,7 @@ export default {
       start: 'Start with the first one — the rest will follow. 🚀',
       going: 'Nice progress, finish the rest too! 💪',
       allDone: 'Today’s top 3 are done! 🎉',
+      addMore: 'Those are done! Add one more to complete your top 3. ✨',
     },
     top: {
       title: 'Today’s top 3',

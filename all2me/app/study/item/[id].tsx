@@ -161,7 +161,7 @@ function ItemForm({ existing, type, courseId }: { existing?: StudyItem; type?: s
             ))}
           </Row>
           <Label>{tr('study.paper.pass')}</Label>
-          <Row gap={8}>
+          <Row gap={8} style={{ flexWrap: 'wrap' }}>
             {([0, 1, 2, 3] as const).map((n) => (
               <Chip key={n} label={n === 0 ? tr('study.paper.pass0') : tr('study.reading.passN', { n })} active={paper.pass === n} onPress={() => setPaper({ pass: n })} />
             ))}
