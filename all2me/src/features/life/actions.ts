@@ -43,6 +43,7 @@ export function smokeResist(): { ok: boolean; capped: boolean } {
     useSmoke.getState().markActivity(day);
   }
   if (res.ok) useCore.getState().pushToast('life.smoke.toast.resisted', { n: res.event.points });
+  else if (res.reason === 'cap') useCore.getState().pushToast('life.smoke.toast.cap', { n: BONUS.smokeResist.perDay });
   return { ok: res.ok, capped: !res.ok && res.reason === 'cap' };
 }
 
