@@ -39,11 +39,10 @@ function PosterBody({ tpl, w, lang, t }: { tpl: Template; w: number; lang: Lang;
 
   if (tpl.layout === 'grid') {
     const items = tpl.items.slice(0, 6);
-    const cw = (w - 24) / 2;
     return (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {items.map((i, idx) => (
-          <View key={idx} style={{ width: cw, alignItems: 'center', marginBottom: 5 * k }}>
+          <View key={idx} style={{ width: '50%', alignItems: 'center', marginBottom: 5 * k }}>
             <Text style={{ fontSize: 20 * k }}>{i.emoji}</Text>
             <Text numberOfLines={2} style={{ fontSize: fs - 0.5, fontWeight: '700', color: INK, textAlign: 'center', paddingHorizontal: 2 }}>
               {name(i)}

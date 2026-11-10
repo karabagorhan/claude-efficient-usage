@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { Bar, Header, IconTile, Row, Screen, SectionHeader, Txt, tap } from '../../src/components/ui';
+import { Bar, IconTile, Row, Screen, SectionHeader, Txt, tap } from '../../src/components/ui';
 import { REFLECTION_TOPICS } from '../../src/data/reflections';
 import { QUOTES, quoteIndexForDay } from '../../src/data/quotes';
 import { L, useLang, useT } from '../../src/i18n';
@@ -55,7 +55,7 @@ export default function ToolsTab() {
   ];
 
   return (
-    <Screen header={<Header title={t('tools.title')} left="none" />} padBottom={24}>
+    <Screen header={<View style={{ paddingVertical: 14, paddingHorizontal: GUTTER }}><Txt variant="h3" center>{t('tools.title')}</Txt></View>} padBottom={24}>
       {/* Afişler */}
       <ScrollView
         horizontal

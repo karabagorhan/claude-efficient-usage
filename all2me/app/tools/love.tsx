@@ -56,7 +56,10 @@ export default function LoveScreen() {
   };
 
   return (
-    <Screen header={<Header title={t('love.title')} />}>
+    <Screen header={<Header />}>
+      <Txt variant="h2" center style={{ marginBottom: 12 }}>
+        {t('love.title')}
+      </Txt>
       <Segmented
         value={view}
         onChange={setView}

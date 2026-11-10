@@ -31,7 +31,8 @@ for (let i = 0; i < argv.length; i++) {
 }
 if (opt.routes.length === 0) opt.routes = ['routine=/', 'tools=/tools', 'wheel=/wheel'];
 const routes = opt.routes.map((r) => {
-  const [name, p] = r.includes('=') ? r.split('=') : [r.replace(/^\//, '').replace(/[/[\]]/g, '_') || 'root', r];
+  const eq = r.indexOf('=');
+  const [name, p] = eq > 0 && !r.slice(0, eq).includes('/') ? [r.slice(0, eq), r.slice(eq + 1)] : [r.replace(/^\//, '').replace(/[/[\]]/g, '_') || 'root', r];
   return { name, path: p };
 });
 

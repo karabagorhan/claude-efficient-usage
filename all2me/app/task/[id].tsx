@@ -370,7 +370,7 @@ export default function TaskEditor() {
       <TimeField value={reminder} onChange={setReminder} placeholder={tr('newtask.editor.reminderHint')} />
 
       <Label>{tr('newtask.editor.dueLabel')}</Label>
-      <TimeField value={due} onChange={setDue} placeholder="HH:MM" />
+      <TimeField value={due} onChange={setDue} placeholder={tr('newtask.editor.reminderHint')} />
       <Txt variant="small" dim style={{ marginTop: 8 }}>
         {tr('newtask.editor.dueHint')}
       </Txt>

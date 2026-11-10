@@ -2,7 +2,7 @@
  * Rota URL'si kurucuları — parametre sözleşmesinin tek kaynağı (docs/CONTRACTS.md §8).
  * Kullanım: router.push(routes.actionHabit(h.id, 'wheel'))
  */
-import type { HabitKind, HabitLink, PastelKey, Slot } from '../engine/types';
+import type { Difficulty, HabitKind, HabitLink, PastelKey, Slot } from '../engine/types';
 
 const qs = (o: Record<string, string | number | undefined | null>) => {
   const parts = Object.entries(o)
@@ -33,7 +33,11 @@ export const routes = {
     target?: number;
     link?: HabitLink;
     source?: string;
+    difficulty?: Difficulty;
   } = {}) => `/task/new${qs(p)}`,
+  /** Bağlı görevin aracı/takipçisi (Rutin'de bağlı göreve dokununca) */
+  linkTarget: (link: HabitLink): string =>
+    ({ drink: '/tools/drink', mood: '/tools/mood', reflection: '/tools/reflection', smoke: '/life/smoke', meal: '/life/meals', chore: '/life/chores', study: '/study', growth: '/growth' })[link],
   streak: () => '/streak',
   duel: (period?: 'day' | 'week' | 'month') => `/duel${qs({ period })}`,
   lucky: () => '/lucky',
