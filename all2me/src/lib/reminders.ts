@@ -6,9 +6,11 @@
  */
 import { buildGrowthNotifs } from '../features/growth/notify';
 import { notifyChores, notifyMeals, notifySmoke } from '../features/life/notify';
+import { syncReportNotifs } from '../features/report/notify';
 import { buildStudyNotifs } from '../features/study/notify';
 import { rescheduleAlarms } from '../features/toolsb/alarmSchedule';
 import { translate } from '../i18n';
+import { useCore } from '../store/core';
 import { useAlarm } from '../store/slices/alarm';
 import { useChores } from '../store/slices/chores';
 import { useDrink, type DrinkReminder } from '../store/slices/drink';
@@ -63,6 +65,8 @@ export async function resyncAllReminders(): Promise<void> {
   if (Object.keys(g.goals).length || Object.keys(g.tops).length || Object.keys(g.learning).length || g.reviews.length) {
     jobs.push(scheduleGroup('growth', buildGrowthNotifs(g.settings)));
   }
+  // haftalık rapor (Pazar 19:00): profil kurulduysa
+  if (useCore.getState().me) jobs.push(syncReportNotifs());
   await Promise.all(jobs.map((j) => j.catch(() => {})));
 }
 

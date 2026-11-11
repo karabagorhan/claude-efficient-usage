@@ -9,6 +9,7 @@ import React, { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastHost } from '../src/components/ToastHost';
+import { installAlarmResponder } from '../src/features/toolsb/alarmSchedule';
 import { onNotificationOpen, rescheduleReminders } from '../src/lib/notifications';
 import { cancelAllReminders, resyncAllReminders } from '../src/lib/reminders';
 import { startSync } from '../src/lib/sync';
@@ -58,6 +59,9 @@ function Boot() {
 
   useEffect(() => onNotificationOpen((url) => router.push(url as any)), []);
 
+  // alarm bildirimi: dokunuş → tam ekran alarm, 'Ertele' eylemleri (url taşımaz; yukarıdaki dinleyiciyle çakışmaz)
+  useEffect(() => (me ? installAlarmResponder() : undefined), [me?.id]);
+
   return null;
 }
 
@@ -87,8 +91,10 @@ export default function RootLayout() {
           <Stack.Screen name="new-task" options={modal} />
           <Stack.Screen name="task/[id]" options={modal} />
           <Stack.Screen name="action" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+          <Stack.Screen name="alarm-ring" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen name="lucky" options={modal} />
           <Stack.Screen name="planner" options={modal} />
+          <Stack.Screen name="profile-quiz" options={modal} />
           <Stack.Screen name="streak" options={modal} />
           <Stack.Screen name="duel" />
           <Stack.Screen name="pairing" options={modal} />

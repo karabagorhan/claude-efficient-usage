@@ -150,3 +150,31 @@ export function schedule(picked: { task: PoolTask; block: PlanBlock }[], wake: s
 }
 
 export const totalMinutes = (items: PlanItem[]): number => items.reduce((s, i) => s + i.task.minutes, 0);
+
+/**
+ * Profil tabanlı başlangıç planı (onboarding "İlk günün planı"): `generatePlan` sonucunu
+ *  - yoğun (efor 2+) görevleri kişinin en enerjik zaman dilimine kaydırarak (uygunsa),
+ *  - yatış saatinden 1 saat öncesini aşan satırları çıkararak
+ * yeniden saatler. Geriye uyumlu ek: `generatePlan` / `schedule` davranışı değişmez.
+ */
+export function generatePeakPlan(a: PlanAnswers, seed: number, peak: PlanBlock | null, sleep?: string | null, pool: PoolTask[] = PLANNER_POOL): PlanItem[] {
+  const picked = generatePlan(a, seed, [], pool).map((i) => ({ task: i.task, block: i.block }));
+  if (peak) {
+    for (const hard of picked.filter((p) => p.task.effort >= 2 && p.block !== peak)) {
+      if (!hard.task.parts.includes(peak)) continue;
+      const easy = picked.find((p) => p.block === peak && p.task.effort < hard.task.effort && p.task.parts.includes(hard.block));
+      if (easy) {
+        easy.block = hard.block;
+        hard.block = peak;
+      }
+    }
+  }
+  let items = schedule(picked, a.wake);
+  if (sleep) {
+    let end = toMin(sleep);
+    if (end <= toMin(a.wake)) end += 24 * 60;
+    const limit = Math.min(end - 60, 23 * 60 + 55);
+    items = items.filter((i) => toMin(i.time) <= limit);
+  }
+  return items;
+}

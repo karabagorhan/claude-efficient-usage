@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, Switch, View } from 'react-native';
+import { AppState, Platform, Pressable, Switch, View } from 'react-native';
+import { router } from 'expo-router';
 import { Card, Chip, EmptyState, Field, Header, IconButton, PillButton, Row, Screen, Txt, tap } from '../../src/components/ui';
 import type { Weekday } from '../../src/engine/types';
-import { nextAlarm, nextOccurrence, rescheduleAlarms } from '../../src/features/toolsb/alarmSchedule';
+import { exactAlarmStatus, nextAlarm, nextOccurrence, openExactAlarmSettings, rescheduleAlarms, type ExactAlarmStatus } from '../../src/features/toolsb/alarmSchedule';
 import { DAYS_SHORT, fmtTime, useLang, useT } from '../../src/i18n';
 import { useAlarm, type AlarmItem } from '../../src/store/slices/alarm';
+import { routes } from '../../src/lib/routes';
 import { radius, useTheme } from '../../src/theme';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -30,6 +32,17 @@ export default function AlarmScreen() {
   const setAll = useAlarm((s) => s.setAll);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [tick, setTick] = useState(0);
+  const [exact, setExact] = useState<ExactAlarmStatus>({ missing: false, canOpenSettings: false });
+  const [exactMsg, setExactMsg] = useState(false);
+
+  // Android 12+: tam zamanlı alarm izni; açılışta ve uygulamaya dönünce denetle
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const check = () => void exactAlarmStatus().then(setExact);
+    check();
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && check());
+    return () => sub.remove();
+  }, []);
 
   // açılışta geçmiş tek seferlik alarmları kapat; dakikada bir "x dk sonra" bilgisini tazele
   useEffect(() => {
@@ -160,7 +173,7 @@ export default function AlarmScreen() {
           ) : null}
         </View>
         <Txt variant="caption" faint center style={{ marginTop: 14 }}>
-          {t('alarm.note')}
+          {t(Platform.OS === 'android' ? 'alarm.noteAndroid' : 'alarm.noteIos')}
         </Txt>
       </Screen>
     );
@@ -169,6 +182,32 @@ export default function AlarmScreen() {
   // ---------- liste ----------
   return (
     <Screen header={<Header title={t('alarm.title')} />}>
+      {Platform.OS === 'android' && exact.missing && sorted.length > 0 ? (
+        <Card bg={th.pastel.peach} padding={14} style={{ marginBottom: 14 }}>
+          <Txt variant="bodyBold" color={th.onPastel}>
+            {t('alarm.exact.title')}
+          </Txt>
+          <Txt variant="small" color={th.onPastel} style={{ marginTop: 4 }}>
+            {t('alarm.exact.body')}
+          </Txt>
+          {exact.canOpenSettings ? (
+            <View style={{ marginTop: 10 }}>
+              <PillButton
+                small
+                label={t('alarm.exact.open')}
+                onPress={() => {
+                  void openExactAlarmSettings().then((ok) => (ok ? setExact({ missing: false, canOpenSettings: false }) : setExactMsg(true)));
+                }}
+              />
+            </View>
+          ) : null}
+          {exactMsg || !exact.canOpenSettings ? (
+            <Txt variant="caption" color={th.onPastel} style={{ marginTop: 8 }}>
+              {t('alarm.exact.manual')}
+            </Txt>
+          ) : null}
+        </Card>
+      ) : null}
       {sorted.length > 0 ? (
         <Card bg={th.pastel.yellow} padding={14} style={{ marginBottom: 14 }}>
           <Txt variant="bodyBold" color={th.onPastel}>
@@ -219,8 +258,20 @@ export default function AlarmScreen() {
           }}
         />
       </View>
+      <View style={{ marginTop: 8 }}>
+        <PillButton
+          kind="ghost"
+          icon="eye-outline"
+          label={t('alarm.preview')}
+          onPress={() => {
+            const n = nxt?.alarm;
+            const d = new Date();
+            router.push(routes.alarmRing({ alarmId: n?.id, hour: n ? n.hour : d.getHours(), minute: n ? n.minute : d.getMinutes(), label: n?.label }) as any);
+          }}
+        />
+      </View>
       <Txt variant="caption" faint center style={{ marginTop: 14 }}>
-        {t('alarm.note')}
+        {t(Platform.OS === 'android' ? 'alarm.noteAndroid' : 'alarm.noteIos')}
       </Txt>
     </Screen>
   );

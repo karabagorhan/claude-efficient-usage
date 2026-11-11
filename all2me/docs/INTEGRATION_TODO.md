@@ -28,3 +28,14 @@
 ## Bilinçli olarak açık kalanlar
 - Gerçek cihazda bildirim / ses / alarm / haptik denemesi yapılmadı; Supabase senkronu uçtan uca denenmedi.
 - Ev işleri partnerle paylaşılmıyor (sonraki sürüm).
+
+## Faz 3 — yorum araştırmasından (replica/entrepreneur.md §5), faz 2 ajanları bitince
+- [ ] Hatırlatıcı sağlığı ekranı: izin durumu, test bildirimi, sessiz saatler, günlük bildirim üst sınırı (Ayarlar altında).
+- [ ] Rutin'de görev sırası: saate göre otomatik + elle sıralama; kaydırarak sil/arşivle + geri al toast'ı.
+- [ ] "Önceden işaretle": ileri tarihli görevi puansız işaretleyebilme (unuttum hakkı metnini netleştir).
+- [ ] Esnek tekrar: her N gün / hafta / ay + başlangıç (çapa) tarihi (engine isPlannedOn + testler + düzenleyici).
+- [ ] Açılış hata sınırı (ErrorBoundary) + kurtarma ekranı (yeniden dene / verileri dışa aktarmadan sıfırla uyarısı).
+- [ ] Destek kaynakları (iş ortaklığı yok, genel bilgi) + testlerde "tanı değildir" etiketi kontrolü.
+- [ ] Geri bildirim / hata bildir: paylaş menüsüyle tanı metni (sürüm, platform, dil); adres yok (kullanıcıya sorulacak).
+- [ ] "Hep ücretsiz" mesajı Ayarlar > Hakkında'da (onboarding'e onb2 ekliyor).
+- (Kullanıcı yedekle/geri yükle'yi seçmedi — yapılmayacak. Widget: Expo Go'da yok.)

@@ -1,5 +1,5 @@
 import { PLANNER_POOL } from '../../data/plannerPool';
-import { blockPlan, budgetOf, generatePlan, toMin, totalMinutes, type PlanAnswers } from './plan';
+import { blockPlan, budgetOf, generatePeakPlan, generatePlan, toMin, totalMinutes, type PlanAnswers } from './plan';
 
 // Bağımlılıksız mini assert (tsconfig'te node tipleri yok)
 const assert = {
@@ -100,6 +100,24 @@ ok('aynı tohum aynı plan; yeniden oluştur (avoid) farklı plan verir', () => 
 ok('blockPlan dağılımı', () => {
   for (let k = 5; k <= 9; k++) assert.equal(blockPlan(k).length, k);
   assert.deepEqual(blockPlan(5).filter((b) => b === 'evening').length, 1);
+});
+
+ok('generatePeakPlan: aynı tohum aynı plan, yatıştan 1 saat önce biter, yoğun işler doruğa kayar', () => {
+  const a: PlanAnswers = { wake: '07:00', energy: 'high', areas: [], minutes: 90 };
+  const p1 = generatePeakPlan(a, 5, 'evening', '23:00');
+  assert.deepEqual(generatePeakPlan(a, 5, 'evening', '23:00').map((p) => p.id), p1.map((p) => p.id));
+  for (const p of p1) assert.ok(toMin(p.time) <= toMin('22:00'), `geç satır ${p.time}`);
+  let moved = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    const base0 = generatePlan(a, seed);
+    const peak = generatePeakPlan(a, seed, 'evening', null);
+    const hard = (l: typeof base0) => l.filter((p) => p.block === 'evening' && p.task.effort >= 2).length;
+    assert.ok(hard(peak) >= hard(base0), 'doruk blokta yoğun görev azalmamalı');
+    if (hard(peak) > hard(base0)) moved++;
+  }
+  assert.ok(moved > 0, 'en az bir tohumda kayma olmalı');
+  const late = generatePeakPlan({ ...a, wake: '10:00' }, 3, null, '00:30');
+  for (const p of late) assert.ok(toMin(p.time) <= 23 * 60 + 30);
 });
 
 console.log(`${n} planner testi geçti`);

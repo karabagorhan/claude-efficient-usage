@@ -3,7 +3,7 @@
  * diğer grupların bildirimlerine dokunmaz. ASLA cancelAllScheduledNotificationsAsync çağırma.
  *
  * Gruplar (sahipleri): 'habit' (çekirdek, bu dosya), 'drink', 'sleep', 'alarm', 'timer', 'mood',
- * 'smoke', 'meals', 'chores', 'study', 'growth'. Hepsini yeniden kurmak: src/lib/reminders.ts.
+ * 'smoke', 'meals', 'chores', 'study', 'growth', 'report'. Hepsini yeniden kurmak: src/lib/reminders.ts.
  * Bildirim `url` verisi taşıyorsa dokununca o rotaya gidilir (app/_layout.tsx).
  */
 import * as Notifications from 'expo-notifications';
@@ -15,7 +15,7 @@ import { useSettings } from '../store/settings';
 export type NotifGroup = 'habit' | 'drink' | 'sleep' | 'alarm' | 'timer' | 'mood' | (string & {});
 
 /** Uygulamanın kullandığı tüm bildirim grupları. */
-export const NOTIF_GROUPS: NotifGroup[] = ['habit', 'drink', 'sleep', 'alarm', 'timer', 'mood', 'smoke', 'meals', 'chores', 'study', 'growth'];
+export const NOTIF_GROUPS: NotifGroup[] = ['habit', 'drink', 'sleep', 'alarm', 'timer', 'mood', 'smoke', 'meals', 'chores', 'study', 'growth', 'report'];
 
 export type NotifTrigger =
   /** Her gün HH:MM */

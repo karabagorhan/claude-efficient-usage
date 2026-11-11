@@ -4,9 +4,11 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cancelGroups, NOTIF_GROUPS } from '../lib/notifications';
+import { removeAllFromCalendar } from '../lib/calendar';
 import { useCore } from './core';
 import { useSettings } from './settings';
 import { useAlarm } from './slices/alarm';
+import { useCalendar } from './slices/calendar';
 import { useChores } from './slices/chores';
 import { useDrink } from './slices/drink';
 import { useFavorites } from './slices/favorites';
@@ -17,7 +19,9 @@ import { useMeditate } from './slices/meditate';
 import { useMood } from './slices/mood';
 import { useMotivation } from './slices/motivation';
 import { usePlanner } from './slices/planner';
+import { useProfile } from './slices/profile';
 import { useReflection } from './slices/reflection';
+import { useReportPrefs } from './slices/report';
 import { useSleep } from './slices/sleep';
 import { useSmoke } from './slices/smoke';
 import { useSoundscape } from './slices/soundscape';
@@ -29,6 +33,7 @@ import { useWorkout } from './slices/workout';
 /** Her dilimin `reset()`'i olan store'ları (getState().reset()). */
 export const SLICES: Array<{ getState: () => { reset: () => void } }> = [
   useAlarm,
+  useCalendar,
   useChores,
   useDrink,
   useFavorites,
@@ -39,7 +44,9 @@ export const SLICES: Array<{ getState: () => { reset: () => void } }> = [
   useMood,
   useMotivation,
   usePlanner,
+  useProfile,
   useReflection,
+  useReportPrefs,
   useSleep,
   useSmoke,
   useSoundscape,
@@ -62,6 +69,8 @@ export function resetAllSlices(): void {
 export async function resetAllData(): Promise<void> {
   // önce bildirimler (alarm, su, sigara... hiçbir grup kalmasın)
   await cancelGroups(NOTIF_GROUPS).catch(() => {});
+  // cihaz takvimindeki All2Me olayları (izin sorulmaz; izin yoksa atlanır)
+  await removeAllFromCalendar().catch(() => {});
   resetAllSlices();
   useCore.getState().resetAll();
   useSettings.getState().resetSettings();

@@ -42,6 +42,8 @@ export const routes = {
   duel: (period?: 'day' | 'week' | 'month') => `/duel${qs({ period })}`,
   lucky: () => '/lucky',
   planner: () => '/planner',
+  /** "Rutin tipin" profil testi (modal) */
+  profileQuiz: () => '/profile-quiz',
   pairing: () => '/pairing',
   stats: () => '/stats',
   badges: () => '/badges',
@@ -55,6 +57,8 @@ export const routes = {
   tool: (
     name: 'timer' | 'drink' | 'sleep' | 'reflection' | 'meditate' | 'workout' | 'motivation' | 'soundscape' | 'alarm' | 'mood' | 'love',
   ) => `/tools/${name}`,
+  /** Alarm çalma ekranı (tam ekran); bildirim dokunuşu açar */
+  alarmRing: (p: { alarmId?: string; hour: number; minute: number; label?: string }) => `/alarm-ring${qs(p)}`,
   /** Zamanlayıcı bir göreve bağlı açılabilir; `tag` çalışma etiketini seçer (focus|lesson|homework|article|work) */
   timer: (p: { habitId?: string; minutes?: number; tag?: 'focus' | 'lesson' | 'homework' | 'article' | 'work' } = {}) => `/tools/timer${qs(p)}`,
   reflectionWrite: (topicId?: string, entryId?: string) => `/tools/reflection-write${qs({ topicId, entryId })}`,
