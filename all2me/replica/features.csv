@@ -1,0 +1,70 @@
+feature,area,priority,original,clone,notes
+"Evet/Hayır soru kartları (büyük başlık, ortada görsel, Hayır çerçeveli + Evet siyah hap)",onboarding,should,yes,yes,"s02/s03. app/onboarding.tsx q:* adımları, 7 soru; görseller özgün emoji kompozisyonu (src/features/onboarding/QuestionArt.tsx)"
+Onboarding geri dönüş oku,onboarding,could,yes,yes,s02. IconButton arrow-undo; ek olarak ilerleme çubuğu
+Sonuç ekranı: 2x2 halka gösterge + seviye etiketi,onboarding,should,yes,yes,"s01. RingGauge + metricLevel (cevaplardan türetilir), 'tanı değildir' notu; sahte istatistik bloğu yok"
+Kutlama ekranı (konfeti),onboarding,could,yes,yes,"s08. Confetti + maskot, 3.2 sn sonra ana ekrana geçer"
+"Sosyal kanıt blokları (certified by, 30M+, %94)",onboarding,could,yes,skip,s01. Sahte istatistik + başka markanın adı; SPEC §1 yasaklar
+"Uzun kişiselleştirme akışı (bildirim izni adımı, uyku süresi seçimi, rutin önizlemesi)",onboarding,could,yes,partial,"doğrulanmadı (research/meplus-features.md §2, teardown özeti). All2Me: dil, ad/avatar, 7 soru, sonuç, önerilen görevler, partner. Eksik: uyku süresi adımı, rutin önizlemesi; bildirim izni ilk hatırlatıcı kurulurken isteniyor"
+Onboarding sonu paywall ve çıkış teklifi,monetization,could,yes,skip,"doğrulanmadı (research §2). Ücretli sürüm yok, tüm özellikler açık (ürün kuralı)"
+"Alt sekme çubuğu: Rutin, İlham, Çark, Araçlar, Profil; ortada renkli çark + pembe hap",navigation,must,yes,yes,"s05-s07. app/(tabs)/_layout.tsx. Fark: orijinalde Çark tam ekran modal açıyor (s09'da sekme çubuğu yok), All2Me'de sekme. Hap etiketi kontrastı düşük (design/contrast.md #4)"
+"Rutin panosu: günün görevleri, tek dokunuşla tamamla",routine,must,yes,yes,"Ekran görüntüsü yok, yalnız sekme adı (s05); research §1 'daily routine planner / habit tracker'. app/(tabs)/index.tsx: zaman dilimleri, sayaç/süreli görev, ilerleme, boş durum, + butonu"
+Görev hatırlatıcıları (seçilen saatte),routine,should,yes,yes,doğrulanmadı (research §1 mağaza özeti). app/task/[id].tsx reminderTime -> src/lib/notifications.ts; gerçek cihazda denenmedi (README)
+Görev simgesi ve rengini özelleştirme,routine,should,yes,yes,doğrulanmadı (research §1). app/task/[id].tsx emoji seçici + özel emoji + 7 pastel
+Sınırsız alışkanlık sayısı (ücretli sürümde),routine,should,yes,yes,doğrulanmadı (research §1 VIP iddiası). core store'da görev sınırı yok
+Yeni Görev modalı + 'Yeniden adlandırmak için dokun' ile özel görev,new task,must,yes,yes,s10/s11. app/new-task.tsx -> routes.createTask -> görev düzenleyici. Fark: başlık kaydırmada sabit kalmıyor (diff.md)
+"Gününü planla kartı (orijinalde AI asistan, ücretli)",new task,should,yes,yes,"s10. Bilinçli ikame: çevrimdışı kural tabanlı Akıllı planlayıcı (app/planner.tsx: kalkış, enerji, alan, süre -> saatli plan -> rutine ekle); yapay zekâ iddiası yok"
+Şanslı görevini çevir kartı,new task,should,yes,yes,s10. app/lucky.tsx -> Harekete Geç (bonus modu)
+"Bağlı araç görevleri: su (0/hedef), ruh hali (0/1), yansıma (0/1)",new task,should,yes,yes,s10. new-task.tsx linked[]; eklenmişse 'Eklendi' rozeti; rutinden dokununca araca gider (routes.linkTarget)
+"Önerilen görev listesi (pastel kart, emoji, zaman dilimi, ›)",new task,must,yes,yes,s10/s11. 53 öneri (src/data/suggestions.ts) + kategori çipleri; karta dokun -> ön dolu düzenleyici
+Hedefli sayaç görevi ('Hedef 0/1 kez'),new task,should,yes,yes,s11. kind=counter + target; rutin kartında artırma
+"Harekete Geç ekranı: eğik görev kartı, Tamamlandı / Sonra yap, maskot",action,should,yes,yes,"s04. app/action.tsx (görev modu + çark/şanslı bonus modu), konfeti, özgün maskot"
+"Ev işi çarkı: 10 dilim emoji+ad, ortada maskot, dalgalı çerçeve, yavaşlayarak durur",wheel,must,yes,yes,s09/s12. src/features/wheel/WheelView.tsx SVG + Animated. Kusur: 369px genişlikte bazı dilim adları emojiyle çakışıyor/kesiliyor (diff.md)
+Çark sonuç şeridi (son çıkan dilim),wheel,should,yes,yes,s09/s12. useWheel.last kalıcı; çevirince Harekete Geç açılır
+"Çarkı sıfırla ve düzenle (dilim ekle/sil/yeniden adlandır, emoji)",wheel,should,yes,yes,"s09 sağ üst ikonlar. app/wheel-edit.tsx, onaylı sıfırlama"
+"Sınırsız çevirme (orijinalde 3 hak + geri sayım, fazlası ücretli)",wheel,should,yes,yes,"s09 'Get More Spins (0/3)', s12 '(1/3)'. All2Me sınırsız; günde 5 çark görevi puanlanır"
+İlham başlığı + arama + favoriler,inspire,should,yes,yes,"s07. app/inspire/search.tsx, favorites.tsx, kalp ile favorile"
+Öne çıkan afiş karuseli + sayfa noktaları,inspire,could,yes,yes,"s07. FEATURED afişleri (özgün çizim yok, emoji + düz renk)"
+Yatay kategori ikonları,inspire,should,yes,yes,s07. 11 kategori -> app/inspire/category/[id].tsx
+Bölümler + 'Tümü ›' + yatay kaydırılan dikey şablon kartları,inspire,must,yes,yes,"s07, s13-s17. 9 bölüm (src/data/inspire/categories.ts SECTIONS)"
+Şablon kartı içinde madde ızgarası/listesi,inspire,should,yes,yes,s13. src/features/inspire/TemplateCard.tsx (zaman dilimli liste / onay kutulu liste)
+Şablon detayı: hepsini ya da tek tek rutine ekle,inspire,must,yes,yes,Detay ekranı referansta görülmedi (SPEC §3.7). app/inspire/[id].tsx addAll + tekli ekle + favori
+40+ şablon içeriği,inspire,should,yes,yes,62 özgün iki dilli şablon (templates-*.ts). Orijinal içerik illüstrasyonlu poster; All2Me metin+emoji
+Video içerikli bölüm (oynat düğmeli kartlar),inspire,could,yes,skip,s07 'To be Organized'. Lisanslı/üçüncü taraf video içeriği klonlanmaz; aynı bölüm metin şablonlarıyla dolu
+"Tanı koyan psikolojik testler (çocukluk travması, DEHB)",inspire,could,yes,skip,s15. SPEC §1: tanı koyan test yok; yerine tanı koymayan mini testler (eklenenler satırı)
+MBTI kişilik testiyle rutin önerisi,inspire,could,yes,partial,doğrulanmadı (research §1). MBTI yok; tanı koymayan mini testler sonuçta şablon önerir (app/inspire/quiz/[id].tsx r.templates) ama kişilik tipi / tam rutin önerisi yok
+Fotoğraftan temizlik planı (AI),inspire,could,yes,skip,"doğrulanmadı, güvenilmez kaynak (research §1); ağ/API anahtarı gerektirir, çevrimdışı ilkeye aykırı"
+Araçlar ekranı + 'Kendimi Sevmenin 100 Yolu' afişi (kart destesi),tools,should,yes,yes,s05/s06. app/(tabs)/tools.tsx afiş karuseli; app/tools/love.tsx 100 kart + 'bugün yaptım'
+Yatay araç şeridi (9 araç),tools,must,yes,yes,"s05/s06. Zamanlayıcı, Su, Uyku, Yansıma, Meditasyon, Egzersiz, Motivasyon, Ses Ortamı, Alarm"
+Zamanlayıcı (odak/pomodoro),tools,should,yes,yes,"s06 ikon (içerik görülmedi). app/tools/timer.tsx hazır süreler, bildirim, görev/etiket bağlantısı"
+Su takibi + günlük hatırlatıcılar,tools,must,yes,yes,"s05 kartı, s10 '0/73oz'. app/tools/drink.tsx hedef, ml/oz, geçmiş, hatırlatıcı aralığı"
+Uyku takibi,tools,should,yes,yes,"s06 ikon (içerik görülmedi). app/tools/sleep.tsx yatış/kalkış, hedef, 7 gün grafik, yatma hatırlatıcısı"
+Yansıma konuları (orijinalde kilitli konular var),tools,should,yes,yes,"s05 kilit simgeli konu. 27 konu hepsi açık (src/data/reflections.ts), yazma + geçmiş"
+Meditasyon / nefes,tools,should,yes,yes,"s06 kesik 'Me…' ikonu. app/tools/meditate.tsx 3 nefes kalıbı, süre, animasyon"
+Egzersiz rutinleri,tools,should,yes,yes,s05 ikon. app/tools/workout.tsx hazır rutinler + adım zamanlayıcı
+Motivasyon sözleri,tools,could,yes,yes,"s05 ikon. app/tools/motivation.tsx günün sözü, kaydırma, favori; özgün sözler"
+Ses ortamı,tools,could,yes,yes,"s05 ikon. 8 betikle sentezlenmiş döngü (assets/sounds), uyku zamanlayıcısı; gerçek cihazda denenmedi"
+Alarm,tools,could,yes,partial,"s05 ikon. app/tools/alarm.tsx saat+gün+etiket ama yerel bildirim: sessiz/rahatsız etme modunda çalmayabilir, uygulama kapalıyken gerçek saat alarmı değil (README bilinen sınırlar; Expo Go kısıtı)"
+'Nasıl hissediyorsun? Kaydetmek için dokun' ruh hali kartı + kayıt,tools,must,yes,yes,s05. app/tools/mood.tsx 5 seviye + etiket + not
+Ruh hali takvimi / istatistiği,tools,should,yes,yes,"doğrulanmadı (research §1 'Mood Tracker Calendar', 'Mood Stat'). mood.tsx ay takvimi + 30 gün ortalaması + geçmiş listesi"
+"Seri ekranı: alev, büyük sayı, teşvik afişi",streak,should,yes,yes,"s16. app/streak.tsx, seriye göre 6 kademeli mesaj"
+"Seri takvimi (ay görünümü, ay gezinme)",streak,should,yes,yes,s16. monthCells + shiftMonth; hafta Pazartesi başlar (referans Pazar)
+Profil sekmesi,profile,should,yes,yes,"Yalnız sekme adı görüldü (s05). app/(tabs)/profile.tsx seviye/XP, seri, yarış, rozetler, istatistik, partner, ayarlar"
+'Library' bölümü,inspire,could,yes,skip,"doğrulanmadı (research §1 tek kullanıcı yorumu); kapsamı bilinmiyor, karşılaştırılamaz"
+Kilit ekranı / ana ekran widget'ları,platform,could,yes,skip,doğrulanmadı (research §1). Expo Go'da native widget yok
+"VIP abonelik, 7 gün deneme, paywall",monetization,could,yes,skip,"Ürün kuralı: ücretli sürüm yok, kilit/paywall/reklam yok"
+"İki kişilik eşleşme + Supabase senkronu (yerel mod, demo partner)",partner,must,no,yes,"Kullanıcı isteği. src/lib/sync.ts, supabase/0001_init.sql, app/pairing.tsx; gerçek sunucuya karşı uçtan uca denenmedi (README)"
+"İki kişilik puan yarışı: günlük/haftalık/aylık, şampiyonluk rafı, dürt/tebrik",partner,must,no,yes,Kullanıcı isteği. app/duel.tsx + rutin DuelCard
+"Puan motoru, seri çarpanı, seviye/XP, 40 rozet, istatistik",gamification,should,no,yes,"src/engine/*, app/badges.tsx, app/stats.tsx (grafik, ısı haritası)"
+Haftalık gün şeridi + 'unuttum hakkı' (dün için),routine,should,no,yes,"WeekStrip, core.canBackfill"
+"Gelişmiş görev düzenleyici: tekrar, haftalık kota, tür, zorluk, özel, birlikte",routine,should,no,yes,app/task/[id].tsx
+"Birden çok çark (ev işleri, kendine bakım, hareket)",wheel,could,no,yes,Referansta yalnız ev işi çarkı görüldü. src/data/wheels.ts
+Tanı koymayan 'kendini tanı' mini testleri,inspire,could,no,yes,"src/data/inspire/quizzes.ts, sonuç şablon önerir"
+Dil seçimi TR/EN,settings,must,no,yes,"src/i18n, onboarding ilk adım, Ayarlar"
+"Açık/koyu tema, ml/oz, verileri sıfırla",settings,should,no,yes,"app/settings.tsx, src/store/resetAll.ts"
+Yaşam merkezi (/life) + rutin özet şeridi,life,must,no,yes,"app/life/index.tsx, src/features/routine/LifeStrip.tsx"
+"Sigara azaltma: plan, istek erteleme, biriken para, tetikleyiciler, en zor saatler",life,must,no,yes,"app/life/smoke.tsx, src/store/slices/smoke.ts"
+"Ev yemeği / fast food: öğün kaydı, haftalık hedef, menü planı, fikirler, alışveriş listesi",life,must,no,yes,app/life/meals.tsx
+"Ev işleri: tekrarlı işler, çamaşır ve bulaşık makinesi akışı",life,must,no,yes,app/life/chores.tsx; partnerle paylaşılmıyor (SPEC: sonraki sürüm)
+"Okul / yüksek lisans: dersler, ödev/makale/sınav, okuma listesi, tez kilometre taşları",life,must,no,yes,"app/study/*, src/store/slices/study.ts"
+"İş ve kişisel gelişim: hedefler, 3 önemli iş, öğrenme listesi, haftalık değerlendirme",life,must,no,yes,"app/growth/*, src/store/slices/growth.ts"
+Bildirim grupları + Ayarlar'da ana anahtar,settings,should,no,yes,"src/lib/notifications.ts, src/lib/reminders.ts"

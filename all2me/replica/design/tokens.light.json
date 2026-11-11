@@ -1,0 +1,236 @@
+{
+  "_about": "All2Me AÇIK tema, src/theme/index.ts (light + PASTELS.light + GRADIENTS) rollerinden çıkarıldı (replica-design tokens.json biçimi). 'component' grubu: tema dışında ekranlarda sabit yazılmış ama tekrar eden renkler (dosya adı _sources'ta). Kontrol: python3 -I contrast.py tokens.light.json",
+  "_sources": {
+    "component-ink": "#14171A sabit: app/action.tsx, app/(tabs)/wheel.tsx, app/onboarding.tsx (görev seçimi halkası), TemplateCard",
+    "component-on-color": "#FFFFFF sabit: tab pembe hap etiketi (app/(tabs)/_layout.tsx), onboarding seviye hapları (app/onboarding.tsx), new-task FeatureCard, streak afişi",
+    "component-wheel-soft": "#5A4A78: app/(tabs)/wheel.tsx SOFT",
+    "component-streak-unit": "#F5A35A: app/streak.tsx 'day streak' (açık tema)"
+  },
+  "color": {
+    "bg": "#F7F7FF",
+    "card": "#FFFFFF",
+    "card-alt": "#EEEEF6",
+    "text": "#14171A",
+    "text-dim": "#6B7280",
+    "text-faint": "#A3A8B3",
+    "border": "#E6E6EF",
+    "primary": "#14171A",
+    "on-primary": "#FFFFFF",
+    "on-pastel": "#14171A",
+    "coral": "#FF6B3D",
+    "purple": "#7C5CFC",
+    "pink": "#FF7AE0",
+    "blue": "#3B6CF6",
+    "orange": "#FF8A1F",
+    "success": "#22C55E",
+    "danger": "#EF4444",
+    "warn": "#F59E0B",
+    "tab-bar": "#FFFFFF",
+    "tab-active": "#14171A",
+    "tab-inactive": "#A3A8B3",
+    "pastel": {
+      "blue": "#CFE2FF",
+      "green": "#DCF5B5",
+      "purple": "#E6D9FB",
+      "mint": "#C9F2E7",
+      "peach": "#FCE2C0",
+      "pink": "#FBD5F7",
+      "yellow": "#FBEF7E"
+    },
+    "gradient": {
+      "wheel-top": "#FF7AE0",
+      "wheel-bottom": "#F3E9FF",
+      "action-top": "#7C5CFC",
+      "streak-top": "#FF8A1F",
+      "streak-mid": "#FFC37A",
+      "streak-cream": "#FFF1E0",
+      "ai-start": "#5B7CFA",
+      "ai-mid": "#A66CFF",
+      "ai-end": "#F08BEA",
+      "lucky-start": "#6C6CF0"
+    },
+    "component": {
+      "ink": "#14171A",
+      "on-color": "#FFFFFF",
+      "wheel-soft": "#5A4A78",
+      "streak-unit": "#F5A35A"
+    }
+  },
+  "pairs": [
+    [
+      "text",
+      "bg"
+    ],
+    [
+      "text",
+      "card"
+    ],
+    [
+      "text",
+      "card-alt"
+    ],
+    [
+      "text-dim",
+      "bg"
+    ],
+    [
+      "text-dim",
+      "card"
+    ],
+    [
+      "text-dim",
+      "card-alt"
+    ],
+    [
+      "text-faint",
+      "bg"
+    ],
+    [
+      "text-faint",
+      "card"
+    ],
+    [
+      "text-faint",
+      "bg",
+      "large"
+    ],
+    [
+      "on-primary",
+      "primary"
+    ],
+    [
+      "on-pastel",
+      "pastel-blue"
+    ],
+    [
+      "on-pastel",
+      "pastel-green"
+    ],
+    [
+      "on-pastel",
+      "pastel-purple"
+    ],
+    [
+      "on-pastel",
+      "pastel-mint"
+    ],
+    [
+      "on-pastel",
+      "pastel-peach"
+    ],
+    [
+      "on-pastel",
+      "pastel-pink"
+    ],
+    [
+      "on-pastel",
+      "pastel-yellow"
+    ],
+    [
+      "tab-active",
+      "tab-bar"
+    ],
+    [
+      "tab-inactive",
+      "tab-bar"
+    ],
+    [
+      "component-on-color",
+      "pink"
+    ],
+    [
+      "danger",
+      "bg"
+    ],
+    [
+      "danger",
+      "card"
+    ],
+    [
+      "success",
+      "bg"
+    ],
+    [
+      "success",
+      "card"
+    ],
+    [
+      "warn",
+      "card"
+    ],
+    [
+      "component-on-color",
+      "danger"
+    ],
+    [
+      "component-on-color",
+      "success"
+    ],
+    [
+      "component-on-color",
+      "coral"
+    ],
+    [
+      "component-on-color",
+      "warn"
+    ],
+    [
+      "component-on-color",
+      "purple"
+    ],
+    [
+      "component-on-color",
+      "gradient-ai-start"
+    ],
+    [
+      "component-on-color",
+      "gradient-ai-end"
+    ],
+    [
+      "component-on-color",
+      "gradient-lucky-start"
+    ],
+    [
+      "component-on-color",
+      "orange"
+    ],
+    [
+      "component-on-color",
+      "gradient-wheel-top",
+      "large"
+    ],
+    [
+      "component-on-color",
+      "gradient-action-top",
+      "large"
+    ],
+    [
+      "component-wheel-soft",
+      "gradient-wheel-bottom"
+    ],
+    [
+      "orange",
+      "gradient-streak-mid",
+      "large"
+    ],
+    [
+      "component-streak-unit",
+      "gradient-streak-cream",
+      "large"
+    ],
+    [
+      "purple",
+      "bg"
+    ],
+    [
+      "border",
+      "card",
+      "ui"
+    ],
+    [
+      "border",
+      "bg",
+      "ui"
+    ]
+  ]
+}
