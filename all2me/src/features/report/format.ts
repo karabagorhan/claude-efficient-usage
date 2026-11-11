@@ -29,6 +29,7 @@ export function insightText(t: TFn, lang: Lang, i: Insight): string {
 export function suggestionText(t: TFn, lang: Lang, s: Suggestion): string {
   const p: Record<string, string | number> = {};
   for (const [k, v] of Object.entries(s.params)) p[k] = k === 'avg' || k === 'h' || k === 'goal' ? num(v, lang) : v;
+  if (s.id === 'smoke') p.n = t('common.unit.days', { n: s.params.n });
   if (s.slot) p.slot = t(`task.slot.${s.slot}`);
   if (s.weekday !== undefined) p.day = DAYS_LONG[lang][s.weekday];
   return t(`report.sugg.${s.id}`, p);
@@ -47,17 +48,17 @@ export const money = (amount: number, currency: string, lang: Lang): string => {
 };
 
 export function rangeLabel(start: string, end: string, lang: Lang): string {
-  return `${fmtDay(start, lang, 'month')} – ${fmtDay(end, lang, 'month')}`;
+  return `${fmtDay(start, lang, 'short')} – ${fmtDay(end, lang, 'short')}`;
 }
 
 /** Paylaşılacak düz metin özet. */
 export function shareText(t: TFn, lang: Lang, s: WeekStats, cmp: WeekComparison, insights: Insight[], partnerName?: string): string {
   const L: string[] = [];
   L.push(`📊 ${t('report.share.header', { range: rangeLabel(s.start, s.end, lang) })}`);
-  L.push(`⭐ ${t('report.share.points', { n: s.points })}${cmp.prevHasData ? ` (${deltaText(t, cmp.points)})` : ''}`);
+  L.push(`⭐ ${t('report.share.points', { n: t('common.unit.pts', { n: s.points }) })}${cmp.prevHasData ? ` (${deltaText(t, cmp.points)})` : ''}`);
   if (s.rate !== null) L.push(`✅ ${t('report.share.rate', { n: pct(s.rate) })}`);
-  L.push(`🔥 ${t('report.share.streak', { n: s.longestRun, m: s.activeDays })}`);
-  if (s.bestDay) L.push(`🏆 ${t('report.share.best', { day: fmtDay(s.bestDay.day, lang), n: s.bestDay.points })}`);
+  L.push(`🔥 ${t('report.share.streak', { n: t('common.unit.days', { n: s.longestRun }), m: t('common.unit.days', { n: s.activeDays }) })}`);
+  if (s.bestDay) L.push(`🏆 ${t('report.share.best', { day: fmtDay(s.bestDay.day, lang), n: t('common.unit.pts', { n: s.bestDay.points }) })}`);
   if (s.race && partnerName) L.push(`🤝 ${t('report.share.race', { me: s.race.mePoints, them: s.race.partnerPoints, name: partnerName })}`);
   if (s.sleep) L.push(`😴 ${t('report.share.sleep', { h: num(s.sleep.avgH, lang) })}`);
   if (s.mood) L.push(`🙂 ${t('report.share.mood', { n: num(s.mood.avg, lang) })}`);
@@ -70,7 +71,7 @@ export function shareText(t: TFn, lang: Lang, s: WeekStats, cmp: WeekComparison,
   if (insights.length) {
     L.push('');
     L.push(`💡 ${t('report.share.insight')}`);
-    L.push(insightText(t, lang, insights[0]) + ' ' + t('report.insight.basedOn', { n: insights[0].n }));
+    L.push(insightText(t, lang, insights[0]) + ' ' + t('report.insight.basedOn', { n: t('common.unit.days', { n: insights[0].n }) }));
   }
   L.push('');
   L.push(t('report.share.footer'));

@@ -4,23 +4,49 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Confetti } from '../src/components/Confetti';
 import { Mascot } from '../src/components/Mascot';
 import { RingGauge } from '../src/components/RingGauge';
-import { Avatar, Bar, Field, IconButton, PastelCard, PillButton, Screen, Txt } from '../src/components/ui';
+import { Avatar, Bar, Chip, Field, IconButton, PastelCard, PillButton, Screen, Txt } from '../src/components/ui';
 import { METRICS, QUESTIONS, metricLevel } from '../src/features/onboarding/questions';
 import { QuestionArt } from '../src/features/onboarding/QuestionArt';
 import { DEFAULT_SELECTED, rankStarter, type QuestionId } from '../src/features/onboarding/starter';
+import { FOCUS_AREAS, FOCUS_EMOJI, buildFirstDay } from '../src/features/onboarding/firstDay';
+import { QUIZ, quizResult, TYPE_ART } from '../src/features/onboarding/quiz';
+import { QuizQuestionView, TimeStepper, TypeResultView } from '../src/features/onboarding/QuizParts';
 import { PairingPanel, type PairResult } from '../src/features/pairing/PairingPanel';
-import { L, useLang, useT, type Lang } from '../src/i18n';
+import { fmtTime, L, useLang, useT, type Lang } from '../src/i18n';
 import { uuid } from '../src/lib/id';
+import { ensurePermission } from '../src/lib/notifications';
 import { ensureSession, isBackendConfigured } from '../src/lib/supabase';
 import { useCore } from '../src/store/core';
 import { useSettings } from '../src/store/settings';
+import { useProfile, type EnergyPeak, type FocusArea } from '../src/store/slices/profile';
 import { GUTTER, radius, useTheme } from '../src/theme';
 
 const AVATARS = ['🌟', '🦊', '🐼', '🐱', '🐶', '🦄', '🌈', '🍀', '🚀', '🌻', '🐳', '🍉'];
 const COLORS = ['#7C5CFC', '#EE4D7E', '#A93BC9', '#3B6CF6', '#FF8A1F', '#34D399', '#F43F5E', '#14B8A6'];
 
-type StepId = 'lang' | 'profile' | `q:${QuestionId}` | 'result' | 'tasks' | 'pair' | 'done';
-const STEPS: StepId[] = ['lang', 'profile', ...QUESTIONS.map((q) => `q:${q.id}` as StepId), 'result', 'tasks', 'pair', 'done'];
+type StepId = 'lang' | 'profile' | `q:${QuestionId}` | 'result' | 'rhythm' | 'energy' | 'focus' | `z:${number}` | 'type' | 'plan' | 'notif' | 'pair' | 'done';
+const STEPS: StepId[] = [
+  'lang',
+  'profile',
+  ...QUESTIONS.map((q) => `q:${q.id}` as StepId),
+  'result',
+  'rhythm',
+  'energy',
+  'focus',
+  ...QUIZ.map((_, k) => `z:${k}` as StepId),
+  'type',
+  'plan',
+  'notif',
+  'pair',
+  'done',
+];
+const PEAKS: Array<{ id: EnergyPeak; emoji: string; pastel: 'yellow' | 'peach' | 'purple' }> = [
+  { id: 'morning', emoji: '🌅', pastel: 'yellow' },
+  { id: 'noon', emoji: '☀️', pastel: 'peach' },
+  { id: 'evening', emoji: '🌙', pastel: 'purple' },
+];
+/** Adım başına yaklaşık saniye (kalan süre göstergesi) */
+const SEC_PER_STEP = 6;
 
 export default function OnboardingScreen() {
   const t = useTheme();
@@ -33,18 +59,43 @@ export default function OnboardingScreen() {
   const [emoji, setEmoji] = useState(AVATARS[0]);
   const [color, setColor] = useState(COLORS[0]);
   const [answers, setAnswers] = useState<Partial<Record<QuestionId, boolean>>>({});
-  const [picked, setPicked] = useState<Record<string, boolean> | null>(null);
   const [pair, setPair] = useState<PairResult | null>(null);
+  const [quick, setQuick] = useState(false);
+  const [wake, setWake] = useState('07:00');
+  const [sleep, setSleep] = useState('23:00');
+  const [rhythmSet, setRhythmSet] = useState(true);
+  const [weekendDiff, setWeekendDiff] = useState(false);
+  const [peak, setPeak] = useState<EnergyPeak | null>(null);
+  const [focus, setFocus] = useState<FocusArea[]>([]);
+  const [quiz, setQuiz] = useState<number[]>([]);
+  const [dropped, setDropped] = useState<Record<string, boolean>>({});
+  const [planSkipped, setPlanSkipped] = useState(false);
+  const [notifDenied, setNotifDenied] = useState(false);
   const finishing = useRef(false);
 
   const step = STEPS[i];
   const total = STEPS.length - 1;
-  const ranked = useMemo(() => rankStarter(answers), [answers]);
-  const selected = picked ?? Object.fromEntries(ranked.map((s, idx) => [s.id, idx < DEFAULT_SELECTED]));
-  const nSelected = ranked.filter((s) => selected[s.id]).length;
 
-  const next = () => setI((v) => Math.min(v + 1, STEPS.length - 1));
-  const back = () => setI((v) => Math.max(v - 1, 0));
+  const type = useMemo(() => quizResult(quiz), [quiz]);
+  const rows = useMemo(
+    () => buildFirstDay({ wake: rhythmSet ? wake : null, sleep: rhythmSet ? sleep : null, energyPeak: peak, focus, answers, type }),
+    [rhythmSet, wake, sleep, peak, focus, answers, type],
+  );
+  const keptRows = planSkipped ? [] : rows.filter((r) => !dropped[r.id]);
+
+  // 'type' adımı test yapılmadıysa atlanır (ileri ve geri)
+  const move = (d: 1 | -1) =>
+    setI((v) => {
+      let n = Math.max(0, Math.min(v + d, STEPS.length - 1));
+      if (STEPS[n] === 'type' && !type) n = Math.max(0, Math.min(n + d, STEPS.length - 1));
+      return n;
+    });
+  const next = () => move(1);
+  const back = () => {
+    if (quick && step === 'profile') setQuick(false);
+    move(-1);
+  };
+  const skipTo = (id: StepId) => setI(STEPS.indexOf(id));
 
   const finish = async () => {
     if (finishing.current) return;
@@ -59,19 +110,33 @@ export default function OnboardingScreen() {
     }
     const core = useCore.getState();
     core.setMe({ id, name: name.trim(), emoji, color });
-    const drafts = ranked
-      .filter((s) => selected[s.id])
-      .map((s) => ({
-        title: L(s.title, lang),
-        icon: s.icon,
-        slot: s.slot,
-        pastel: s.pastel,
-        difficulty: s.difficulty,
-        kind: s.kind,
-        target: s.target,
-        link: s.link,
-        source: 'onboarding',
-      }));
+    const drafts = quick
+      ? rankStarter({})
+          .slice(0, DEFAULT_SELECTED)
+          .map((s) => ({ title: L(s.title, lang), icon: s.icon, slot: s.slot, pastel: s.pastel, difficulty: s.difficulty, kind: s.kind, target: s.target, link: s.link, source: 'onboarding' }))
+      : keptRows.map((r) => ({
+          title: L(r.title, lang),
+          icon: r.emoji,
+          slot: r.slot,
+          reminderTime: r.time ?? undefined,
+          pastel: r.pastel,
+          difficulty: r.difficulty,
+          kind: r.kind,
+          target: r.target,
+          link: r.link,
+          source: 'onboarding',
+        }));
+    if (!quick) {
+      useProfile.getState().save({
+        wake: rhythmSet ? wake : null,
+        sleep: rhythmSet ? sleep : null,
+        weekendDiff: rhythmSet && weekendDiff,
+        energyPeak: peak,
+        focusAreas: focus,
+        routineType: type,
+        quizAnswers: type ? quiz : [],
+      });
+    }
     if (drafts.length) core.addHabitsFromTemplates(drafts);
     if (pair) core.setPair(pair.pairId, pair.code);
     useSettings.getState().setOnboarded(true);
@@ -94,7 +159,11 @@ export default function OnboardingScreen() {
         <View style={{ flex: 1 }}>
           <Bar value={(i + 1) / total} color={t.coral} height={6} />
         </View>
-        <View style={{ width: 44 }} />
+        <View style={{ minWidth: 56, alignItems: 'flex-end' }}>
+          <Txt variant="caption" dim numberOfLines={1}>
+            {tr('onboarding.time.left', { n: Math.max(1, Math.ceil(((total - i) * SEC_PER_STEP) / 60)) })}
+          </Txt>
+        </View>
       </View>
     );
 
@@ -151,7 +220,22 @@ export default function OnboardingScreen() {
         })}
       </>
     );
-    footer = <PillButton label={tr('common.btn.next')} arrow onPress={next} />;
+    footer = (
+      <View>
+        <PillButton label={tr('common.btn.next')} arrow onPress={next} />
+        <PillButton
+          kind="ghost"
+          label={tr('onboarding.quick.start')}
+          onPress={() => {
+            setQuick(true);
+            next();
+          }}
+        />
+        <Txt variant="caption" faint center>
+          {tr('onboarding.quick.hint')}
+        </Txt>
+      </View>
+    );
   } else if (step === 'profile') {
     body = (
       <>
@@ -202,12 +286,15 @@ export default function OnboardingScreen() {
         </View>
       </>
     );
-    footer = <PillButton label={tr('common.btn.next')} arrow disabled={name.trim().length === 0} onPress={next} />;
+    footer = quick ? (
+      <PillButton label={tr('onboarding.quick.go')} arrow disabled={name.trim().length === 0} onPress={() => void finish()} />
+    ) : (
+      <PillButton label={tr('common.btn.next')} arrow disabled={name.trim().length === 0} onPress={next} />
+    );
   } else if (qDef) {
     scroll = false;
     const answer = (v: boolean) => {
       setAnswers((a) => ({ ...a, [qDef.id]: v }));
-      setPicked(null);
       next();
     };
     body = (
@@ -260,42 +347,185 @@ export default function OnboardingScreen() {
       </>
     );
     footer = <PillButton label={tr('common.btn.next')} arrow onPress={next} />;
-  } else if (step === 'tasks') {
+  } else if (step === 'rhythm') {
     body = (
       <>
-        <Title sub={tr('onboarding.tasks.hint')}>{tr('onboarding.tasks.title')}</Title>
-        {ranked.map((s) => {
-          const on = !!selected[s.id];
+        <Title sub={tr('onboarding.rhythm.hint')}>{tr('onboarding.rhythm.title')}</Title>
+        <TimeStepper label={tr('onboarding.rhythm.wake')} icon="⏰" value={wake} onChange={(v) => { setRhythmSet(true); setWake(v); }} />
+        <TimeStepper label={tr('onboarding.rhythm.sleep')} icon="🌙" value={sleep} onChange={(v) => { setRhythmSet(true); setSleep(v); }} />
+        <Txt variant="bodyBold" style={{ marginTop: 8, marginBottom: 10 }}>
+          {tr('onboarding.rhythm.weekend')}
+        </Txt>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Chip label={tr('onboarding.rhythm.weekendSame')} active={!weekendDiff} onPress={() => setWeekendDiff(false)} />
+          <Chip label={tr('onboarding.rhythm.weekendDiff')} active={weekendDiff} onPress={() => setWeekendDiff(true)} />
+        </View>
+        <Txt variant="caption" dim style={{ marginTop: 10 }}>
+          {tr('onboarding.rhythm.weekendNote')}
+        </Txt>
+      </>
+    );
+    footer = (
+      <View>
+        <PillButton label={tr('common.btn.next')} arrow onPress={next} />
+        <PillButton kind="ghost" label={tr('common.btn.skip')} onPress={() => { setRhythmSet(false); setWeekendDiff(false); next(); }} />
+      </View>
+    );
+  } else if (step === 'energy') {
+    body = (
+      <>
+        <Title sub={tr('onboarding.energy.hint')}>{tr('onboarding.energy.title')}</Title>
+        {PEAKS.map((p) => (
+          <Pressable key={p.id} accessibilityRole="button" accessibilityState={{ selected: peak === p.id }} onPress={() => setPeak(p.id)} style={{ marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: radius.lg, backgroundColor: t.pastel[p.pastel], borderWidth: 2, borderColor: peak === p.id ? t.text : 'transparent' }}>
+              <Text style={{ fontSize: 34 }}>{p.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Txt variant="h3" color={t.onPastel}>{tr(`onboarding.energy.${p.id}`)}</Txt>
+                <Txt variant="small" color={t.onPastel}>{tr(`onboarding.energy.${p.id}Hint`)}</Txt>
+              </View>
+            </View>
+          </Pressable>
+        ))}
+      </>
+    );
+    footer = (
+      <View>
+        <PillButton label={tr('common.btn.next')} arrow disabled={!peak} onPress={next} />
+        <PillButton kind="ghost" label={tr('common.btn.skip')} onPress={() => { setPeak(null); next(); }} />
+      </View>
+    );
+  } else if (step === 'focus') {
+    body = (
+      <>
+        <Title sub={tr('onboarding.focus.hint')}>{tr('onboarding.focus.title')}</Title>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          {FOCUS_AREAS.map((f) => (
+            <Chip
+              key={f}
+              emoji={FOCUS_EMOJI[f]}
+              label={tr(`onboarding.focus.${f}`)}
+              active={focus.includes(f)}
+              onPress={() => setFocus((p) => (p.includes(f) ? p.filter((x) => x !== f) : [...p, f]))}
+            />
+          ))}
+        </View>
+      </>
+    );
+    footer = (
+      <View>
+        <PillButton label={tr('common.btn.next')} arrow disabled={focus.length === 0} onPress={next} />
+        <PillButton kind="ghost" label={tr('common.btn.skip')} onPress={() => { setFocus([]); next(); }} />
+      </View>
+    );
+  } else if (step.startsWith('z:')) {
+    scroll = false;
+    const k = Number(step.slice(2));
+    body = (
+      <QuizQuestionView
+        index={k}
+        value={quiz[k]}
+        onAnswer={(v) => {
+          setQuiz((p) => {
+            const n = [...p];
+            n[k] = v;
+            return n;
+          });
+          if (k === QUIZ.length - 1) skipTo('type');
+          else next();
+        }}
+      />
+    );
+    footer = (
+      <PillButton
+        kind="ghost"
+        label={tr('onboarding.quiz.skip')}
+        onPress={() => {
+          setQuiz([]);
+          skipTo('plan');
+        }}
+      />
+    );
+  } else if (step === 'type') {
+    body = type ? <TypeResultView type={type} /> : null;
+    footer = <PillButton label={tr('common.btn.next')} arrow onPress={next} />;
+  } else if (step === 'plan') {
+    body = (
+      <>
+        <Title sub={tr('onboarding.plan.hint')}>{tr('onboarding.plan.title')}</Title>
+        {rows.map((r) => {
+          if (dropped[r.id]) return null;
           return (
             <PastelCard
-              key={s.id}
-              emoji={s.icon}
-              overline={tr(`task.slot.${s.slot}`)}
-              title={L(s.title, lang)}
-              pastel={s.pastel}
-              onPress={() => setPicked({ ...selected, [s.id]: !on })}
+              key={r.id}
+              emoji={r.emoji}
+              overline={r.time ? `${fmtTime(r.time, lang)}${r.minutes ? ` · ${tr('planner.min', { n: r.minutes })}` : ''}` : tr('onboarding.plan.anytime')}
+              title={L(r.title, lang)}
+              pastel={r.pastel}
               right={
-                <View
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 15,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: on ? t.onPastel : 'transparent',
-                    borderWidth: 2,
-                    borderColor: t.onPastel,
-                  }}
-                >
-                  {on ? <Ionicons name="checkmark" size={18} color={t.onPrimary} /> : null}
-                </View>
+                <IconButton
+                  icon="close"
+                  color={t.onPastel}
+                  label={tr('onboarding.plan.remove', { title: L(r.title, lang) })}
+                  onPress={() => setDropped((p) => ({ ...p, [r.id]: true }))}
+                />
               }
             />
           );
         })}
+        {keptRows.length === 0 ? (
+          <Txt dim center>
+            {tr('onboarding.plan.empty')}
+          </Txt>
+        ) : null}
+        <Txt variant="caption" faint center style={{ marginTop: 6 }}>
+          {tr('common.medicalNote')}
+        </Txt>
       </>
     );
-    footer = <PillButton label={nSelected > 0 ? tr('onboarding.tasks.addN', { n: nSelected }) : tr('onboarding.tasks.none')} arrow onPress={next} />;
+    footer = (
+      <View>
+        <PillButton label={keptRows.length > 0 ? tr('onboarding.tasks.addN', { n: keptRows.length }) : tr('onboarding.tasks.none')} arrow onPress={next} />
+        {keptRows.length > 0 ? (
+          <PillButton kind="ghost" label={tr('common.btn.skip')} onPress={() => { setPlanSkipped(true); next(); }} />
+        ) : null}
+      </View>
+    );
+  } else if (step === 'notif') {
+    body = (
+      <>
+        <Title sub={tr('onboarding.notif.hint')}>{tr('onboarding.notif.title')}</Title>
+        <View style={{ alignItems: 'center', marginBottom: 16 }}>
+          <Text style={{ fontSize: 64 }}>🔔</Text>
+        </View>
+        {(['b1', 'b2', 'b3'] as const).map((b) => (
+          <View key={b} style={{ flexDirection: 'row', gap: 10, marginBottom: 10, alignItems: 'center' }}>
+            <Ionicons name="checkmark-circle" size={22} color={t.success} />
+            <Txt style={{ flex: 1 }}>{tr(`onboarding.notif.${b}`)}</Txt>
+          </View>
+        ))}
+        {notifDenied ? (
+          <Txt variant="small" dim center style={{ marginTop: 10 }}>
+            {tr('onboarding.notif.denied')}
+          </Txt>
+        ) : null}
+      </>
+    );
+    footer = notifDenied ? (
+      <PillButton label={tr('common.btn.next')} arrow onPress={next} />
+    ) : (
+      <View>
+        <PillButton
+          label={tr('onboarding.notif.allow')}
+          onPress={() => {
+            void ensurePermission().then((ok) => {
+              if (ok) next();
+              else setNotifDenied(true);
+            });
+          }}
+        />
+        <PillButton kind="ghost" label={tr('onboarding.notif.later')} onPress={next} />
+      </View>
+    );
   } else if (step === 'pair') {
     body = (
       <>
@@ -323,6 +553,11 @@ export default function OnboardingScreen() {
         <Txt dim center>
           {tr('onboarding.done.hint')}
         </Txt>
+        <View style={{ backgroundColor: t.cardAlt, borderRadius: radius.lg, padding: 14, marginHorizontal: 8 }}>
+          <Txt variant="small" center>
+            {tr('onboarding.free.note')}
+          </Txt>
+        </View>
       </View>
     );
     footer = <PillButton label={tr('onboarding.done.cta')} arrow onPress={() => void finish()} />;

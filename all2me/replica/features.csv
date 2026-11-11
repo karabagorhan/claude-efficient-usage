@@ -43,7 +43,7 @@ Meditasyon / nefes,tools,should,yes,yes,"s06 kesik 'Me…' ikonu. app/tools/medi
 Egzersiz rutinleri,tools,should,yes,yes,s05 ikon. app/tools/workout.tsx hazır rutinler + adım zamanlayıcı
 Motivasyon sözleri,tools,could,yes,yes,"s05 ikon. app/tools/motivation.tsx günün sözü, kaydırma, favori; özgün sözler"
 Ses ortamı,tools,could,yes,yes,"s05 ikon. 8 betikle sentezlenmiş döngü (assets/sounds), uyku zamanlayıcısı; gerçek cihazda denenmedi"
-Alarm,tools,could,yes,partial,"s05 ikon. app/tools/alarm.tsx saat+gün+etiket ama yerel bildirim: sessiz/rahatsız etme modunda çalmayabilir, uygulama kapalıyken gerçek saat alarmı değil (README bilinen sınırlar; Expo Go kısıtı)"
+Alarm,tools,could,yes,partial,"s05 ikon. app/tools/alarm.tsx: Android'de expo-notifications delivery alarmClock + yüksek öncelikli `alarm` kanalı (MAX, bypassDnd) + tam zamanlı alarm izni uyarısı; iOS'ta zamanında ses çalan bildirim (kritik uyarı yok); Ertele 5/10 dk kategori eylemleri; dokununca tam ekran app/alarm-ring.tsx (Kapat/Ertele + mini görev). CİHAZDA DENENMEDİ; app.json'a android.permission.SCHEDULE_EXACT_ALARM (ya da USE_EXACT_ALARM) eklenmeden izin ekranı açılmaz; Expo Go'da alarmClock/kanal davranışı değişebilir; cihaz kapalıyken çalmaz"
 'Nasıl hissediyorsun? Kaydetmek için dokun' ruh hali kartı + kayıt,tools,must,yes,yes,s05. app/tools/mood.tsx 5 seviye + etiket + not
 Ruh hali takvimi / istatistiği,tools,should,yes,yes,"doğrulanmadı (research §1 'Mood Tracker Calendar', 'Mood Stat'). mood.tsx ay takvimi + 30 gün ortalaması + geçmiş listesi"
 "Seri ekranı: alev, büyük sayı, teşvik afişi",streak,should,yes,yes,"s16. app/streak.tsx, seriye göre 6 kademeli mesaj"

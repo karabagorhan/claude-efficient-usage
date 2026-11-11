@@ -48,6 +48,7 @@ export default function LifeHub() {
 
   return (
     <Screen header={<Header title={t('life.hub.title')} subtitle={fmtDay(day, lang)} large />}>
+      <PastelCard emoji="📊" pastel="blue" overline={t('report.card.title')} title={t('report.link')} onPress={() => router.push(routes.report())} />
       <MessageCard text={msg} pastel="yellow" emoji="✨" />
       <Spacer h={16} />
 

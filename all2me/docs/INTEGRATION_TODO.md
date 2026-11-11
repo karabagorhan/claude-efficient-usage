@@ -39,3 +39,4 @@
 - [ ] Geri bildirim / hata bildir: paylaş menüsüyle tanı metni (sürüm, platform, dil); adres yok (kullanıcıya sorulacak).
 - [ ] "Hep ücretsiz" mesajı Ayarlar > Hakkında'da (onboarding'e onb2 ekliyor).
 - (Kullanıcı yedekle/geri yükle'yi seçmedi — yapılmayacak. Widget: Expo Go'da yok.)
+- [ ] E2E F02-E16 (yeni görev ilk 24 saat %50) faz 2 sırasında sürekli düşüyor; F23-E4, F07-E1 tam koşuda kararsız — faz 2 bitince incele.

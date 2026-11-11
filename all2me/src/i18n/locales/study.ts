@@ -86,6 +86,15 @@ export default {
       weeklyPlanSub: 'Pazar 20:00',
       globalOff: 'Uygulama bildirimleri kapalı; Ayarlar’dan açabilirsin.',
     },
+    calendar: {
+      itemLabel: 'Teslim tarihini takvime ekle',
+      itemHint: 'Telefonundaki "All2Me" takvimine 1 gün ve 1 saat önce hatırlatmalı bir kayıt açar. Saat yoksa 09:00 alınır.',
+      itemNeedDue: 'Önce bir teslim tarihi seç.',
+      courseLabel: 'Ders saatlerini takvime ekle',
+      courseHint: 'Her ders saati haftalık tekrar eden bir kayıt olur (16 hafta). Bitiş tarihini takvim uygulamandan değiştirebilirsin.',
+      courseNeedSlots: 'Önce en az bir ders saati ekle.',
+      unsupported: 'Bu cihazda desteklenmiyor (yalnız iOS ve Android).',
+    },
     course: {
       title: 'Ders',
       new: 'Yeni ders',
@@ -318,6 +327,15 @@ export default {
       weeklyPlan: 'Weekly planning',
       weeklyPlanSub: 'Sunday 8:00 PM',
       globalOff: 'App notifications are off; turn them on in Settings.',
+    },
+    calendar: {
+      itemLabel: 'Add due date to calendar',
+      itemHint: 'Creates an entry in the "All2Me" calendar on your phone with reminders 1 day and 1 hour before. Without a time it uses 09:00.',
+      itemNeedDue: 'Pick a due date first.',
+      courseLabel: 'Add class times to calendar',
+      courseHint: 'Each class time becomes a weekly repeating entry (16 weeks). You can change the end date in your calendar app.',
+      courseNeedSlots: 'Add at least one class time first.',
+      unsupported: 'Not supported on this device (iOS and Android only).',
     },
     course: {
       title: 'Course',

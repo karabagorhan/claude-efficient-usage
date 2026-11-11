@@ -20,6 +20,12 @@ export default {
       living: 'Sağlıklı yaşam',
       evening: 'Akşam',
     },
+    calendar: {
+      label: 'Takvime ekle',
+      hint: 'Hatırlatma saatinde tekrar eden bir kayıt olarak telefonundaki "All2Me" takvimine eklenir (1 yıl).',
+      needReminder: 'Önce bir hatırlatma saati seç.',
+      unsupported: 'Bu cihazda desteklenmiyor (yalnız iOS ve Android).',
+    },
     editor: {
       titleNew: 'Yeni görev',
       titleEdit: 'Görevi düzenle',
@@ -74,6 +80,12 @@ export default {
       school: 'School/Work',
       living: 'Healthy living',
       evening: 'Evening',
+    },
+    calendar: {
+      label: 'Add to calendar',
+      hint: 'Added to the "All2Me" calendar on your phone as a repeating entry at the reminder time (1 year).',
+      needReminder: 'Pick a reminder time first.',
+      unsupported: 'Not supported on this device (iOS and Android only).',
     },
     editor: {
       titleNew: 'New task',

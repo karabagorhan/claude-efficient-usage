@@ -6,6 +6,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 import { Chip, EmptyState, Field, Header, IconButton, PillButton, Row, Screen, Segmented, Txt } from '../../../src/components/ui';
+import { applyCalendar, dropCalendar } from '../../../src/features/calendar/apply';
+import { CalendarRow } from '../../../src/features/calendar/CalendarRow';
+import { calKey, isInCalendar, itemSpec } from '../../../src/lib/calendar';
 import { ensureStudyNotifSync } from '../../../src/features/study/notify';
 import { isItemType, ITEM_TYPES, PRIORITIES, STATUSES, TYPE_META, type PaperInfo, type StudyItem, type StudyItemType } from '../../../src/features/study/types';
 import { ChecklistEditor, ConfirmDelete, DateField, Label, Stepper } from '../../../src/features/study/ui';
@@ -65,11 +68,14 @@ function ItemForm({ existing, type, courseId }: { existing?: StudyItem; type?: s
   const remind = d.remind ?? { dayBefore: true, morning: true };
   const isReading = d.type === 'reading';
   const canSave = d.title.trim().length > 0;
+  const [cal, setCal] = useState(() => (existing ? isInCalendar(calKey.item(existing.id)) : false));
 
   const save = () => {
     if (!canSave) return;
     const out: StudyItemDraft = { ...d, paper: isReading ? { ...paper, pagesRead: paper.pagesTotal > 0 ? Math.min(paper.pagesRead, paper.pagesTotal) : paper.pagesRead } : d.paper };
-    saveItem(out);
+    const savedId = saveItem(out);
+    const spec = itemSpec(savedId);
+    void applyCalendar(calKey.item(savedId), cal, spec ? [spec] : []);
     close();
   };
 
@@ -120,6 +126,15 @@ function ItemForm({ existing, type, courseId }: { existing?: StudyItem; type?: s
 
       <Label>{tr('study.item.due')}</Label>
       <DateField value={d.due} time={d.time} withTime onChange={(due, time) => set({ due, time })} placeholder={tr('study.item.duePh')} />
+
+      <CalendarRow
+        label={tr('study.calendar.itemLabel')}
+        hint={tr('study.calendar.itemHint')}
+        unsupported={tr('study.calendar.unsupported')}
+        needs={d.due ? undefined : tr('study.calendar.itemNeedDue')}
+        value={cal}
+        onChange={setCal}
+      />
 
       <Label>{tr('study.item.status')}</Label>
       <Segmented value={d.status ?? 'todo'} onChange={(status) => set({ status })} options={STATUSES.map((s) => ({ id: s, label: tr(`study.statusShort.${s}`) }))} />
@@ -199,6 +214,7 @@ function ItemForm({ existing, type, courseId }: { existing?: StudyItem; type?: s
             label={tr('study.item.delete')}
             confirmLabel={tr('study.item.confirmDelete')}
             onConfirm={() => {
+              dropCalendar(calKey.item(existing.id));
               deleteItem(existing.id);
               close();
             }}

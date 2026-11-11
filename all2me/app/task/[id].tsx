@@ -15,6 +15,9 @@ import {
   type Slot,
   type Weekday,
 } from '../../src/engine/types';
+import { applyCalendar, dropCalendar } from '../../src/features/calendar/apply';
+import { CalendarRow } from '../../src/features/calendar/CalendarRow';
+import { calKey, habitSpecs, isInCalendar } from '../../src/lib/calendar';
 import { DAYS_SHORT, useLang, useT } from '../../src/i18n';
 import { useCore, type HabitDraft } from '../../src/store/core';
 import { radius, useTheme } from '../../src/theme';
@@ -161,6 +164,7 @@ export default function TaskEditor() {
   const [isPrivate, setIsPrivate] = useState(initial.isPrivate);
   const [together, setTogether] = useState(initial.together);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [cal, setCal] = useState(() => (existing ? isInCalendar(calKey.habit(existing.id)) : false));
 
   const nameOk = title.trim().length > 0;
   const daysOk = mode !== 'days' || days.length > 0;
@@ -194,7 +198,8 @@ export default function TaskEditor() {
       source: initial.source,
     };
     const core = useCore.getState();
-    core.saveHabit(draft);
+    const savedId = core.saveHabit(draft);
+    void applyCalendar(calKey.habit(savedId), cal && reminder !== '', habitSpecs(savedId));
     core.pushToast('toast.saved');
     leave();
   };
@@ -202,6 +207,7 @@ export default function TaskEditor() {
   const remove = () => {
     if (!existing) return;
     warn();
+    dropCalendar(calKey.habit(existing.id));
     useCore.getState().archiveHabit(existing.id);
     leave();
   };
@@ -397,6 +403,15 @@ export default function TaskEditor() {
           <Switch value={together} onValueChange={setTogether} trackColor={{ true: t.purple, false: t.borderInput }} accessibilityLabel={tr('task.together')} />
         </Row>
       </Card>
+
+      <CalendarRow
+        label={tr('newtask.calendar.label')}
+        hint={tr('newtask.calendar.hint')}
+        unsupported={tr('newtask.calendar.unsupported')}
+        needs={reminder && TIME_RE.test(reminder) ? undefined : tr('newtask.calendar.needReminder')}
+        value={cal}
+        onChange={setCal}
+      />
 
       <View style={{ marginTop: 28 }}>
         <PillButton label={tr('common.btn.save')} onPress={save} disabled={!canSave} />

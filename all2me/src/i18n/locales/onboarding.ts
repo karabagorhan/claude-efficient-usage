@@ -38,6 +38,13 @@ export default {
       level: { low: 'Gelişmeye açık', mid: 'Yolunda', high: 'Parlıyor' },
       note: 'Bu bir tanı ya da test sonucu değil; cevaplarından çıkan kısa bir özet. Birlikte geliştirelim.',
     },
+    time: { left: '~{{n}} dk' },
+    quick: {
+      start: 'Hızlı başla',
+      hint: 'Sadece ad ve dil; kişiselleştirmeyi sonra yaparsın.',
+      go: 'Hızlı başla',
+    },
+    free: { note: 'All2Me tamamen ücretsiz: deneme süresi, kilitli özellik ve reklam yok.' },
     rhythm: {
       title: 'Günün ne zaman başlar, ne zaman biter?',
       hint: 'Planını bu saatlere göre dizeceğiz. 15 dakikalık adımlarla ayarla.',
@@ -224,6 +231,13 @@ export default {
       level: { low: 'Room to grow', mid: 'On track', high: 'Shining' },
       note: 'This is not a diagnosis or a test result, just a quick summary of your answers. Let’s improve it together.',
     },
+    time: { left: '~{{n}} min' },
+    quick: {
+      start: 'Quick start',
+      hint: 'Just a name and language; personalize later.',
+      go: 'Quick start',
+    },
+    free: { note: 'All2Me is completely free: no trial period, no locked features, no ads.' },
     rhythm: {
       title: 'When does your day start and end?',
       hint: 'We’ll build your plan around these times. Adjust in 15-minute steps.',

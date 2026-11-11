@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Switch, View } from 'react-native';
 import { Card, Header, PillButton, Row, Screen, Segmented, Txt } from '../src/components/ui';
+import { calendarSupported, removeAllFromCalendar, syncAllToCalendar } from '../src/lib/calendar';
+import { useCalendar } from '../src/store/slices/calendar';
 import { fmtTime, tErr, useLang, useT } from '../src/i18n';
 import { syncNow, useSyncStatus } from '../src/lib/sync';
 import { routes } from '../src/lib/routes';
@@ -34,6 +36,31 @@ export default function SettingsScreen() {
   const sync = useSyncStatus();
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
+  const calSupported = calendarSupported();
+  const calId = useCalendar((c) => c.calendarId);
+  const calCount = useCalendar((c) => Object.values(c.events).reduce((n, ids) => n + ids.length, 0));
+  const [calBusy, setCalBusy] = useState(false);
+  const [calConfirm, setCalConfirm] = useState(false);
+  const calToast = (key: string, params?: Record<string, number>) => useCore.getState().pushToast({ key, params, emoji: key.endsWith('error') || key.endsWith('denied') ? '⚠️' : '📅' });
+  const syncCal = async () => {
+    setCalBusy(true);
+    try {
+      const r = await syncAllToCalendar();
+      calToast(r.result === 'ok' ? 'settings.calendar.toast.synced' : `settings.calendar.toast.${r.result}`, { n: r.count });
+    } finally {
+      setCalBusy(false);
+    }
+  };
+  const removeCal = async () => {
+    setCalBusy(true);
+    try {
+      const r = await removeAllFromCalendar();
+      calToast(r === 'ok' ? 'settings.calendar.toast.removed' : `settings.calendar.toast.${r}`);
+    } finally {
+      setCalBusy(false);
+      setCalConfirm(false);
+    }
+  };
 
   const version = Constants.expoConfig?.version ?? '1.0.0';
 
@@ -101,6 +128,43 @@ export default function SettingsScreen() {
             </Txt>
             <Switch value={s.notifications} onValueChange={s.setNotifications} trackColor={{ true: t.success, false: t.borderInput }} accessibilityLabel={tr('settings.reminders.label')} />
           </Row>
+        </Card>
+      </Section>
+
+      <Section title={tr('settings.calendar.title')}>
+        <Card>
+          <Txt variant="bodyBold">
+            📅 {!calSupported ? tr('settings.calendar.notConnected') : calId ? tr('settings.calendar.connected') : tr('settings.calendar.notConnected')}
+          </Txt>
+          {calSupported && calId ? (
+            <Txt variant="small" dim style={{ marginTop: 2 }}>
+              {tr('settings.calendar.events', { n: calCount })}
+            </Txt>
+          ) : null}
+          <Txt variant="small" dim style={{ marginTop: 6 }}>
+            {calSupported ? tr('settings.calendar.hint') : tr('settings.calendar.unsupported')}
+          </Txt>
+          {calSupported ? (
+            calConfirm ? (
+              <View style={{ marginTop: 12 }}>
+                <Txt>{tr('settings.calendar.removeWarn')}</Txt>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                  <PillButton style={{ flex: 1 }} small kind="outline" label={tr('common.btn.cancel')} onPress={() => setCalConfirm(false)} />
+                  <PillButton style={{ flex: 1 }} small loading={calBusy} color={t.danger} textColor={t.onDanger} label={tr('settings.calendar.removeConfirm')} onPress={() => void removeCal()} />
+                </View>
+              </View>
+            ) : (
+              <>
+                <Txt variant="caption" faint style={{ marginTop: 6 }}>
+                  {tr('settings.calendar.syncHint')}
+                </Txt>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                  <PillButton style={{ flex: 1 }} small icon="sync" loading={calBusy} label={tr('settings.calendar.syncAll')} onPress={() => void syncCal()} />
+                  <PillButton style={{ flex: 1 }} small kind="outline" disabled={!calId && calCount === 0} label={tr('settings.calendar.remove')} onPress={() => setCalConfirm(true)} />
+                </View>
+              </>
+            )
+          ) : null}
         </Card>
       </Section>
 

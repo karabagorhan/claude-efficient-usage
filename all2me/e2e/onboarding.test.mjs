@@ -27,10 +27,21 @@ async function runOnboarding(s, { name }) {
   assert.ok((await s.body()).match(new RegExp(`${s.t('onboarding.result.level.low')}|${s.t('onboarding.result.level.mid')}|${s.t('onboarding.result.level.high')}`)), 'seviye etiketi');
   await s.shot(`onb-${s.lang}-2-result`);
   await s.btn(s.t('common.btn.next'));
-  await s.expectText(s.t('onboarding.tasks.title'));
+  // yeni kişiselleştirme adımları: hepsi atlanabilir
+  await s.expectText(s.t('onboarding.rhythm.title'), 'ritim ekranı');
+  await s.btn(s.t('common.btn.skip'));
+  await s.expectText(s.t('onboarding.energy.title'));
+  await s.btn(s.t('common.btn.skip'));
+  await s.expectText(s.t('onboarding.focus.title'));
+  await s.btn(s.t('common.btn.skip'));
+  await s.expectText(s.t('onboarding.quiz.q1.q'), 'profil testi ilk soru');
+  await s.btn(s.t('onboarding.quiz.skip'));
+  await s.expectText(s.t('onboarding.plan.title'), 'ilk gün planı');
   // "N görevi ekle" düğmesi (görev satırları da artık rol=button; adı rakam içerebildiği için düğme adı sözlükten kurulur)
   const addN = s.t('onboarding.tasks.addN', { n: '@@' }).split('@@').map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\d+');
   await s.btn(new RegExp(`^${addN}`));
+  await s.expectText(s.t('onboarding.notif.title'), 'bildirim ekranı');
+  await s.btn(s.t('onboarding.notif.later'));
   await s.expectText(s.t('onboarding.pair.title'), 'partner ekranı');
   await s.shot(`onb-${s.lang}-3-pair`);
   await s.btn(s.t('settings.pairing.localContinue'));

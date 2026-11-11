@@ -13,6 +13,7 @@ import { addDays, weekStartKey } from '../../src/engine/dates';
 import { currentStreak, isPlannedOn } from '../../src/engine/points';
 import type { Habit, Slot } from '../../src/engine/types';
 import { DuelCard } from '../../src/features/routine/DuelCard';
+import { WeekBand } from '../../src/features/report/WeekBand';
 import { LifeStrip } from '../../src/features/routine/LifeStrip';
 import { WeekStrip } from '../../src/features/routine/WeekStrip';
 import { fmtDay, useLang, useT } from '../../src/i18n';
@@ -270,6 +271,7 @@ export default function ScreenRoutine() {
         <View style={{ height: 16 }} />
         <DuelCard me={me} partner={partner} myPts={myPts} partnerPts={partnerPts} />
         {isToday ? <LifeStrip day={todayKey} /> : null}
+        {isToday ? <WeekBand /> : null}
 
         {!hasAny ? (
           <EmptyState

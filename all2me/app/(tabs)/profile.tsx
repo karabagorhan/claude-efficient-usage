@@ -10,7 +10,9 @@ import { levelFromXp } from '../../src/engine/levels';
 import { useLang, useT } from '../../src/i18n';
 import { routes } from '../../src/lib/routes';
 import { today as todayKey, totalsFor, useCore, useDayStreak } from '../../src/store/core';
+import { TYPE_ART } from '../../src/features/onboarding/quiz';
 import { useSettings } from '../../src/store/settings';
+import { useProfile } from '../../src/store/slices/profile';
 import { alpha, radius, useTheme } from '../../src/theme';
 
 export default function ProfileTab() {
@@ -25,6 +27,7 @@ export default function ProfileTab() {
   const eventsMap = useCore((s) => s.events);
   const compsMap = useCore((s) => s.completions);
   const badgeRecs = useCore((s) => s.badges);
+  const routineType = useProfile((s) => s.routineType);
   const streak = useDayStreak();
   const t0 = todayKey();
   const myId = me?.id ?? '__me__';
@@ -156,6 +159,31 @@ export default function ProfileTab() {
           </View>
         </Pressable>
       </Row>
+
+      {/* Rutin tipin */}
+      <Pressable onPress={go(routes.profileQuiz())} accessibilityRole="button" style={{ marginTop: 12 }}>
+        <View style={{ backgroundColor: th.pastel[routineType ? TYPE_ART[routineType].pastel : 'pink'], borderRadius: radius.lg, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Txt size={38}>{routineType ? TYPE_ART[routineType].emoji : '🧩'}</Txt>
+          <View style={{ flex: 1 }}>
+            <Txt size={13} weight="700" color={th.onPastel}>{t('onboarding.typeCard.title')}</Txt>
+            <Txt variant="h3" color={th.onPastel}>{routineType ? t(`onboarding.type.${routineType}.name`) : t('onboarding.typeCard.none')}</Txt>
+            <Txt size={13} color={th.onPastel}>{routineType ? t('onboarding.typeCard.retake') : t('onboarding.typeCard.noneBody')}</Txt>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={th.onPastel} />
+        </View>
+      </Pressable>
+
+      {/* Haftalık rapor */}
+      <Pressable onPress={go(routes.report())} accessibilityRole="button" accessibilityLabel={t('report.card.title')}>
+        <View style={{ marginTop: 12, backgroundColor: th.pastel.blue, borderRadius: radius.lg, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Txt size={30}>📊</Txt>
+          <View style={{ flex: 1 }}>
+            <Txt weight="800" color={th.onPastel}>{t('report.card.title')}</Txt>
+            <Txt size={12} color={th.onPastel}>{t('report.card.body')}</Txt>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={th.onPastel} />
+        </View>
+      </Pressable>
 
       {/* Partner kartı */}
       <Card style={{ marginTop: 12 }} padding={16}>

@@ -4,6 +4,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { applyCalendar, dropCalendar } from '../../../src/features/calendar/apply';
+import { CalendarRow } from '../../../src/features/calendar/CalendarRow';
+import { calKey, courseSpecs, isInCalendar } from '../../../src/lib/calendar';
 import { RingGauge } from '../../../src/components/RingGauge';
 import { Card, Chip, EmptyState, Field, Header, IconButton, PillButton, Row, Screen, SectionHeader, Txt } from '../../../src/components/ui';
 import { hhmmToMinutes } from '../../../src/engine/dates';
@@ -129,6 +132,7 @@ function CourseForm({ id, onDone, onCancel }: { id?: string; onDone: (id: string
   const [term, setTerm] = useState(existing?.term ?? '');
   const [pastel, setPastel] = useState<PastelKey>(existing?.pastel ?? PASTEL_KEYS[count % PASTEL_KEYS.length]);
   const [slots, setSlots] = useState<ClassSlot[]>(existing?.slots ?? []);
+  const [cal, setCal] = useState(() => (id ? isInCalendar(calKey.course(id)) : false));
 
   const updateSlot = (i: number, p: Partial<ClassSlot>) => setSlots((ss) => ss.map((s, j) => (j === i ? { ...s, ...p } : s)));
   const addSlot = () =>
@@ -139,6 +143,7 @@ function CourseForm({ id, onDone, onCancel }: { id?: string; onDone: (id: string
   const save = () => {
     if (!name.trim()) return;
     const newId = saveCourse({ id, name, code, teacher, term, pastel, slots });
+    void applyCalendar(calKey.course(newId), cal, courseSpecs(newId));
     onDone(newId);
   };
 
@@ -197,6 +202,15 @@ function CourseForm({ id, onDone, onCancel }: { id?: string; onDone: (id: string
       ))}
       <Chip label={tr('study.course.addSlot')} emoji="➕" onPress={addSlot} style={{ alignSelf: 'flex-start' }} />
 
+      <CalendarRow
+        label={tr('study.calendar.courseLabel')}
+        hint={tr('study.calendar.courseHint')}
+        unsupported={tr('study.calendar.unsupported')}
+        needs={slots.length ? undefined : tr('study.calendar.courseNeedSlots')}
+        value={cal}
+        onChange={setCal}
+      />
+
       <PillButton label={tr('common.btn.save')} onPress={save} disabled={!name.trim()} style={{ marginTop: 24 }} />
       {id ? (
         <View style={{ marginTop: 12 }}>
@@ -204,6 +218,7 @@ function CourseForm({ id, onDone, onCancel }: { id?: string; onDone: (id: string
             label={tr('study.course.delete')}
             confirmLabel={tr('study.course.confirmDelete')}
             onConfirm={() => {
+              dropCalendar(calKey.course(id));
               deleteCourse(id);
               router.back();
             }}
