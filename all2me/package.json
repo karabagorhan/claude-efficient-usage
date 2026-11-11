@@ -47,7 +47,8 @@
     "web": "expo start --web",
     "test": "tsx tests/engine.test.ts && tsx tests/store.test.ts && tsx tests/life.test.ts && tsx tests/study.test.ts && tsx src/features/planner/plan.test.ts",
     "typecheck": "tsc --noEmit",
-    "shots": "node scripts/shots.mjs"
+    "shots": "node scripts/shots.mjs",
+    "e2e": "node e2e/run.mjs"
   },
   "private": true
 }
