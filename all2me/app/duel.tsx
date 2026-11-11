@@ -10,7 +10,7 @@ import { eventLabel, fmtDay, translate, useLang, useT } from '../src/i18n';
 import { MONTHS_SHORT } from '../src/i18n/dates';
 import { routes } from '../src/lib/routes';
 import { today as todayKey, useCore } from '../src/store/core';
-import { alpha, radius, useTheme } from '../src/theme';
+import { alpha, radius, readable, useTheme } from '../src/theme';
 
 const NUDGE_KEYS = ['duel.nudgeMsg.a', 'duel.nudgeMsg.b', 'duel.nudgeMsg.c'];
 const CHEER_KEYS = ['duel.cheerMsg.a', 'duel.cheerMsg.b', 'duel.cheerMsg.c'];
@@ -146,8 +146,8 @@ export default function DuelScreen() {
   const winnerName = st.winnerId === myId ? me.name : st.winnerId === pId ? partner.name : null;
   const banner = winnerName
     ? isCurrent
-      ? { text: t('duel.banner.leading', { name: winnerName, title: t(`points.champion.${period}`) }), color: th.warn }
-      : { text: t('duel.banner.winner', { name: winnerName, title: t(`points.champion.${period}`) }), color: th.warn }
+      ? { text: t('duel.banner.leading', { name: winnerName, title: t(`points.champion.${period}`) }), color: th.warnText }
+      : { text: t('duel.banner.winner', { name: winnerName, title: t(`points.champion.${period}`) }), color: th.warnText }
     : st.tie && st.qualified
       ? { text: t('duel.banner.tie'), color: th.textDim }
       : !st.qualified
@@ -239,9 +239,9 @@ export default function DuelScreen() {
             {(['day', 'week', 'month'] as const).map((p) => (
               <Row key={p} between style={{ paddingVertical: 6 }}>
                 <Txt weight="600" style={{ flex: 1 }}>{p === 'day' ? '🥇' : p === 'week' ? '🌠' : '🏅'} {t(`points.champion.${p}`)}</Txt>
-                <Txt weight="800" color={me.color}>{champs[p].wins[myId] ?? 0}</Txt>
+                <Txt weight="800" color={readable(me.color, th.card)}>{champs[p].wins[myId] ?? 0}</Txt>
                 <Txt weight="800" dim> – </Txt>
-                <Txt weight="800" color={partner.color}>{champs[p].wins[pId] ?? 0}</Txt>
+                <Txt weight="800" color={readable(partner.color, th.card)}>{champs[p].wins[pId] ?? 0}</Txt>
                 {champs[p].ties ? <Txt dim size={12}>  ({t('duel.shelfTies', { n: champs[p].ties })})</Txt> : null}
               </Row>
             ))}
@@ -275,7 +275,7 @@ export default function DuelScreen() {
             {feed.map((e) => (
               <Row key={e.id} between style={{ paddingVertical: 6 }} gap={8}>
                 <Txt numberOfLines={1} style={{ flex: 1 }}>{feedIcon(e.type)} {feedText(e)}</Txt>
-                {e.points > 0 ? <Txt weight="700" color={th.success}>+{e.points}</Txt> : null}
+                {e.points > 0 ? <Txt weight="700" color={th.successText}>+{e.points}</Txt> : null}
               </Row>
             ))}
           </Card>
@@ -286,24 +286,26 @@ export default function DuelScreen() {
 }
 
 function PlayerCol({ p, pts, lead, align, unit }: { p: { name: string; emoji: string; color: string }; pts: number; lead: boolean; align?: 'right'; unit: string }) {
+  const th = useTheme();
   return (
     <View style={{ alignItems: align === 'right' ? 'flex-end' : 'flex-start', flex: 1 }}>
       <Avatar emoji={p.emoji} color={p.color} size={52} />
       <Txt variant="bodyBold" numberOfLines={1} style={{ marginTop: 6 }}>{p.name}</Txt>
-      <Txt size={32} weight="800" color={p.color}>{pts}{lead ? ' 👑' : ''}</Txt>
+      <Txt size={32} weight="800" color={readable(p.color, th.card, 3)}>{pts}{lead ? ' 👑' : ''}</Txt>
       <Txt size={12} dim>{unit}</Txt>
     </View>
   );
 }
 
 function Mini({ label, a, b, ca, cb }: { label: string; a: number; b: number; ca: string; cb: string }) {
+  const th = useTheme();
   return (
     <View style={{ alignItems: 'center' }}>
       <Txt size={12} dim>{label}</Txt>
       <Row>
-        <Txt weight="800" color={ca}>{a}</Txt>
+        <Txt weight="800" color={readable(ca, th.card)}>{a}</Txt>
         <Txt weight="800" dim> – </Txt>
-        <Txt weight="800" color={cb}>{b}</Txt>
+        <Txt weight="800" color={readable(cb, th.card)}>{b}</Txt>
       </Row>
     </View>
   );

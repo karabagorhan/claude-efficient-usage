@@ -44,9 +44,9 @@ export default [
       const name = (await s.page.getByText('Bulaşıkları yıka', { exact: true }).count()) ? 'Bulaşıkları yıka' : null;
       assert.ok(name, 'ön koşul: Bulaşıkları yıka listede');
       // aynı kart için iki kez: önce yap, sonra (yeni durumda) tekrar yap
-      await s.page.getByText('Bulaşıkları yıka', { exact: true }).locator('xpath=ancestor::div[.//*[@aria-label="Tamamlandı"]][1]').getByRole('button', { name: 'Tamamlandı' }).first().click();
+      await s.page.getByText('Bulaşıkları yıka', { exact: true }).locator(`xpath=ancestor::div[.//*[@aria-label="${s.t('common.btn.done')}"]][1]`).getByRole('button', { name: s.t('common.btn.done') }).first().click();
       await s.page.waitForTimeout(400);
-      await s.page.getByText('Bulaşıkları yıka', { exact: true }).locator('xpath=ancestor::div[.//*[@aria-label="Tamamlandı"]][1]').getByRole('button', { name: 'Tamamlandı' }).first().click();
+      await s.page.getByText('Bulaşıkları yıka', { exact: true }).locator(`xpath=ancestor::div[.//*[@aria-label="${s.t('common.btn.done')}"]][1]`).getByRole('button', { name: s.t('common.btn.done') }).first().click();
       await s.page.waitForTimeout(400);
       const c = await s.store('chores');
       const bonus = (await events(s)).filter((e) => e.type === 'bonus' && e.group === 'chore');

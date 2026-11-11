@@ -19,7 +19,7 @@ geliştirici sözleşmesi: `docs/CONTRACTS.md`.
 - **İlham**: 40+ iki dilli şablon, kategoriler, arama, favoriler, tanı koymayan "kendini tanı" mini testleri.
 - **Araçlar**: odak zamanlayıcı / pomodoro (çalışma etiketiyle), su, uyku, ruh hali, yansıma (20+ konu),
   nefes / meditasyon, egzersiz rutinleri, motivasyon sözleri, ses ortamı (betikle sentezlenmiş döngüler),
-  alarm, "Kendimi Sevmenin 100 Yolu".
+  alarm, "Kendine 100 İyilik".
 - **Yaşam takibi**: sigara azaltma (azaltma planı, istek erteleme, biriken para, tetikleyiciler, en zor saatler),
   ev yemeği / fast food (haftalık hedef, menü planı, 30+ yemek fikri, alışveriş listesi), ev işleri
   (tekrarlı işler, çamaşır ve bulaşık makinesi akışı), okul / yüksek lisans (dersler, ödev / makale / sınav,

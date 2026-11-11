@@ -155,7 +155,7 @@ function Dashboard({ plan, pricing }: { plan: NonNullable<ReturnType<typeof useS
               {t('life.smoke.limitTomorrow', { n: tomorrowLimit })}
             </Txt>
             {resistedToday > 0 ? (
-              <Txt variant="small" color={th.success} weight="700">
+              <Txt variant="small" color={th.successText} weight="700">
                 {t('life.smoke.resistedToday', { n: resistedToday })}
               </Txt>
             ) : null}

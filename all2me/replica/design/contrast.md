@@ -1,4 +1,4 @@
-# Kontrast denetimi (replica-design / contrast.py)
+# Kontrast denetimi (replica-design / contrast.py) — önce / sonra
 
 Tarih: 2026-11-11. Kaynak: `src/theme/index.ts` (light, dark, PASTELS, GRADIENTS) + ekranlarda sabit yazılmış,
 tekrar eden renkler (`component-*`, kaynakları token dosyalarının `_sources` alanında).
@@ -12,10 +12,170 @@ python3 -I replica-design/contrast.py replica/design/tokens.dark.json
 Eşikler (WCAG 2.2 AA): normal metin 4.5, büyük metin (≥24px ya da ≥18.66px kalın) 3, UI sınırı/odak halkası 3.
 Not: 12-14px kalın hap etiketleri (sekme "Çark" hapı, onboarding seviye hapları) büyük metin sayılmaz.
 
-**Sonuç: açık tema 42 çiftin 26'sı, koyu tema 41 çiftin 17'si AA'yı geçemiyor. İki dosya da exit 1.**
-Çekirdek okuma çiftleri (metin/zemin, metin/kart, ana buton, pastel kart üstü metin, etkin sekme) iki temada
-da AAA. Başarısızlıklar ikincil gri tonlar, anlamsal renklerin metin olarak kullanımı, beyaz-yazılı renkli
-haplar/gradyan kartlar ve input sınırında toplanıyor.
+## Özet
+
+| | çift | AA altında | exit |
+|---|---|---|---|
+| **Önce** açık | 42 | **26** | 1 |
+| **Önce** koyu | 41 | **17** | 1 |
+| **Sonra** açık | 54 | **0** | 0 |
+| **Sonra** koyu | 45 | **0** | 0 |
+
+"Sonra" token dosyaları uygulamadaki **gerçek kullanımı** ölçer: metin rengi olarak artık `*Text` rolleri kullanıldığı
+için `danger/success/warn/purple`-zemin çiftleri yerine `dangerText/…`-zemin çiftleri; yeni yüzeyler (Araçlar afişleri,
+şanslı kart bitişi, Harekete Geç "+N puan", Seri başlığı/afişi, koyu Seri başlığı) eklendi. Çift sayısı bu yüzden arttı.
+
+## Yapılan değişiklikler (madde → çözüm → yeni oran)
+
+| # | önce | çözüm (dosya) | sonra |
+|---|---|---|---|
+| 1 | açık `textFaint #A3A8B3` 2.24/2.38 (Yeni Görev başlığı, placeholder, notlar) | `textFaint → #6B7280`, `textDim → #5B6370` (ayrı ton korunur) — `src/theme/index.ts` | 4.54 bg / 4.83 card |
+| 2 | açık `textDim` / card-alt 4.19 | `textDim → #5B6370` | 5.25 card-alt, 5.69 bg |
+| 3 | açık `tabInactive` 2.38 | `#6B7280` | 4.83 |
+| 4 | beyaz / pembe hap 2.30 (Çark sekmesi) | marka geçişi: `pink → #A93BC9` (orkide), beyaz yazı kalır — `app/(tabs)/_layout.tsx` | 5.05 |
+| 5-8 | `danger` 3.53, `success` 2.14, `warn` 2.15, `purple` 4.11 metin olarak | yeni roller `dangerText #DC2626`, `successText #15803D`, `warnText #B45309`, `purpleText #6D4AE8` (koyu: dolgu değerleri / `#A994FF`); 25+ kullanım yeri `*Text`'e geçirildi (task, settings, pairing, study, growth, duel, badges, smoke, chores ✓ simgesi, rutin "+puan"…); `danger` dolgusu `#DC2626` | 4.53–5.53 (koyu 6.2–11.4) |
+| 9 | onboarding seviye hapları beyaz/coral-warn-success 2.15–2.83 | hap yazısı `t.onAccent #14171A` — `app/onboarding.tsx`; ayrıca `Chip` renkli etkin durumda `onAccent` | 5.14 / 8.38 / 7.90 (koyu 7.33 / 10.78 / 9.36) |
+| 10 | beyaz / danger buton 3.76 (koyu 2.77) | `onDanger` rolü (açık beyaz, koyu `#14171A`); sil/çık/sıfırla butonları ve geri sayım rozeti | 4.83 (koyu 6.50) |
+| 11 | beyaz / `ai` 3.68–2.19, `lucky` 4.17 | `ai → #4F5BD5 → #6F55DD → #8E4FE0`, `lucky → #5B5BE0 → #6D4AE8`; FeatureCard üst satırındaki `opacity 0.9` kaldırıldı — `app/new-task.tsx` | 4.83–5.54 |
+| 12 | beyaz / mor dolgu küçük yazı 4.38 | Araçlar afişi `#6D4AE8 → #8E4FE0 → #A93BC9`, söz afişi `#C2410C → #BE185D → #A93BC9`, alt satır opaklığı kaldırıldı; 100 İyilik kartları ve söz kartları koyu gradyan çiftlerine taşındı (`app/tools/love.tsx`, `src/data/quotes.ts`) | 4.83–6.04 |
+| 13 | beyaz / turuncu Seri afişi 2.36 | afiş yazısı `#14171A` (iki temada); açık temada Seri başlığı da koyu — `app/streak.tsx` | 7.63 |
+| 14 | Seri sayısı turuncu / krem 1.50 | açık temada `#C2410C` | 3.29 (büyük metin) |
+| 15 | "day streak" 1.84 | `#B45309` | 4.52 |
+| 16 | input sınırı `border` 1.24 | yeni `borderInput #858A95` (koyu `#6B7280`): `Field`, pasif `Chip`, anahtar (Switch) kapalı izi | 3.46 card / 3.25 bg (koyu 3.56 / 3.93) |
+| 17-18 | koyu `textFaint` 3.21, `tabInactive` 3.05 | `#868D99`, `#7E8592` | 5.15–5.69, 4.87 |
+| 19-20 | koyu beyaz / pembe 2.03, / mor 3.20 | pembe `#A93BC9` (iki tema); mor dolgu üstünde küçük yazı kalmadı | 5.05 |
+| 21 | koyu input sınırı 1.29 | `borderInput #6B7280` | 3.56 |
+| 22 | koyu temada sabit `#14171A` seçim halkası 1.47 | halka ve dolgu `t.onPastel`, ✓ `t.onPrimary` — `app/onboarding.tsx` | 10.4–11.9 |
+| + | Harekete Geç "+N puan" (`purple` 4.11) | `#5B3FD6` (gradyanın açık ucu `#E9E2FF` üstünde) — `app/action.tsx` | 5.37 |
+| + | İlham poster "SABAH/AKŞAM" etiketi vurgu rengiyle 2.1–3.9 | `INK` %72 — `src/features/inspire/TemplateCard.tsx` | ≥ 5.25 (12 poster zemininde karışım rengiyle ölçüldü) |
+| + | Düello: kullanıcının seçtiği avatar rengi metin olarak (ör. turuncu 2.36) | yeni `readable(color, bg, min)` yardımcısı tonu koruyup koyulaştırır — `src/theme/index.ts`, `app/duel.tsx` | ≥ 4.5 (büyük sayı ≥ 3) |
+
+## Kalan istisnalar (gerekçeli)
+
+- `border` (#E6E6EF / koyu #2A2F3C, 1.24 / 1.29): yalnız **dekoratif** ayırıcı/kart kenarı ve sayfa noktası; bileşeni
+  tanımlamak için gerekli bir sınır değil (WCAG 1.4.11 kapsamı dışı). Etkileşimli sınırlar `borderInput`'a taşındı.
+- Gradyan üstü metin tek durak renginde ölçüldü; `action` gradyanının üst durağı `#7C5CFC` üstündeki 40px başlık 4.38
+  (büyük metin, eşik 3 → geçer). Başlık kısaltıldığı için ("Sıra sende!" / "Your move!") ikinci satır açık bölgeye inmiyor.
+- Çark dilimleri (pastel zemin + `onPastel`) ve çark çerçevesi (#17A398) dekoratif; dilim yazısı `onPastel` ile ≥ 11.9.
+- Kullanıcının seçtiği renkler grafik/çubuk dolgusu olarak (metin değil) olduğu gibi kullanılıyor; metin olduklarında `readable()`.
+- Uygulama ikonu gradyanı (`scripts/gen-icons.mjs`) metin taşımaz.
+
+## Sonra — açık tema ham çıktı
+
+```
+  AAA   16.88:1  text                     on bg                   
+  AAA   17.99:1  text                     on card                 
+  AAA   15.59:1  text                     on card-alt             
+  AA     5.69:1  text-dim                 on bg                   
+  AA     6.06:1  text-dim                 on card                 
+  AA     5.25:1  text-dim                 on card-alt             
+  AA     4.54:1  text-faint               on bg                   
+  AA     4.83:1  text-faint               on card                 
+  AAA   17.99:1  on-primary               on primary              
+  AAA   12.68:1  on-pastel                on pastel-blue          
+  AAA   13.70:1  on-pastel                on pastel-green         
+  AAA   11.97:1  on-pastel                on pastel-purple        
+  AAA   13.98:1  on-pastel                on pastel-mint          
+  AAA   12.67:1  on-pastel                on pastel-peach         
+  AAA   12.35:1  on-pastel                on pastel-pink          
+  AAA   14.16:1  on-pastel                on pastel-yellow        
+  AAA   17.99:1  tab-active               on tab-bar              
+  AA     4.83:1  tab-inactive             on tab-bar              
+  AA     5.05:1  component-on-color       on pink                 
+  AA     4.53:1  danger-text              on bg                   
+  AA     4.83:1  danger-text              on card                 
+  AA     4.71:1  success-text             on bg                   
+  AA     5.02:1  success-text             on card                 
+  AA     4.71:1  warn-text                on bg                   
+  AA     5.02:1  warn-text                on card                 
+  AA     5.19:1  purple-text              on bg                   
+  AA     5.53:1  purple-text              on card                 
+  AA     4.83:1  on-danger                on danger               
+  AA     5.14:1  on-accent                on coral                
+  AAA    8.38:1  on-accent                on warn                 
+  AAA    7.90:1  on-accent                on success              
+  AAA    7.63:1  on-accent                on orange               
+  AA     5.54:1  component-on-color       on gradient-ai-start    
+  AA     5.22:1  component-on-color       on gradient-ai-mid      
+  AA     4.83:1  component-on-color       on gradient-ai-end      
+  AA     5.23:1  component-on-color       on gradient-lucky-start 
+  AA     5.53:1  component-on-color       on gradient-lucky-end   
+  AA     5.53:1  component-on-color       on gradient-love-start  
+  AA     4.83:1  component-on-color       on gradient-love-mid    
+  AA     5.05:1  component-on-color       on gradient-love-end    
+  AA     5.18:1  component-on-color       on gradient-quote-start 
+  AA     6.04:1  component-on-color       on gradient-quote-mid   
+  AA     5.05:1  component-on-color       on gradient-quote-end   
+  AAA    5.05:1  component-on-color       on gradient-wheel-top   large
+  AA     4.38:1  component-on-color       on gradient-action-top  large
+  AA     6.82:1  component-wheel-soft     on gradient-wheel-bottom 
+  AA     3.29:1  component-streak-number  on gradient-streak-mid  large
+  AAA    4.52:1  component-streak-unit    on gradient-streak-cream large
+  AAA    7.63:1  component-ink            on orange               
+  AAA    7.63:1  component-ink            on gradient-streak-top  
+  AA     5.37:1  component-action-earned  on gradient-action-light 
+  PASS   3.46:1  border-input             on card                 ui
+  PASS   3.25:1  border-input             on bg                   ui
+  PASS   5.02:1  success-text             on card                 ui
+
+  54 pairs, 0 failing AA
+```
+
+## Sonra — koyu tema ham çıktı
+
+```
+  AAA   17.28:1  text                     on bg                   
+  AAA   15.63:1  text                     on card                 
+  AAA   13.54:1  text                     on card-alt             
+  AAA    7.49:1  text-dim                 on bg                   
+  AA     6.77:1  text-dim                 on card                 
+  AA     5.87:1  text-dim                 on card-alt             
+  AA     5.69:1  text-faint               on bg                   
+  AA     5.15:1  text-faint               on card                 
+  AAA   17.28:1  on-primary               on primary              
+  AAA   10.96:1  on-pastel                on pastel-blue          
+  AAA   10.36:1  on-pastel                on pastel-green         
+  AAA   11.68:1  on-pastel                on pastel-purple        
+  AAA   10.52:1  on-pastel                on pastel-mint          
+  AAA   10.88:1  on-pastel                on pastel-peach         
+  AAA   11.93:1  on-pastel                on pastel-pink          
+  AAA    9.26:1  on-pastel                on pastel-yellow        
+  AAA   16.42:1  tab-active               on tab-bar              
+  AA     4.87:1  tab-inactive             on tab-bar              
+  AA     5.05:1  component-on-color       on pink                 
+  AA     6.87:1  danger-text              on bg                   
+  AA     6.22:1  danger-text              on card                 
+  AAA    9.89:1  success-text             on bg                   
+  AAA    8.95:1  success-text             on card                 
+  AAA   11.39:1  warn-text                on bg                   
+  AAA   10.30:1  warn-text                on card                 
+  AAA    7.58:1  purple-text              on bg                   
+  AA     6.85:1  purple-text              on card                 
+  AA     6.50:1  on-danger                on danger               
+  AAA    7.33:1  on-accent                on coral                
+  AAA   10.78:1  on-accent                on warn                 
+  AAA    9.36:1  on-accent                on success              
+  AAA    8.71:1  on-accent                on orange               
+  AA     5.54:1  component-on-color       on gradient-ai-start    
+  AA     4.83:1  component-on-color       on gradient-ai-end      
+  AA     5.23:1  component-on-color       on gradient-lucky-start 
+  AA     5.53:1  component-on-color       on gradient-lucky-end   
+  AAA    5.05:1  component-on-color       on gradient-wheel-top   large
+  AAA    4.54:1  orange                   on gradient-streak-dark-mid large
+  AAA    5.96:1  component-streak-unit    on gradient-streak-dark-mid large
+  AA     4.66:1  component-on-color       on gradient-streak-dark-top 
+  AAA    7.63:1  component-ink            on gradient-streak-banner 
+  PASS   3.56:1  border-input             on card                 ui
+  PASS   3.93:1  border-input             on bg                   ui
+  PASS  10.96:1  on-pastel                on pastel-blue          ui
+  PASS  10.36:1  on-pastel                on pastel-green         ui
+
+  45 pairs, 0 failing AA
+```
+
+---
+
+# ÖNCE (ilk denetim, değişiklikten önce)
 
 ## Açık tema — ham çıktı
 

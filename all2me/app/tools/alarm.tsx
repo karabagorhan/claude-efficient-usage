@@ -181,9 +181,15 @@ export default function AlarmScreen() {
       ) : (
         <View style={{ gap: 10 }}>
           {sorted.map((a) => (
-            <Card key={a.id} onPress={() => setDraft({ id: a.id, hour: a.hour, minute: a.minute, days: a.days, label: a.label, enabled: a.enabled })} padding={16}>
+            <Card key={a.id} padding={16}>
               <Row between>
-                <View style={{ flex: 1, paddingRight: 10 }}>
+                {/* Düzenleme alanı ile anahtar kardeş: anahtara dokunmak kartın düzenleme dokunuşuna sızmaz (BUG-006). */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t('common.btn.edit')} ${fmtTime(`${pad(a.hour)}:${pad(a.minute)}`, lang)}`}
+                  onPress={() => setDraft({ id: a.id, hour: a.hour, minute: a.minute, days: a.days, label: a.label, enabled: a.enabled })}
+                  style={({ pressed }) => ({ flex: 1, paddingRight: 10, opacity: pressed ? 0.7 : 1 })}
+                >
                   <Txt size={38} weight="800" dim={!a.enabled} style={{ fontVariant: ['tabular-nums'] }}>
                     {fmtTime(`${pad(a.hour)}:${pad(a.minute)}`, lang)}
                   </Txt>
@@ -191,8 +197,13 @@ export default function AlarmScreen() {
                     {a.label ? `${a.label} · ` : ''}
                     {daysText(a)}
                   </Txt>
-                </View>
-                <Switch value={a.enabled} onValueChange={(v) => onToggle(a, v)} trackColor={{ true: th.success, false: th.border }} />
+                </Pressable>
+                <Switch
+                  value={a.enabled}
+                  onValueChange={(v) => onToggle(a, v)}
+                  trackColor={{ true: th.success, false: th.borderInput }}
+                  accessibilityLabel={`${fmtTime(`${pad(a.hour)}:${pad(a.minute)}`, lang)}${a.label ? ` ${a.label}` : ''}`}
+                />
               </Row>
             </Card>
           ))}

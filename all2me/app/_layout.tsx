@@ -12,6 +12,7 @@ import { ToastHost } from '../src/components/ToastHost';
 import { onNotificationOpen, rescheduleReminders } from '../src/lib/notifications';
 import { cancelAllReminders, resyncAllReminders } from '../src/lib/reminders';
 import { startSync } from '../src/lib/sync';
+import { installTabSync } from '../src/lib/tabSync';
 import { myHabits, useCore } from '../src/store/core';
 import { useSettings } from '../src/store/settings';
 import { useTheme } from '../src/theme';
@@ -29,6 +30,9 @@ function Boot() {
     if (!me || !pairId) return;
     return startSync();
   }, [me?.id, pairId]);
+
+  // web: başka sekmenin yazdığı durumu yeniden yükle (çok sekmede kayıp olmasın)
+  useEffect(() => installTabSync(), []);
 
   useEffect(() => {
     if (!me) return;

@@ -37,6 +37,7 @@ export const EN_ONE: Record<string, string> = {
   'routine.life.dueIn': "In {{n}} day: {{title}}",
   'routine.life.chores': "{{n}} overdue chore",
   'sleep.goalHours': "{{n}} hour",
+  'streak.unit': "day in a row",
   'soundscape.intro': "Tap to play or stop. You can mix up to {{n}} sound.",
   'soundscape.nowPlaying': "{{n}} sound playing",
   'streak.days': "{{n}} day",

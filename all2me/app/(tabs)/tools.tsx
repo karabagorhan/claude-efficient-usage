@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { Bar, IconTile, Row, Screen, SectionHeader, Txt, tap } from '../../src/components/ui';
+import { IconTile, Row, Screen, SectionHeader, Txt, tap } from '../../src/components/ui';
 import { REFLECTION_TOPICS } from '../../src/data/reflections';
 import { QUOTES, quoteIndexForDay } from '../../src/data/quotes';
 import { L, useLang, useT } from '../../src/i18n';
@@ -17,7 +17,7 @@ import { useDrink, drinkTotalOn } from '../../src/store/slices/drink';
 import { useMood } from '../../src/store/slices/mood';
 import { useSleep } from '../../src/store/slices/sleep';
 import { useSettings } from '../../src/store/settings';
-import { GUTTER, alpha, radius, useTheme, type PastelKey } from '../../src/theme';
+import { GUTTER, radius, useTheme, type PastelKey } from '../../src/theme';
 
 const TOOLS: Array<{ id: Parameters<typeof routes.tool>[0]; emoji: string; pastel: PastelKey }> = [
   { id: 'timer', emoji: '⏳', pastel: 'purple' },
@@ -67,9 +67,9 @@ export default function ToolsTab() {
         scrollEventThrottle={16}
         style={{ marginHorizontal: 0 }}
       >
-        <Pressable onPress={() => router.push(routes.tool('love'))} style={{ width: bw }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('tools.banner.love')} onPress={() => router.push(routes.tool('love'))} style={{ width: bw }}>
           <LinearGradient
-            colors={['#7C5CFC', '#A66CFF', '#F08BEA']}
+            colors={['#6D4AE8', '#8E4FE0', '#A93BC9']}
             start={{ x: 0, y: 0.2 }}
             end={{ x: 1, y: 0.8 }}
             style={{ height: 150, borderRadius: radius.lg, padding: 20, overflow: 'hidden', justifyContent: 'center' }}
@@ -78,7 +78,7 @@ export default function ToolsTab() {
               <Txt variant="h1" color="#fff" numberOfLines={3}>
                 {t('tools.banner.love')}
               </Txt>
-              <Txt variant="small" color="#ffffffdd" style={{ marginTop: 6 }}>
+              <Txt variant="small" color="#fff" style={{ marginTop: 6 }}>
                 {t('tools.banner.loveSub')}
               </Txt>
             </View>
@@ -88,14 +88,14 @@ export default function ToolsTab() {
             </View>
           </LinearGradient>
         </Pressable>
-        <Pressable onPress={() => router.push(routes.tool('motivation'))} style={{ width: bw }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('tools.banner.quote')} onPress={() => router.push(routes.tool('motivation'))} style={{ width: bw }}>
           <LinearGradient
-            colors={['#FF8A1F', '#FF6B8B', '#F08BEA']}
+            colors={['#C2410C', '#BE185D', '#A93BC9']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ height: 150, borderRadius: radius.lg, padding: 20, justifyContent: 'center' }}
           >
-            <Txt variant="caption" color="#ffffffcc" weight="700">
+            <Txt variant="caption" color="#fff" weight="700">
               ✨ {t('tools.banner.quote')}
             </Txt>
             <Txt variant="h3" color="#fff" numberOfLines={4} style={{ marginTop: 6 }}>
@@ -119,11 +119,12 @@ export default function ToolsTab() {
 
       {/* Ruh hali */}
       <Pressable
+        accessibilityRole="button"
         onPress={() => router.push(routes.tool('mood'))}
         style={{ marginTop: 22, backgroundColor: th.pastel.green, borderRadius: radius.lg, padding: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
       >
         <View style={{ flex: 1, paddingRight: 8 }}>
-          <Txt variant="h3" color={th.onPastel}>
+          <Txt variant="h3" color={th.onPastel} numberOfLines={2}>
             {todayMood ? t('tools.mood.today', { label: t(`mood.level.${todayMood}`) }) : t('tools.mood.title')}
           </Txt>
           <Txt color={th.onPastel} style={{ marginTop: 2 }}>
@@ -135,12 +136,12 @@ export default function ToolsTab() {
         ) : (
           <Row>
             {[5, 4, 2, 1].map((l, i) => (
-              <View key={l} style={{ marginLeft: i ? -12 : 0 }}>
-                <MoodFace level={l} size={40} ring={th.pastel.green} />
+              <View key={l} style={{ marginLeft: i ? -10 : 0 }}>
+                <MoodFace level={l} size={32} ring={th.pastel.green} />
               </View>
             ))}
-            <View style={{ marginLeft: -10, width: 40, height: 40, borderRadius: 20, backgroundColor: '#14171A', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="add" size={26} color="#fff" />
+            <View style={{ marginLeft: -8, width: 34, height: 34, borderRadius: 17, backgroundColor: th.onPastel, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="add" size={22} color={th.isDark ? '#14171A' : '#fff'} />
             </View>
           </Row>
         )}
@@ -148,6 +149,7 @@ export default function ToolsTab() {
 
       {/* Su */}
       <Pressable
+        accessibilityRole="button"
         onPress={() => router.push(routes.tool('drink'))}
         style={{ marginTop: 12, backgroundColor: th.pastel.blue, borderRadius: radius.lg, padding: 18, flexDirection: 'row', alignItems: 'center' }}
       >
@@ -155,17 +157,12 @@ export default function ToolsTab() {
           <Txt variant="h3" color={th.onPastel}>
             {t('tools.drink.title')}
           </Txt>
-          <Txt color={th.onPastel} style={{ marginTop: 2 }}>
-            {t('tools.drink.sub')}
+          <Txt color={th.onPastel} style={{ marginTop: 2 }} numberOfLines={1}>
+            {drunk > 0 ? t('drink.amountOf', { a: fromMl(drunk, units), b: fromMl(goalMl, units), unit: t(`common.unit.${units}`) }) : t('tools.drink.sub')}
           </Txt>
-          <View style={{ marginTop: 10, marginRight: 8 }}>
-            <Bar value={drunk / goalMl} color={th.blue} bg={alpha('#FFFFFF', 0.5)} height={8} />
-            <Txt variant="caption" color={th.onPastel} style={{ marginTop: 4 }}>
-              {t('drink.amountOf', { a: fromMl(drunk, units), b: fromMl(goalMl, units), unit: t(`common.unit.${units}`) })}
-            </Txt>
-          </View>
         </View>
-        <DropFill value={drunk / goalMl} size={56} />
+        {/* ilerleme damlada (tek satır kart, diff.md #4) */}
+        <DropFill value={drunk / goalMl} size={52} />
         <Ionicons name="chevron-forward" size={22} color={th.onPastel} />
       </Pressable>
 
@@ -179,6 +176,7 @@ export default function ToolsTab() {
 
       {/* Uyku özeti */}
       <Pressable
+        accessibilityRole="button"
         onPress={() => router.push(routes.tool('sleep'))}
         style={{ marginTop: 22, backgroundColor: th.pastel.purple, borderRadius: radius.lg, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14 }}
       >

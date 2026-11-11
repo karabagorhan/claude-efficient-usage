@@ -99,7 +99,7 @@ export default function SettingsScreen() {
             <Txt dim style={{ flex: 1 }}>
               {tr('settings.reminders.hint')}
             </Txt>
-            <Switch value={s.notifications} onValueChange={s.setNotifications} trackColor={{ true: t.success, false: t.border }} />
+            <Switch value={s.notifications} onValueChange={s.setNotifications} trackColor={{ true: t.success, false: t.borderInput }} accessibilityLabel={tr('settings.reminders.label')} />
           </Row>
         </Card>
       </Section>
@@ -125,7 +125,7 @@ export default function SettingsScreen() {
                 <Txt variant="small" dim>
                   {tr('settings.sync.label')}
                 </Txt>
-                <Txt variant="small" weight="600" color={sync.status === 'error' ? t.danger : t.text} numberOfLines={2} style={{ flexShrink: 1, textAlign: 'right' }}>
+                <Txt variant="small" weight="600" color={sync.status === 'error' ? t.dangerText : t.text} numberOfLines={2} style={{ flexShrink: 1, textAlign: 'right' }}>
                   {syncText}
                 </Txt>
               </Row>
@@ -155,11 +155,11 @@ export default function SettingsScreen() {
             <Txt>{tr('settings.data.warn')}</Txt>
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
               <PillButton style={{ flex: 1 }} small kind="outline" label={tr('common.btn.cancel')} onPress={() => setConfirm(false)} />
-              <PillButton style={{ flex: 1 }} small loading={busy} color={t.danger} textColor="#fff" label={tr('settings.data.confirm')} onPress={() => void resetAll()} />
+              <PillButton style={{ flex: 1 }} small loading={busy} color={t.danger} textColor={t.onDanger} label={tr('settings.data.confirm')} onPress={() => void resetAll()} />
             </View>
           </Card>
         ) : (
-          <PillButton kind="outline" icon="trash-outline" label={tr('settings.data.reset')} textColor={t.danger} onPress={() => setConfirm(true)} />
+          <PillButton kind="outline" icon="trash-outline" label={tr('settings.data.reset')} textColor={t.dangerText} onPress={() => setConfirm(true)} />
         )}
       </Section>
 

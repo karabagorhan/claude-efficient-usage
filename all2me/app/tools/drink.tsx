@@ -61,6 +61,7 @@ export default function DrinkScreen() {
   const avg = Math.round(week.reduce((a, w) => a + w.ml, 0) / 7);
 
   const add = (ml: number) => {
+    if (!(ml > 0)) return; // negatif / sıfır miktar yok (BUG-008)
     press();
     useDrink.getState().add(ml);
     const s = useDrink.getState();
@@ -72,6 +73,8 @@ export default function DrinkScreen() {
     const d = useDrink.getState();
     if (!d.undoLast(day)) return;
     const tot = Object.values(useDrink.getState().entries).reduce((a, e) => (e.dayKey === day ? a + e.ml : a), 0);
+    // hedefin altına inildiyse bağlı "Su iç" görevi ve puanı geri alınır (BUG-002)
+    if (tot < d.goalMl) useCore.getState().undoLinked('drink', day);
     useCore.getState().setLinkedProgress('drink', 0);
     if (tot > 0) syncCore(tot, d.goalMl);
   };
@@ -185,7 +188,7 @@ export default function DrinkScreen() {
           />
           <PillButton
             label={t('common.btn.add')}
-            disabled={!Number(customVal)}
+            disabled={!(Number(customVal) > 0)}
             onPress={() => {
               add(toMl(Number(customVal), units));
               setCustomVal('');

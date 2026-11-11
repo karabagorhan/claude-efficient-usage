@@ -2,9 +2,9 @@
 export default {
   tr: {
     title: 'Yeni Görev',
-    rename: 'Yeniden adlandırmak için dokun',
-    planner: { overline: 'Akıllı planlayıcı', title: 'Gününü akıllı planla' },
-    luckyCard: { overline: 'Küçük bir kendine bakım sürprizi', title: 'Şanslı görevini çevir' },
+    rename: 'Adını koymak için dokun',
+    planner: { overline: 'Akıllı planlayıcı', title: 'Bugüne hazır bir plan al' },
+    luckyCard: { overline: 'Şansa bırak, kendini şımart', title: 'Şans kartını çek' },
     goal: 'Hedef: {{done}}/{{target}}',
     added: 'Eklendi',
     suggested: 'Önerilen görevler',
@@ -46,8 +46,8 @@ export default {
       emojiCustom: 'Kendi emojin',
     },
     lucky: {
-      title: 'Şanslı görevini çevir',
-      subtitle: 'Kendine küçük bir bakım molası ver',
+      title: 'Şans kartını çek',
+      subtitle: 'Desteden bir kart, sana küçük bir mola',
       spinning: 'Kartlar karışıyor…',
       again: 'Yeniden çevir',
       doIt: 'Bunu yap',
@@ -57,9 +57,9 @@ export default {
   },
   en: {
     title: 'New Task',
-    rename: 'Tap to rename',
-    planner: { overline: 'Smart planner', title: 'Plan your day smartly' },
-    luckyCard: { overline: 'A fun little self-care surprise', title: 'Spin your lucky task' },
+    rename: 'Tap here to name it',
+    planner: { overline: 'Smart planner', title: 'Get a ready-made plan for today' },
+    luckyCard: { overline: 'Let chance pick a treat', title: 'Draw a lucky card' },
     goal: 'Goal: {{done}}/{{target}}',
     added: 'Added',
     suggested: 'Suggested tasks',
@@ -101,8 +101,8 @@ export default {
       emojiCustom: 'Your own emoji',
     },
     lucky: {
-      title: 'Spin your lucky task',
-      subtitle: 'Give yourself a little self-care break',
+      title: 'Draw a lucky card',
+      subtitle: 'One card from the deck, one small break for you',
       spinning: 'Shuffling the cards…',
       again: 'Spin again',
       doIt: 'Do this one',

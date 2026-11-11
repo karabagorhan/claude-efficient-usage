@@ -51,7 +51,7 @@ export default {
     streak: '{{n}} gün seri',
     link: {
       drink: 'Su iç',
-      mood: 'Ruh hali kaydı',
+      mood: 'Ruh halimi yaz',
       reflection: 'Yansıma',
       smoke: 'Sigara limiti',
       meal: 'Ev yemeği',
@@ -115,7 +115,7 @@ export default {
     streak: '{{n}}-day streak',
     link: {
       drink: 'Drink water',
-      mood: 'Mood check-in',
+      mood: 'Log my mood',
       reflection: 'Reflection',
       smoke: 'Smoking limit',
       meal: 'Home-cooked meal',

@@ -33,16 +33,18 @@ export default function StreakScreen() {
 
   const colors = t.isDark ? (['#B85A10', '#6B3A12', '#241810', t.bg] as const) : GRADIENTS.streak;
   const light = '#FFFFFF';
+  // Kontrast (contrast.md #13-15): açık temada turuncu/krem zeminde koyu turuncu sayı, kahve-amber birim, koyu başlık.
+  const INK = '#14171A';
 
   return (
-    <GradientScreen colors={colors} scroll padBottom={32} header={<Header left="back" title={tr('streak.title')} color={t.isDark ? light : '#fff'} />}>
+    <GradientScreen colors={colors} scroll padBottom={32} header={<Header left="back" title={tr('streak.title')} color={t.isDark ? light : INK} />}>
       <View style={{ alignItems: 'center', marginTop: 4 }}>
         <Flame size={156} />
-        <Txt size={96} weight="900" color={t.orange} style={{ lineHeight: 104, marginTop: -6 }}>
+        <Txt size={96} weight="900" color={t.isDark ? t.orange : '#C2410C'} style={{ lineHeight: 104, marginTop: -6 }}>
           {String(streak)}
         </Txt>
-        <Txt size={24} weight="800" color={t.isDark ? '#FFC37A' : '#F5A35A'}>
-          {tr('streak.unit')}
+        <Txt size={24} weight="800" color={t.isDark ? '#FFC37A' : '#B45309'}>
+          {tr('streak.unit', { n: streak })}
         </Txt>
       </View>
 
@@ -60,7 +62,7 @@ export default function StreakScreen() {
         }}
       >
         <Txt size={44}>🏆</Txt>
-        <Txt variant="h3" color="#FFFFFF" style={{ flex: 1 }}>
+        <Txt variant="h3" color={INK} style={{ flex: 1 }}>
           {tr(`streak.banner.${bannerKey(streak)}`)}
         </Txt>
       </View>

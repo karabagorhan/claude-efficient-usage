@@ -9,8 +9,8 @@ export default [
     run: async (s) => {
       await s.goto('/inspire', 900);
       await s.expectText(s.t('inspire.title'));
-      await s.expectText('Temizlik');
-      await s.expectText('Evi Temiz Tut', 'şablon kartı');
+      await s.expectText('Pırıl Pırıl Ev');
+      await s.expectText('Temiz Ev Temelleri', 'şablon kartı');
       await s.shot('inspire-tab');
     },
   },
@@ -18,7 +18,7 @@ export default [
     id: 'F06-H2', name: 'şablon detayı: tek madde ekle → "Eklendi"; "Hepsini rutine ekle" kalan maddeleri ekler; tekrar eklenmez', opts: { lang: 'tr', seedOpts: { noHabits: true, withHistory: false } },
     run: async (s) => {
       await s.goto('/inspire/clean-home-basics', 900);
-      await s.expectText('Evi Temiz Tut');
+      await s.expectText('Temiz Ev Temelleri');
       const addBtns = s.page.getByRole('button', { name: s.t('inspire.detail.add'), exact: true });
       const n0 = await addBtns.count();
       assert.ok(n0 >= 6, `madde sayısı ${n0}`);
@@ -48,7 +48,7 @@ export default [
       let fav = (await s.store('favorites')).favorites;
       assert.deepEqual(fav, ['clean-home-basics']);
       await s.goto('/inspire/favorites', 700);
-      await s.expectText('Evi Temiz Tut');
+      await s.expectText('Temiz Ev Temelleri');
       await s.expectText(s.t('inspire.templatesCount', { n: 1 }));
       await s.shot('inspire-favorites');
       await s.goto('/inspire/clean-home-basics', 700);
@@ -108,8 +108,8 @@ export default [
     id: 'F06-E4', name: 'kategori sayfası: kategori şablonları listelenir ve karta dokununca detay açılır', opts: { lang: 'tr' },
     run: async (s) => {
       await s.goto('/inspire/category/cleaning', 800);
-      await s.expectText('Evi Temiz Tut');
-      await s.tap('Evi Temiz Tut');
+      await s.expectText('Temiz Ev Temelleri');
+      await s.tap('Temiz Ev Temelleri');
       await s.page.waitForURL(/\/inspire\/clean-home-basics/);
       await s.expectText(s.t('inspire.detail.addAll'));
     },

@@ -17,7 +17,7 @@ import { useSettings } from '../src/store/settings';
 import { GUTTER, radius, useTheme } from '../src/theme';
 
 const AVATARS = ['🌟', '🦊', '🐼', '🐱', '🐶', '🦄', '🌈', '🍀', '🚀', '🌻', '🐳', '🍉'];
-const COLORS = ['#7C5CFC', '#FF6B3D', '#FF7AE0', '#3B6CF6', '#FF8A1F', '#34D399', '#F43F5E', '#14B8A6'];
+const COLORS = ['#7C5CFC', '#EE4D7E', '#A93BC9', '#3B6CF6', '#FF8A1F', '#34D399', '#F43F5E', '#14B8A6'];
 
 type StepId = 'lang' | 'profile' | `q:${QuestionId}` | 'result' | 'tasks' | 'pair' | 'done';
 const STEPS: StepId[] = ['lang', 'profile', ...QUESTIONS.map((q) => `q:${q.id}` as StepId), 'result', 'tasks', 'pair', 'done'];
@@ -98,9 +98,9 @@ export default function OnboardingScreen() {
       </View>
     );
 
-  const Title = ({ children, sub }: { children: string; sub?: string }) => (
+  const Title = ({ children, sub, compact }: { children: string; sub?: string; compact?: boolean }) => (
     <View style={{ marginBottom: 18 }}>
-      <Txt variant="display" center>
+      <Txt variant={compact ? 'h1' : 'display'} center role="header">
         {children}
       </Txt>
       {sub ? (
@@ -190,6 +190,9 @@ export default function OnboardingScreen() {
           {COLORS.map((c) => (
             <Pressable
               key={c}
+              accessibilityRole="button"
+              accessibilityLabel={`${tr('onboarding.profile.color')} ${c}`}
+              accessibilityState={{ selected: c === color }}
               onPress={() => setColor(c)}
               style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c, borderWidth: 3, borderColor: c === color ? t.text : t.bg, alignItems: 'center', justifyContent: 'center' }}
             >
@@ -216,7 +219,7 @@ export default function OnboardingScreen() {
       </View>
     );
     footer = (
-      <View style={{ flexDirection: 'row', gap: 12 }}>
+      <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 12 }}>
         <PillButton style={{ flex: 1 }} kind="outline" label={tr('onboarding.no')} onPress={() => answer(false)} />
         <PillButton style={{ flex: 1.3 }} label={tr('onboarding.yes')} onPress={() => answer(true)} />
       </View>
@@ -225,7 +228,7 @@ export default function OnboardingScreen() {
     const col = { low: t.coral, mid: t.warn, high: t.success } as const;
     body = (
       <>
-        <Title>{tr('onboarding.result.title')}</Title>
+        <Title compact>{tr('onboarding.result.title')}</Title>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 18 }}>
           {METRICS.map((m) => {
             const r = metricLevel(answers, m.from);
@@ -240,7 +243,7 @@ export default function OnboardingScreen() {
                   </View>
                 </RingGauge>
                 <View style={{ backgroundColor: col[r.level], borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 7, marginTop: -16 }}>
-                  <Txt weight="800" size={14} color="#FFFFFF" numberOfLines={1}>
+                  <Txt weight="800" size={14} color={t.onAccent} numberOfLines={1}>
                     {tr(`onboarding.result.level.${r.level}`)}
                   </Txt>
                 </View>
@@ -279,12 +282,12 @@ export default function OnboardingScreen() {
                     borderRadius: 15,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: on ? '#14171A' : 'transparent',
+                    backgroundColor: on ? t.onPastel : 'transparent',
                     borderWidth: 2,
-                    borderColor: '#14171A',
+                    borderColor: t.onPastel,
                   }}
                 >
-                  {on ? <Ionicons name="checkmark" size={18} color="#fff" /> : null}
+                  {on ? <Ionicons name="checkmark" size={18} color={t.onPrimary} /> : null}
                 </View>
               }
             />

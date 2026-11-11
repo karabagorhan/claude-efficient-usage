@@ -132,7 +132,7 @@ export function PairingPanel({
           style={{ letterSpacing: 6, fontSize: 24, textAlign: 'center' }}
         />
         {err ? (
-          <Txt color={t.danger} variant="small" style={{ marginBottom: 8 }}>
+          <Txt color={t.dangerText} variant="small" style={{ marginBottom: 8 }}>
             {err}
           </Txt>
         ) : null}
@@ -154,7 +154,7 @@ export function PairingPanel({
   return (
     <View style={{ gap: 10 }}>
       {err ? (
-        <Txt color={t.danger} variant="small">
+        <Txt color={t.dangerText} variant="small">
           {err}
         </Txt>
       ) : null}

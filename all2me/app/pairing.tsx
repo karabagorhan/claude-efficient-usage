@@ -52,7 +52,7 @@ export default function PairingScreen() {
                   style={{ flex: 1 }}
                   small
                   color={t.danger}
-                  textColor="#fff"
+                  textColor={t.onDanger}
                   label={tr('settings.pairing.leaveConfirm')}
                   onPress={() => {
                     useCore.getState().leavePair();
@@ -62,7 +62,7 @@ export default function PairingScreen() {
               </View>
             </Card>
           ) : (
-            <PillButton kind="ghost" label={tr('settings.pairing.leave')} textColor={t.danger} onPress={() => setConfirmLeave(true)} />
+            <PillButton kind="ghost" label={tr('settings.pairing.leave')} textColor={t.dangerText} onPress={() => setConfirmLeave(true)} />
           )}
         </View>
       ) : (
@@ -74,7 +74,7 @@ export default function PairingScreen() {
             {tr('settings.pairing.subtitle')}
           </Txt>
           {err ? (
-            <Txt color={t.danger} variant="small" style={{ marginBottom: 10 }}>
+            <Txt color={t.dangerText} variant="small" style={{ marginBottom: 10 }}>
               {err}
             </Txt>
           ) : null}

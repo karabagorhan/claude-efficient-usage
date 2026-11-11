@@ -66,7 +66,7 @@ export const REFLECTION_TOPICS: ReflectionTopic[] = [
     ['Bir ilişkinde ihtiyacın olup söylemediğin bir şey var mı?', 'Is there a need you have not voiced in a relationship?'],
     ['Bu hafta kime zaman ayırmak istersin?', 'Who would you like to make time for this week?'],
   ]),
-  T('overeating', 'habits', '🍫', 'peach', ['Aşırı yeme isteği geldiğinde', 'When you want to overeat'], ['Davranışın arkasındaki ihtiyaç', 'The need behind the behavior'], [
+  T('overeating', 'habits', '🍫', 'peach', ['Yemek teselliye dönünce', 'When food turns into comfort'], ['İsteğin asıl ne söylediği', 'What the craving is really asking for'], [
     ['Yeme isteği geldiğinde ne yapıyordun, ne hissediyordun?', 'What were you doing and feeling when the craving came?'],
     ['Gerçekten aç mıydın, yoksa başka bir şeye mi ihtiyacın vardı?', 'Were you truly hungry, or did you need something else?'],
     ['Aynı ihtiyacı karşılayabilecek yemek dışı üç seçenek yaz.', 'List three non-food ways to meet the same need.'],

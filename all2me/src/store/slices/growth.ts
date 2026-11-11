@@ -77,7 +77,8 @@ export const useGrowth = create<GrowthState>()(
         next = { ...next, doneDay: complete ? (prev?.doneDay ?? dayKeyOf()) : undefined };
         set((s) => ({ goals: { ...s.goals, [next.id]: next } }));
         const was = prev ? !!prev.doneDay : false;
-        if (!was && complete) {
+        // Yeni kayıt "tamamlanmış" doğarsa bonus yok: puan yalnız kaydedilmiş bir hedefte ilerleyerek kazanılır (BUG-001).
+        if (!was && complete && prev) {
           useCore.getState().logActivity('goalDone');
           award(`growth:goal:${next.id}`, GROWTH_POINTS.goal, 'growth.bonus.goal', '🏆');
         }

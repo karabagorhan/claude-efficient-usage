@@ -1,10 +1,10 @@
 {
-  "_about": "All2Me KOYU tema, src/theme/index.ts (dark + PASTELS.dark + GRADIENTS) rollerinden çıkarıldı. GRADIENTS iki temada ortak; seri ekranı koyu temada app/streak.tsx içindeki ayrı renkleri kullanır. 'component' grubu: tema dışı sabit renkler. Kontrol: python3 -I contrast.py tokens.dark.json",
+  "_about": "All2Me KOYU tema (düzeltme turu sonrası), src/theme/index.ts (dark + PASTELS.dark) + koyu temada da aynı kalan gradyanlar. Çiftler gerçek kullanım. Kontrol: python3 -I contrast.py tokens.dark.json",
   "_sources": {
-    "component-ink": "#14171A sabit: onboarding görev seçim halkası (PastelCard koyu temada koyu pastel kullanır), araçlar ruh hali '+' dairesi",
-    "component-on-color": "#FFFFFF sabit: tab pembe hap etiketi, onboarding seviye hapları, new-task FeatureCard",
-    "component-streak-unit": "#FFC37A: app/streak.tsx 'day streak' (koyu tema)",
-    "gradient-streak-dark-*": "app/streak.tsx koyu tema gradyanı ['#B85A10', '#6B3A12', '#241810', bg]"
+    "component-on-color": "#FFFFFF: sekme Çark hapı (t.pink), FeatureCard gradyanları, Seri başlığı (koyu tema #FFFFFF, zemin #B85A10)",
+    "component-ink": "#14171A: Seri afişi yazısı (zemin #FF8A1F her iki temada)",
+    "component-streak-unit": "#FFC37A: koyu tema 'gün üst üste'",
+    "decorative (çift yok)": "border (#2A2F3C: kart ayırıcı)"
   },
   "color": {
     "bg": "#0E1016",
@@ -12,39 +12,48 @@
     "card-alt": "#232733",
     "text": "#F3F4F6",
     "text-dim": "#9CA3AF",
-    "text-faint": "#5E6472",
+    "text-faint": "#868D99",
     "border": "#2A2F3C",
+    "border-input": "#6B7280",
     "primary": "#F3F4F6",
     "on-primary": "#0E1016",
     "on-pastel": "#F3F4F6",
-    "coral": "#FF825C",
+    "coral": "#FF7AA2",
     "purple": "#957BFF",
-    "pink": "#FF8FE6",
+    "pink": "#A93BC9",
     "blue": "#6A8DFF",
     "orange": "#FF9D45",
     "success": "#34D399",
     "danger": "#F87171",
     "warn": "#FBBF24",
+    "danger-text": "#F87171",
+    "success-text": "#34D399",
+    "warn-text": "#FBBF24",
+    "purple-text": "#A994FF",
+    "on-danger": "#14171A",
+    "on-accent": "#14171A",
     "tab-bar": "#14161D",
     "tab-active": "#F3F4F6",
-    "tab-inactive": "#5E6472",
+    "tab-inactive": "#7E8592",
     "pastel": {
-      "blue": "#24364F",
-      "green": "#2E3F1F",
-      "purple": "#382C52",
-      "mint": "#1F3F37",
-      "peach": "#4A3520",
-      "pink": "#4A2546",
-      "yellow": "#4A4418"
+      "blue": "#22384D",
+      "green": "#2C3F22",
+      "purple": "#362B55",
+      "mint": "#1D3F35",
+      "peach": "#4A3122",
+      "pink": "#48243F",
+      "yellow": "#4A4119"
     },
     "gradient": {
-      "wheel-top": "#FF7AE0",
+      "wheel-top": "#A93BC9",
       "action-top": "#7C5CFC",
-      "ai-start": "#5B7CFA",
-      "ai-end": "#F08BEA",
-      "lucky-start": "#6C6CF0",
+      "ai-start": "#4F5BD5",
+      "ai-end": "#8E4FE0",
+      "lucky-start": "#5B5BE0",
+      "lucky-end": "#6D4AE8",
       "streak-dark-top": "#B85A10",
-      "streak-dark-mid": "#6B3A12"
+      "streak-dark-mid": "#6B3A12",
+      "streak-banner": "#FF8A1F"
     },
     "component": {
       "ink": "#14171A",
@@ -53,46 +62,192 @@
     }
   },
   "pairs": [
-    ["text", "bg"],
-    ["text", "card"],
-    ["text", "card-alt"],
-    ["text-dim", "bg"],
-    ["text-dim", "card"],
-    ["text-dim", "card-alt"],
-    ["text-faint", "bg"],
-    ["text-faint", "card"],
-    ["text-faint", "bg", "large"],
-    ["on-primary", "primary"],
-    ["on-pastel", "pastel-blue"],
-    ["on-pastel", "pastel-green"],
-    ["on-pastel", "pastel-purple"],
-    ["on-pastel", "pastel-mint"],
-    ["on-pastel", "pastel-peach"],
-    ["on-pastel", "pastel-pink"],
-    ["on-pastel", "pastel-yellow"],
-    ["tab-active", "tab-bar"],
-    ["tab-inactive", "tab-bar"],
-    ["component-on-color", "pink"],
-    ["danger", "bg"],
-    ["danger", "card"],
-    ["success", "bg"],
-    ["success", "card"],
-    ["warn", "card"],
-    ["component-on-color", "danger"],
-    ["component-on-color", "success"],
-    ["component-on-color", "coral"],
-    ["component-on-color", "warn"],
-    ["component-on-color", "purple"],
-    ["component-on-color", "gradient-ai-start"],
-    ["component-on-color", "gradient-ai-end"],
-    ["component-on-color", "gradient-lucky-start"],
-    ["component-on-color", "gradient-wheel-top", "large"],
-    ["orange", "gradient-streak-dark-mid", "large"],
-    ["component-streak-unit", "gradient-streak-dark-mid", "large"],
-    ["purple", "bg"],
-    ["border", "card", "ui"],
-    ["border", "bg", "ui"],
-    ["component-ink", "pastel-blue", "ui"],
-    ["component-ink", "pastel-green", "ui"]
+    [
+      "text",
+      "bg"
+    ],
+    [
+      "text",
+      "card"
+    ],
+    [
+      "text",
+      "card-alt"
+    ],
+    [
+      "text-dim",
+      "bg"
+    ],
+    [
+      "text-dim",
+      "card"
+    ],
+    [
+      "text-dim",
+      "card-alt"
+    ],
+    [
+      "text-faint",
+      "bg"
+    ],
+    [
+      "text-faint",
+      "card"
+    ],
+    [
+      "on-primary",
+      "primary"
+    ],
+    [
+      "on-pastel",
+      "pastel-blue"
+    ],
+    [
+      "on-pastel",
+      "pastel-green"
+    ],
+    [
+      "on-pastel",
+      "pastel-purple"
+    ],
+    [
+      "on-pastel",
+      "pastel-mint"
+    ],
+    [
+      "on-pastel",
+      "pastel-peach"
+    ],
+    [
+      "on-pastel",
+      "pastel-pink"
+    ],
+    [
+      "on-pastel",
+      "pastel-yellow"
+    ],
+    [
+      "tab-active",
+      "tab-bar"
+    ],
+    [
+      "tab-inactive",
+      "tab-bar"
+    ],
+    [
+      "component-on-color",
+      "pink"
+    ],
+    [
+      "danger-text",
+      "bg"
+    ],
+    [
+      "danger-text",
+      "card"
+    ],
+    [
+      "success-text",
+      "bg"
+    ],
+    [
+      "success-text",
+      "card"
+    ],
+    [
+      "warn-text",
+      "bg"
+    ],
+    [
+      "warn-text",
+      "card"
+    ],
+    [
+      "purple-text",
+      "bg"
+    ],
+    [
+      "purple-text",
+      "card"
+    ],
+    [
+      "on-danger",
+      "danger"
+    ],
+    [
+      "on-accent",
+      "coral"
+    ],
+    [
+      "on-accent",
+      "warn"
+    ],
+    [
+      "on-accent",
+      "success"
+    ],
+    [
+      "on-accent",
+      "orange"
+    ],
+    [
+      "component-on-color",
+      "gradient-ai-start"
+    ],
+    [
+      "component-on-color",
+      "gradient-ai-end"
+    ],
+    [
+      "component-on-color",
+      "gradient-lucky-start"
+    ],
+    [
+      "component-on-color",
+      "gradient-lucky-end"
+    ],
+    [
+      "component-on-color",
+      "gradient-wheel-top",
+      "large"
+    ],
+    [
+      "orange",
+      "gradient-streak-dark-mid",
+      "large"
+    ],
+    [
+      "component-streak-unit",
+      "gradient-streak-dark-mid",
+      "large"
+    ],
+    [
+      "component-on-color",
+      "gradient-streak-dark-top"
+    ],
+    [
+      "component-ink",
+      "gradient-streak-banner"
+    ],
+    [
+      "border-input",
+      "card",
+      "ui"
+    ],
+    [
+      "border-input",
+      "bg",
+      "ui"
+    ],
+    [
+      "on-pastel",
+      "pastel-blue",
+      "ui"
+    ],
+    [
+      "on-pastel",
+      "pastel-green",
+      "ui"
+    ]
   ]
 }

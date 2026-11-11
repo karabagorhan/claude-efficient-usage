@@ -174,9 +174,9 @@ function TasksTab() {
                     accessibilityRole="button"
                     accessibilityLabel={t('common.btn.done')}
                     onPress={() => doneIt(c)}
-                    style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: th.success, alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: th.successText, alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Ionicons name="checkmark" size={22} color={th.success} />
+                    <Ionicons name="checkmark" size={22} color={th.successText} />
                   </Pressable>
                 </Row>
               </Card>

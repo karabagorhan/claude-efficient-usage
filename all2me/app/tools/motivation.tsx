@@ -33,10 +33,11 @@ function QuoteCard({ i, big }: { i: number; big?: boolean }) {
         “{text}”
       </Txt>
       <Row between style={{ marginTop: 16 }}>
-        <Pressable accessibilityLabel={t('motivation.share')} onPress={() => { tap(); void share(); }} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('motivation.share')} onPress={() => { tap(); void share(); }} hitSlop={8}>
           <Ionicons name="share-outline" size={26} color="#fff" />
         </Pressable>
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel={fav ? t('motivation.unfavorite') : t('motivation.favorite')}
           onPress={() => {
             tap();

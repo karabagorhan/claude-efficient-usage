@@ -35,9 +35,11 @@ scripts/shots.mjs            web ekran görüntüsü (README)
 ```ts
 import { useTheme, PASTELS, pastelFor, pastelColor, GRADIENTS, radius, space, GUTTER, BUTTON_H, type, alpha, MOOD_COLORS } from '../src/theme';
 const t = useTheme();           // ayar (system/light/dark) + cihaz teması
-t.bg t.card t.cardAlt t.text t.textDim t.textFaint t.border
+t.bg t.card t.cardAlt t.text t.textDim t.textFaint t.border t.borderInput   // textFaint de AA'yı geçer; borderInput: input/pasif chip sınırı (UI ≥ 3)
 t.primary/t.onPrimary           // ana hap buton (açık: siyah/beyaz, koyu: beyaz/siyah)
-t.coral t.purple t.pink t.blue t.orange t.success t.danger t.warn t.me t.partner
+t.coral t.purple t.pink t.blue t.orange t.success t.danger t.warn t.me t.partner   // DOLGU renkleri
+t.dangerText t.successText t.warnText t.purpleText   // aynı anlamların METİN rengi (zemin/kart üstünde ≥ 4.5)
+t.onDanger t.onAccent   // danger dolgusu / renkli hap (coral, warn, success, orange) üstündeki yazı
 t.pastel.blue … t.pastel.yellow // koyu temada koyulaştırılmış; üstündeki yazı: t.onPastel
 t.tabBar t.tabActive t.tabInactive t.overlay t.isDark
 ```
@@ -69,8 +71,8 @@ DAYS_SHORT[lang][weekday]         // weekday 0 = Pazartesi (engine ile aynı)
 ```ts
 // src/i18n/locales/drink.ts
 export default {
-  tr: { title: 'Su Takibi', goal: 'Hedef {{n}} {{unit}}', reminder: { title: 'Su içme zamanı!' } },
-  en: { title: 'Hydration', goal: 'Goal {{n}} {{unit}}', reminder: { title: 'Time to drink water!' } },
+  tr: { title: 'Su Takibi', goal: 'Hedef {{n}} {{unit}}', reminder: { title: 'Bir yudum mola 💧' } },
+  en: { title: 'Hydration', goal: 'Goal {{n}} {{unit}}', reminder: { title: 'Sip break 💧' } },
 };
 // kullanım: t('drink.goal', { n: 2000, unit: t('common.unit.ml') })   t('drink.reminder.title')
 ```
@@ -82,7 +84,7 @@ export default {
   reflection love motivation timer meditate workout soundscape alarm profile streak duel settings`.
 - Yeni ad alanı gerekiyorsa (ör. `action`, `stats`, `badges`) mevcut en yakın ad alanında alt ağaç kullan
   (ör. `routine.action.*`) ya da raporla; `i18n/index.ts` ortak dosyadır.
-- Hazır buton metinleri: `common.btn.done` (Tamamlandı / Mark as done), `common.btn.later` (Sonra yap / Do it later),
+- Hazır buton metinleri: `common.btn.done` (Yaptım! / I did it!), `common.btn.later` (Şimdi değil / Not now),
   `common.btn.save|cancel|close|next|back|skip|add|addAll|edit|delete|reset|yes|no|start|stop|seeAll`.
 
 ## 4. Ortak bileşenler — `src/components`
@@ -175,7 +177,8 @@ toasts: Toast[] ({key, params?, emoji?}), dirty, cursor, syncedOnce, seenNudges,
 | `addProgress(habitId, dayKey, delta): number` | Sayaç ilerlemesi (tamamlamaz; hedefe ulaşınca `complete` çağır) |
 | `canBackfill(): boolean` | "Unuttum hakkı" (dün için, 09:00'a kadar, haftada 1) → `complete(id, dün, {backfill:true})` |
 | `completeLinked(link, dayKey?): Completion\|null` | Bu türde bağlı aktif görev(ler) varsa günü tamamlar (sayaçsa ilerlemeyi hedefe çeker). Yoksa / zaten tamamsa `null` |
-| `setLinkedProgress(link, value, dayKey?): Completion\|null` | Bağlı görev(ler)in ilerlemesini `value` yapar; `value >= target` (check için 1) olunca tamamlar |
+| `setLinkedProgress(link, value, dayKey?): Completion\|null` | Bağlı görev(ler)in ilerlemesini `value` yapar; `value >= target` (check için 1) olunca tamamlar. Tamamlamayı **kaldırmaz** |
+| `undoLinked(link, dayKey?): number` | Kaynak kayıt geri alınınca / silinince (su "Geri al" hedefin altına inince, son ev yemeği kaydı silinince) bu türdeki bağlı görev(ler)in o günkü tamamlamasını `undo` eder (puan + bonuslar yeniden hesaplanır). Geri alınan görev sayısını döner; tamamlanmamışsa 0 |
 | `awardBonus({id, points, label?, labelKey?, dayKey?, group?, perDay?})` | Görev dışı puan (çark, şanslı görev). `→ {ok:true, event} \| {ok:false, reason:'duplicate'\|'cap'\|'no_profile'}`. Aynı `id` ikinci kez puan vermez; `group`+`perDay` günlük tavan; puan 0..50 kırpılır; liderliğe sayılır |
 | `revokeBonus(id)` | Bonusu geri alır |
 | `logActivity(kind, dayKey?)` | `kind: 'mood'\|'reflection'\|'focus'\|'meditate'\|'workout'\|'drink'\|'sleep'\|'love'` — rozetleri besler (mood7: 7 farklı gün, journal10: 10 yansıma, focus10, breath10=meditate). Araç kaydı yapıldığında **bir kez** çağır |
@@ -261,6 +264,10 @@ Tüm Stack ekranlarında `headerShown: false`: her ekran kendi `Header`'ını ç
 - Araç ekranı kayıt yaptığında: Ruh hali → `completeLinked('mood')`; Yansıma kaydı → `completeLinked('reflection')`;
   Su → her bardakta `setLinkedProgress('drink', <bugünkü bardak sayısı>)` (hedefe ulaşınca kendiliğinden tamamlar)
   ya da günlük hedefe ulaşınca `completeLinked('drink')`. Ayrıca `logActivity(kind)`.
+- Kayıt geri alınır / silinir ve kaynak artık hedefi karşılamazsa `undoLinked(link)` çağrılır (su: "Geri al" sonrası
+  toplam < hedef; ev yemeği: o günün son ev yemeği kaydı silindi → `src/features/life/actions.ts` `mealRemove`).
+- Web'de çok sekme: `src/lib/tabSync.ts` (kök düzende kurulur) bir sekme kalıcı durumu yazınca diğer sekmelerde ilgili
+  store'u `persist.rehydrate()` ile yeniden yükler; yeni dilim `SLICES` listesine eklenirse otomatik kapsanır.
 - Dönen `Completion` varsa ekran `pushToast('toast.completedTitle', {title: habit.title, points: c.points})` gösterebilir.
 - Rutin'de bağlı göreve dokunmak aracı açar (`routes.tool('drink')` …) — elle tamamlama da serbesttir.
 

@@ -41,7 +41,7 @@ export const QUOTES: Loc[] = [
   Q('Kusursuz olmak zorunda değilsin; sadece gerçek ol.', 'You do not have to be flawless; just be real.'),
   Q('Bir gülümseme, günün ayarını değiştirebilir.', 'One smile can retune your whole day.'),
   Q('Zihnin gürültülüyse bedenine dön; nefesin orada bekliyor.', 'If your mind is noisy, return to your body; your breath is waiting there.'),
-  Q('Tutarlılık, yoğunluktan daha çok yol aldırır.', 'Consistency takes you farther than intensity.'),
+  Q('Her gün biraz, bir günde çoktan iyidir.', 'A little every day beats a lot in one day.'),
   Q('Dün yapamadıkların, bugün yapabileceklerini sınırlamaz.', 'What you could not do yesterday does not limit today.'),
   Q('Kendine bir mola ver; mola da bir ilerlemedir.', 'Give yourself a break; a break is also progress.'),
   Q('Hayal ettiğin kişi, bugün verdiğin kararlarda gizli.', 'The person you imagine is hidden in today’s decisions.'),
@@ -91,10 +91,10 @@ export function quoteIndexForDay(dayKey: string): number {
 
 /** Kart zeminleri için gradyan çiftleri (sıra döngüsel). */
 export const QUOTE_GRADIENTS: Array<readonly [string, string]> = [
-  ['#7C5CFC', '#F08BEA'],
-  ['#3B6CF6', '#6CC6F5'],
-  ['#FF8A1F', '#FF6B8B'],
-  ['#14B8A6', '#7DD87F'],
-  ['#8B5CF6', '#3B82F6'],
-  ['#EC4899', '#F59E0B'],
+  ['#6D4AE8', '#A93BC9'],
+  ['#2563EB', '#0E7490'],
+  ['#C2410C', '#BE185D'],
+  ['#0F766E', '#15803D'],
+  ['#7C3AED', '#2563EB'],
+  ['#BE185D', '#B45309'],
 ];

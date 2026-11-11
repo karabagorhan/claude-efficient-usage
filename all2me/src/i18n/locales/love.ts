@@ -1,10 +1,10 @@
-// Ad alanı: 'love' — Kendimi Sevmenin 100 Yolu.
+// Ad alanı: 'love' — Kendine 100 İyilik.
 export default {
   tr: {
-    title: 'Kendimi Sevmenin 100 Yolu',
+    title: 'Kendine 100 İyilik',
     cardOf: '{{i}} / {{n}}',
     doneToday: 'Bugün yaptım ✓',
-    doneMark: 'Yaptım ✓',
+    doneMark: 'Bugün yapıldı ✓',
     undo: 'İşareti kaldır',
     random: 'Rastgele kart',
     prev: 'Önceki',
@@ -17,10 +17,10 @@ export default {
     allDone: 'Hepsini tamamladın! 🎉',
   },
   en: {
-    title: '100 Ways to Love Myself',
+    title: '100 Small Kindnesses',
     cardOf: '{{i}} of {{n}}',
     doneToday: 'Did it today ✓',
-    doneMark: 'Done ✓',
+    doneMark: 'Done today ✓',
     undo: 'Remove mark',
     random: 'Random card',
     prev: 'Previous',

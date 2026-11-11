@@ -118,6 +118,7 @@ export function Txt({
   color,
   center,
   numberOfLines,
+  role,
   style,
 }: {
   children: React.ReactNode;
@@ -129,6 +130,8 @@ export function Txt({
   color?: string;
   center?: boolean;
   numberOfLines?: number;
+  /** 'header': ekran okuyucuya başlık olarak bildirilir */
+  role?: 'header';
   style?: StyleProp<TextStyle>;
 }) {
   const t = useTheme();
@@ -136,6 +139,7 @@ export function Txt({
   return (
     <Text
       numberOfLines={numberOfLines}
+      accessibilityRole={role}
       style={[
         v,
         size ? { fontSize: size, lineHeight: Math.round(size * 1.3) } : null,
@@ -284,17 +288,24 @@ export function Header({
   style?: StyleProp<ViewStyle>;
 }) {
   const t = useTheme();
+  const tr = useT();
   const c = color ?? t.text;
   const goBack = onLeft ?? (() => (router.canGoBack() ? router.back() : router.replace('/')));
   return (
     <View style={[{ paddingHorizontal: GUTTER - 8, paddingVertical: 6 }, style]}>
       <Row between style={{ minHeight: 48 }}>
         <View style={{ width: 88, alignItems: 'flex-start' }}>
-          {left !== 'none' ? <IconButton icon={left === 'close' ? 'close' : 'chevron-back'} color={c} size={26} onPress={goBack} /> : null}
+          {left !== 'none' ? <IconButton
+              icon={left === 'close' ? 'close' : 'chevron-back'}
+              color={c}
+              size={26}
+              label={tr(left === 'close' ? 'common.btn.close' : 'common.btn.back')}
+              onPress={goBack}
+            /> : null}
         </View>
         {!large && title ? (
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Txt variant="h3" color={c} numberOfLines={1}>
+            <Txt variant="h3" color={c} numberOfLines={1} role="header">
               {title}
             </Txt>
             {subtitle ? (
@@ -340,11 +351,11 @@ export function SectionHeader({
   const tr = useT();
   return (
     <Row between style={[{ marginTop: 24, marginBottom: 12 }, style]}>
-      <Txt variant="h2" style={{ flex: 1 }} numberOfLines={1}>
+      <Txt variant="h2" style={{ flex: 1 }} numberOfLines={2} role="header">
         {title}
       </Txt>
       {onSeeAll ? (
-        <Pressable onPress={onSeeAll} hitSlop={8}>
+        <Pressable onPress={onSeeAll} hitSlop={8} accessibilityRole="button" accessibilityLabel={`${title}: ${seeAllLabel ?? tr('common.btn.seeAll')}`}>
           <Row gap={2}>
             <Txt variant="bodyBold">{seeAllLabel ?? tr('common.btn.seeAll')}</Txt>
             <Ionicons name="chevron-forward" size={18} color={t.text} />
@@ -362,6 +373,8 @@ export function Card({
   onLongPress,
   bg,
   padding = 16,
+  role,
+  label,
   style,
 }: {
   children: React.ReactNode;
@@ -369,6 +382,9 @@ export function Card({
   onLongPress?: () => void;
   bg?: string;
   padding?: number;
+  /** Dokunulabilir kart içinde başka düğme yoksa 'button' ver (iç içe düğme erişilebilirlik hatasıdır) */
+  role?: 'button';
+  label?: string;
   style?: StyleProp<ViewStyle>;
 }) {
   const t = useTheme();
@@ -376,6 +392,8 @@ export function Card({
   if (onPress || onLongPress) {
     return (
       <Pressable
+        accessibilityRole={role}
+        accessibilityLabel={label}
         onPress={onPress}
         onLongPress={onLongPress}
         style={({ pressed }) => [base, pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] }, style]}
@@ -413,7 +431,14 @@ export function PastelCard({
 }) {
   const t = useTheme();
   return (
-    <Card onPress={onPress} onLongPress={onLongPress} bg={bg ?? t.pastel[pastel]} padding={0} style={[{ marginBottom: 12 }, style]}>
+    <Card
+      onPress={onPress}
+      onLongPress={onLongPress}
+      role={onPress || onLongPress ? 'button' : undefined}
+      bg={bg ?? t.pastel[pastel]}
+      padding={0}
+      style={[{ marginBottom: 12 }, style]}
+    >
       <Row style={{ minHeight: 76, paddingHorizontal: 18, paddingVertical: 14 }} gap={14}>
         {emoji ? <Text style={{ fontSize: 36, width: 44, textAlign: 'center' }}>{emoji}</Text> : null}
         <View style={{ flex: 1 }}>
@@ -457,6 +482,8 @@ export function IconTile({
   const t = useTheme();
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={() => {
         tap();
         onPress?.();
@@ -503,6 +530,8 @@ export function Chip({
   const on = color ?? t.primary;
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: !!active }}
       onPress={() => {
         tap();
         onPress?.();
@@ -514,7 +543,7 @@ export function Chip({
           borderRadius: radius.pill,
           backgroundColor: active ? on : t.card,
           borderWidth: 1,
-          borderColor: active ? on : t.border,
+          borderColor: active ? on : t.borderInput,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
@@ -523,7 +552,7 @@ export function Chip({
       ]}
     >
       {emoji ? <Text style={{ fontSize: 15 }}>{emoji}</Text> : null}
-      <Text style={{ color: active ? (color ? '#fff' : t.onPrimary) : t.text, fontWeight: '600', fontSize: 14 }}>{label}</Text>
+      <Text style={{ color: active ? (color ? t.onAccent : t.onPrimary) : t.text, fontWeight: '600', fontSize: 14 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -547,6 +576,8 @@ export function Segmented<T extends string>({
         return (
           <Pressable
             key={o.id}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
             onPress={() => {
               tap();
               onChange(o.id);
@@ -620,13 +651,14 @@ export function Field(props: TextInputProps & { label?: string; containerStyle?:
       ) : null}
       <TextInput
         placeholderTextColor={t.textFaint}
+        accessibilityLabel={rest.accessibilityLabel ?? label ?? rest.placeholder}
         style={[
           {
             backgroundColor: t.card,
             color: t.text,
             borderRadius: radius.md,
             borderWidth: 1,
-            borderColor: t.border,
+            borderColor: t.borderInput,
             paddingHorizontal: 16,
             paddingVertical: 14,
             fontSize: 16,

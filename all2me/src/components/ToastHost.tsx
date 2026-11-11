@@ -15,6 +15,8 @@ export function ToastHost() {
   const tr = useT();
   const insets = useSafeAreaInsets();
   const toast = useCore((s) => s.toasts[0]);
+  // kuyrukta bekleyen varsa daha kısa göster (art arda 6 toast 13 sn sürmesin)
+  const waiting = useCore((s) => s.toasts.length > 1);
   const pop = useCore((s) => s.popToast);
   const y = useRef(new Animated.Value(-140)).current;
   useEffect(() => {
@@ -22,7 +24,7 @@ export function ToastHost() {
     success();
     const a = Animated.sequence([
       Animated.timing(y, { toValue: 0, duration: 250, useNativeDriver: true }),
-      Animated.delay(2200),
+      Animated.delay(waiting ? 1100 : 2200),
       Animated.timing(y, { toValue: -140, duration: 250, useNativeDriver: true }),
     ]);
     a.start(() => pop());

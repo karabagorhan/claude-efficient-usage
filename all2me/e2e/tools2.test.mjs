@@ -29,7 +29,11 @@ export default [
       await s.expectText('1 / 100 yapıldı');
       await s.reload();
       await s.expectText('1 / 100 yapıldı');
+      // "Bugün yapıldı ✓" yalnız durum gösterir; dokunmak işareti kaldırmaz (BUG-010)
       await s.tap(s.t('love.doneMark'));
+      await s.page.waitForTimeout(300);
+      await s.expectText('1 / 100 yapıldı');
+      await s.btn(s.t('love.undo'));
       await s.expectText('0 / 100 yapıldı');
     },
   },

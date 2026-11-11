@@ -20,6 +20,9 @@ Referans: kullanıcının gönderdiği 17 ekran görüntüsü (benzer bir uygula
 
 ## 2. Görsel dil (referanstan çıkarılan)
 
+> Düzeltme turu (2026-11-11): metinler ve vurgu/pastel renkleri All2Me'ye özgü değerlere taşındı (kaynak: `src/theme/index.ts`,
+> `replica/copy-changes.md`, `replica/design/contrast.md`). Aşağıdaki hex değerleri ilk taslaktır; güncel değerler temadadır.
+
 - Zemin: çok açık lavanta-beyaz `#F7F7FF`; kartlar beyaz veya pastel.
 - Metin: neredeyse siyah `#14171A`; ikincil `#6B7280`.
 - Ana buton: **siyah hap (pill)**, beyaz kalın yazı, yükseklik ~56, tam yuvarlak. İkincil: beyaz zemin, siyah 1.5px çerçeve.
@@ -39,13 +42,13 @@ Referans: kullanıcının gönderdiği 17 ekran görüntüsü (benzer bir uygula
 ### 3.1 Onboarding (referans s01, s02, s03, s08)
 1. Dil seçimi (Türkçe / English) — ilk ekran, cihaz diline göre ön seçili.
 2. Ad + avatar (emoji) + renk.
-3. Evet/Hayır soru kartları (büyük başlık, ortada sade görsel, altta "Hayır" çerçeveli + "Evet, hadi!" siyah buton):
+3. Evet/Hayır soru kartları (büyük başlık, ortada sade görsel, altta "Hayır" çerçeveli + "Evet, varım!" siyah buton):
    günü düzenlemek, iyi alışkanlık kazanmak, daha iyi uyumak, daha odaklı olmak (4-5 soru).
 4. Sonuç ekranı: 2x2 halka gösterge (Öz-denetim, Konsantrasyon, Üretkenlik, Enerji), her biri cevaplara göre
-   "Geliştirilebilir / İyi / Harika" etiketi. Sahte istatistik yok.
+   "Gelişmeye açık / Yolunda / Parlıyor" etiketi. Sahte istatistik yok.
 5. Cevaplara göre önerilen başlangıç görevleri (seçilebilir liste) → eklenir.
 6. Partner eşleştirme (kod üret / kodla katıl / şimdilik atla).
-7. Konfetili "Çok iyi bir başlangıç!" ekranı → ana ekran.
+7. Konfetili "Hazırız, birlikte büyüyelim!" ekranı → ana ekran.
 
 ### 3.2 Rutin sekmesi (ana pano — referans görüntüsü yok, aynı dille tasarla)
 - Üst: selam + tarih, sağda seri alevi 🔥 N (dokununca Seri ekranı) ve bugünkü puan rozeti.
@@ -58,9 +61,9 @@ Referans: kullanıcının gönderdiği 17 ekran görüntüsü (benzer bir uygula
 - Boş durum: maskot + "İlk görevini ekle".
 
 ### 3.3 Yeni Görev sayfası (referans s10, s11) — modal
-- Başlık "Yeni Görev" / "Yeniden adlandırmak için dokun" (dokununca özel görev adı yazılır → görev düzenleyici).
-- Üstte iki özel kart: **"Gününü akıllı planla"** (çevrimdışı planlayıcı, gradyan kart) ve
-  **"Şanslı görevini çevir"** (rastgele kendine bakım görevi önerir).
+- Başlık "Yeni Görev" / "Adını koymak için dokun" (dokununca özel görev adı yazılır → görev düzenleyici).
+- Üstte iki özel kart: **"Bugüne hazır bir plan al"** (çevrimdışı planlayıcı, gradyan kart) ve
+  **"Şans kartını çek"** (rastgele kendine bakım görevi önerir).
 - Bağlı araç görevleri: Su iç (0/hedef), Ruh hali kaydı (0/1), Yansıma (0/1).
 - Önerilen görevler (pastel kartlar, emoji, "Her zaman"): tırnak kes, kahvaltı yap, pencereleri aç, yatağı topla,
   bütçemi kaydet, diş fırçala, ilaç/vitamin al (Hedef 0/1), saç tara, masayı topla … (en az 30 öneri, kategorili).
@@ -71,11 +74,11 @@ Ad, emoji, pastel renk, zaman dilimi, tekrar (her gün / belirli günler / hafta
 süreli), zorluk (puan), hatırlatıcı saati, özel (partner görmez), birlikte. Sil = arşivle.
 
 ### 3.5 Harekete Geç ekranı (referans s04)
-Mor gradyan, "Harekete geçme zamanı!", hafif eğik görev kartı, **"Tamamlandı"** (siyah) / **"Sonra yap"** (çerçeveli),
+Mor gradyan, "Sıra sende!", hafif eğik görev kartı, **"Yaptım!"** (siyah) / **"Şimdi değil"** (çerçeveli),
 altta maskot. Çarktan, şanslı görevden ve hatırlatıcıdan açılır.
 
 ### 3.6 Çark sekmesi (referans s09, s12)
-- Pembe gradyan zemin, "Eğlenceli Ev İşi Çarkı" başlığı, mavi dalgalı çerçeveli **SVG çark**, 10 dilim (pastel),
+- Orkide gradyan zemin, "Ev İşi Ruleti" başlığı, turkuaz dalgalı çerçeveli **SVG çark**, 10 dilim (pastel),
   her dilimde emoji + kısa ad, ortada maskot. Çevirince yavaşlayarak durur, alttaki şeritte sonuç görünür,
   ardından Harekete Geç ekranı açılır.
 - Sağ üst: sıfırla, **düzenle** (dilimleri ekle/sil/yeniden adlandır, emoji seç).
@@ -85,20 +88,20 @@ altta maskot. Çarktan, şanslı görevden ve hatırlatıcıdan açılır.
 ### 3.7 İlham sekmesi (referans s07, s13, s14, s15, s17)
 - Başlık "İlham", sağda arama ve favoriler (kalp).
 - Üstte kayan afiş (öne çıkan şablonlar).
-- Yatay kategori ikonları: Temizlik Planları, Kendime Bakım, Odak ve Sakinlik, Sabah Rutinleri, İş ve Ders,
+- Yatay kategori ikonları: Pırıl Pırıl Ev, Kendini Şımart, Odak ve Sakinlik, Güne Merhaba, Masa Başı,
   Yemek, Spor, Günün Sonu, Güzellik …
-- Bölümler (yatay kaydırılan dikey kartlar, "Tümü ›"): Popüler temizlik şablonları, Düzenli ol, İş ve Ders 101,
-  Okula dönüş, Yemek ipuçları, Fit ve harika, Günün sonunda, Kaçırılmayacak ipuçları, Kendini tanı (mini testler),
-  Merhaba güzellik.
+- Bölümler (yatay kaydırılan dikey kartlar, "Tümü ›"): Ev için favoriler, Kolay düzen, İş günü takviyesi,
+  Okul modu açık, Yemek ipuçları, Hadi hareket, Gün biterken, Hayatı kolaylaştıranlar, Kendini tanı (mini testler),
+  Işıltı köşesi.
 - Şablon kartı: renkli zemin, büyük başlık, içinde 6-9 maddelik ızgara/liste (emoji + ad).
 - Şablon detayı: maddeler, "Hepsini rutine ekle" / tek tek ekle, favorile.
 - En az **40 özgün şablon**, iki dilde.
 
 ### 3.8 Araçlar sekmesi (referans s05, s06)
-- Başlık "Kendine Bakım Araçları", afiş: "Kendimi Sevmenin 100 Yolu" (kart destesi).
+- Başlık "Araç Kutun", afiş: "Kendine 100 İyilik" (kart destesi).
 - Yatay araç ikonları: **Zamanlayıcı, Su, Uyku, Yansıma, Meditasyon, Egzersiz, Motivasyon, Ses Ortamı, Alarm**.
-- "Nasıl hissediyorsun? Kaydetmek için dokun" ruh hali kartı.
-- "Su içme zamanı! Su takibi ve günlük hatırlatıcılar" kartı.
+- "Bugünün modu? Bir yüz seç" ruh hali kartı.
+- "Bir yudum mola · Bardakları say, hedefe yaklaş" kartı.
 - "Yansıma" bölümü: yansıma konuları listesi (hepsi açık).
 
 Araçlar:
@@ -114,7 +117,7 @@ Araçlar:
 | Ses Ortamı | Döngülü ortam sesleri (yağmur, okyanus, beyaz/pembe/kahverengi gürültü, vantilatör), uyku zamanlayıcısı. Sesler betikle sentezlenir (telifsiz) |
 | Alarm | Saat + gün seçimiyle yerel bildirim alarmı, etiket |
 | Ruh hali | 5 seviye + etiket + not, takvim görünümü |
-| Kendimi Sevmenin 100 Yolu | 100 kısa öneri kartı, "bugün yaptım" işareti |
+| Kendine 100 İyilik | 100 kısa öneri kartı, "bugün yaptım" işareti |
 
 ### 3.9 Profil sekmesi (referans görüntüsü yok)
 Avatar, ad, seviye + XP çubuğu, toplam puan; kartlar: Seri (→ Seri ekranı), Yarış (→ Yarış ekranı), Rozetler,
@@ -122,7 +125,7 @@ Avatar, ad, seviye + XP çubuğu, toplam puan; kartlar: Seri (→ Seri ekranı),
 (**dil**, birim ml/oz, hatırlatıcılar, tema, verileri sıfırla).
 
 ### 3.10 Seri ekranı (referans s16)
-Turuncu gradyan, alev, büyük sayı "N günlük seri", teşvik afişi, **Seri Takvimi** (ay görünümü, tamamlanan günler
+Turuncu gradyan, alev, büyük sayı "N gün üst üste", teşvik afişi, **Alev Takvimi** (ay görünümü, tamamlanan günler
 turuncu daire, ay gezinme). "Gün serisi" = o gün en az 1 görev tamamlandı.
 
 ### 3.11 Yarış ekranı

@@ -164,12 +164,12 @@ export default function Action() {
           <Txt variant="h1" color={INK} center>
             {tr('routine.action.wellDone')}
           </Txt>
-          <Txt variant="h3" color={th.purple} center style={{ marginTop: 4 }}>
+          <Txt variant="h3" color="#5B3FD6" center style={{ marginTop: 4 }}>
             {tr('routine.action.earned', { n: earned ?? 0 })}
           </Txt>
         </View>
       ) : (
-        <View style={{ minHeight: 130, gap: 12 }}>
+        <View style={{ minHeight: 130, gap: 12, paddingHorizontal: 28 }}>
           {note ? (
             <Txt color={INK} center>
               {note}

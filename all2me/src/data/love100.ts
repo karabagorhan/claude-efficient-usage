@@ -2,7 +2,7 @@ import type { Loc } from '../i18n/types';
 
 const P = (tr: string, en: string): Loc => ({ tr, en });
 
-/** "Kendimi Sevmenin 100 Yolu": 100 özgün, kısa öneri. Sıra = kart numarası. */
+/** "Kendine 100 İyilik": 100 özgün, kısa öneri. Sıra = kart numarası. */
 export const LOVE100: Loc[] = [
   P('Aynaya bakıp kendine içtenlikle gülümse.', 'Look in the mirror and smile at yourself, sincerely.'),
   P('Bugün kendine bir iltifat et ve yüksek sesle söyle.', 'Give yourself a compliment today and say it out loud.'),

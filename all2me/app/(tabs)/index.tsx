@@ -3,7 +3,7 @@
  */
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Confetti } from '../../src/components/Confetti';
 import { RingGauge } from '../../src/components/RingGauge';
@@ -40,6 +40,9 @@ function greetingKey(): string {
   return 'common.greeting.night';
 }
 
+/** Tamamlamadan sonra geri almanın yok sayıldığı süre (ms): çift dokunuş koruması. */
+const UNDO_LOCK_MS = 600;
+
 export default function ScreenRoutine() {
   const t = useTheme();
   const tr = useT();
@@ -61,6 +64,7 @@ export default function ScreenRoutine() {
 
   const [sel, setSel] = useState(todayKey);
   const [burst, setBurst] = useState(0);
+  const justDone = useRef<Record<string, number>>({});
 
   const list = useHabitsOnDay(sel);
   const hasAny = useMemo(() => Object.values(habits).some((h) => h.ownerId === me?.id && !h.archived), [habits, me?.id]);
@@ -99,6 +103,7 @@ export default function ScreenRoutine() {
   if (!me) return <Screen><View /></Screen>;
 
   const celebrate = (h: Habit, points: number) => {
+    justDone.current[h.id] = Date.now();
     success();
     setBurst((b) => b + 1);
     useCore.getState().pushToast({ key: 'toast.completedTitle', params: { title: h.title, points }, emoji: '🎉' });
@@ -114,7 +119,11 @@ export default function ScreenRoutine() {
     if (c) celebrate(h, c.points);
   };
 
+  /** Tamamlamadan hemen sonraki dokunuş (çift dokunma / çift tık) geri alma sayılmaz (BUG-003). */
+  const inLock = (h: Habit) => Date.now() - (justDone.current[h.id] ?? 0) < UNDO_LOCK_MS;
+
   const undoNow = (h: Habit) => {
+    if (inLock(h)) return;
     useCore.getState().undo(h.id, sel);
     useCore.getState().pushToast('toast.undone');
   };
@@ -277,7 +286,7 @@ export default function ScreenRoutine() {
                   <Txt variant="bodyBold">{tr('routine.progress.title')}</Txt>
                   <Txt dim>{normal.length ? tr('routine.progress.count', { done: doneCount, total: normal.length }) : tr('routine.progress.none')}</Txt>
                   {allDone ? (
-                    <Txt variant="small" color={t.success} weight="700" style={{ marginTop: 4 }}>
+                    <Txt variant="small" color={t.successText} weight="700" style={{ marginTop: 4 }}>
                       {tr('routine.progress.allDone')}
                     </Txt>
                   ) : null}

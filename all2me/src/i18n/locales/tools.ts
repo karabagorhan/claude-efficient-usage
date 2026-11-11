@@ -1,9 +1,9 @@
 // Ad alanı: 'tools' — Araçlar sekmesi.
 export default {
   tr: {
-    title: 'Kendine Bakım Araçları',
+    title: 'Araç Kutun',
     banner: {
-      love: 'Kendimi Sevmenin 100 Yolu',
+      love: 'Kendine 100 İyilik',
       loveSub: 'Günde bir kart, bir iyilik',
       quote: 'Günün sözü',
     },
@@ -19,14 +19,14 @@ export default {
       alarm: 'Alarm',
     },
     mood: {
-      title: 'Nasıl hissediyorsun?',
-      sub: 'Kaydetmek için dokun',
+      title: 'Bugünün modu?',
+      sub: 'Bir yüz seç',
       today: 'Bugün: {{label}}',
       edit: 'Düzenlemek için dokun',
     },
     drink: {
-      title: 'Su içme zamanı!',
-      sub: 'Su takibi ve günlük hatırlatıcılar',
+      title: 'Bir yudum mola',
+      sub: 'Bardakları say, hedefe yaklaş',
     },
     reflection: {
       title: 'Yansıma',
@@ -48,9 +48,9 @@ export default {
     },
   },
   en: {
-    title: 'Self-Care Tools',
+    title: 'Your Toolbox',
     banner: {
-      love: '100 Ways to Love Myself',
+      love: '100 Small Kindnesses',
       loveSub: 'One card, one kindness a day',
       quote: 'Quote of the day',
     },
@@ -66,14 +66,14 @@ export default {
       alarm: 'Alarm',
     },
     mood: {
-      title: 'How do you feel?',
-      sub: 'Tap to record',
+      title: 'Today’s vibe?',
+      sub: 'Pick a face',
       today: 'Today: {{label}}',
       edit: 'Tap to edit',
     },
     drink: {
-      title: 'Time to drink water!',
-      sub: 'Hydration tracker & daily reminders',
+      title: 'Sip break',
+      sub: 'Glass by glass to your goal',
     },
     reflection: {
       title: 'Reflection',

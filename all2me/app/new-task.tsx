@@ -19,6 +19,8 @@ const WATER_GLASSES = 8;
 function FeatureCard({ colors, emoji, overline, title, onPress }: { colors: readonly [string, string, ...string[]]; emoji: string; overline: string; title: string; onPress: () => void }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${overline}: ${title}`}
       onPress={() => {
         tap();
         onPress();
@@ -29,7 +31,7 @@ function FeatureCard({ colors, emoji, overline, title, onPress }: { colors: read
         <Row gap={14} style={{ minHeight: 76, paddingHorizontal: 18, paddingVertical: 14 }}>
           <Text style={{ fontSize: 36, width: 44, textAlign: 'center' }}>{emoji}</Text>
           <View style={{ flex: 1 }}>
-            <Txt variant="small" color="#FFFFFF" numberOfLines={2} style={{ opacity: 0.9 }}>
+            <Txt variant="small" color="#FFFFFF" numberOfLines={2}>
               {overline}
             </Txt>
             <Txt variant="h3" color="#FFFFFF" numberOfLines={2}>
@@ -77,15 +79,28 @@ export default function NewTask() {
     );
 
   return (
-    <Screen header={<Header left="close" />} padBottom={40}>
-      <Pressable onPress={() => router.push(routes.createTask())} style={{ alignItems: 'center', paddingVertical: 20 }}>
-        <Txt variant="display" center faint>
-          {tr('newtask.title')}
-        </Txt>
-        <Txt dim faint center>
-          {tr('newtask.rename')}
-        </Txt>
-      </Pressable>
+    <Screen
+      padBottom={40}
+      header={
+        // Başlık bloğu sabit: liste altından kayar (referans düzeni, diff.md #2)
+        <View>
+          <Header left="close" />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${tr('newtask.title')}: ${tr('newtask.rename')}`}
+            onPress={() => router.push(routes.createTask())}
+            style={{ alignItems: 'center', paddingTop: 4, paddingBottom: 14 }}
+          >
+            <Txt variant="display" center faint role="header">
+              {tr('newtask.title')}
+            </Txt>
+            <Txt faint center>
+              {tr('newtask.rename')}
+            </Txt>
+          </Pressable>
+        </View>
+      }
+    >
 
       <FeatureCard colors={GRADIENTS.ai} emoji="✨" overline={tr('newtask.planner.overline')} title={tr('newtask.planner.title')} onPress={() => router.push(routes.planner())} />
       <FeatureCard colors={GRADIENTS.lucky} emoji="🍀" overline={tr('newtask.luckyCard.overline')} title={tr('newtask.luckyCard.title')} onPress={() => router.push(routes.lucky())} />

@@ -57,7 +57,7 @@ const pufMono = () => `
 
 const BG = `<defs>
   <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#8B6CFF"/><stop offset="0.55" stop-color="#7C5CFC"/><stop offset="1" stop-color="#FF7AE0"/>
+    <stop offset="0" stop-color="#8B6CFF"/><stop offset="0.55" stop-color="#7C5CFC"/><stop offset="1" stop-color="#D58FE8"/>
   </linearGradient>
   <radialGradient id="glow" cx="0.5" cy="0.42" r="0.5"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
 </defs>`;

@@ -73,6 +73,17 @@ export function mealLog(p: { slot: MealSlot; kind: MealKind; note?: string; amou
   return e;
 }
 
+/** Yemek kaydını sil; o günün son ev yemeği silinirse bağlı "ev yemeği" görevi geri alınır (BUG-002). */
+export function mealRemove(id: string) {
+  const s = useMeals.getState();
+  const e = s.entries[id];
+  s.remove(id);
+  if (e?.kind === 'home') {
+    const stillHome = Object.values(useMeals.getState().entries).some((x) => x.dayKey === e.dayKey && x.kind === 'home');
+    if (!stillHome) useCore.getState().undoLinked('meal', e.dayKey);
+  }
+}
+
 /** İş yapıldı: son yapılma güncellenir, görev tamamlanır, küçük bonus. */
 export function choreDone(id: string): boolean {
   const day = dayKeyOf();

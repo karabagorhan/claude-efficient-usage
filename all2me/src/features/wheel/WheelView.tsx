@@ -1,4 +1,4 @@
-/** SVG çark: mavi dalgalı çerçeve, beyaz halka, pastel dilimler, merkez maskot, sabit işaretçi. */
+/** SVG çark: turkuaz dalgalı çerçeve, beyaz halka, pastel dilimler, merkez maskot, sabit işaretçi. */
 import React, { useMemo } from 'react';
 import { Animated, Platform, View } from 'react-native';
 import Svg, { Circle, G, Path, Text as SvgText } from 'react-native-svg';
@@ -6,6 +6,9 @@ import { Mascot } from '../../components/Mascot';
 import type { WheelSlice } from '../../data/wheels';
 import { L, type Lang } from '../../i18n';
 import { alpha, pastelFor, type PastelKey, type Palette } from '../../theme';
+
+/** Çark çerçevesi (All2Me turkuazı; orkide zeminle tamamlayıcı). */
+export const WHEEL_FRAME = '#17A398';
 
 export const sliceName = (s: WheelSlice, lang: Lang): string => (s.label?.trim() ? s.label : L(s.name, lang));
 
@@ -74,16 +77,23 @@ export function WheelView({
     }),
     [c, size],
   );
-  const fs = n > 10 ? 10 : 11.5;
-  const spin = rotation.interpolate({ inputRange: [0, 360000], outputRange: ['0deg', '360000deg'] });
+  const fsBase = n > 10 ? 10.5 : 12;
   const badge = size * 0.095;
+  // Yazı ve emoji için ayrı halkalar (çakışmasın): emoji kenara yakın, yazı rozet ile emoji arasında.
+  const emo = size * (n > 10 ? 0.062 : 0.07);
+  const rEmoji = R - emo * 0.78;
+  const rIn = badge + 6;
+  const rOut = rEmoji - emo * 0.62 - 3;
+  const rText = (rIn + rOut) / 2;
+  const avail = rOut - rIn;
+  const spin = rotation.interpolate({ inputRange: [0, 360000], outputRange: ['0deg', '360000deg'] });
   const font = Platform.OS === 'web' ? 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif' : undefined;
 
   return (
     <View style={{ width: size, height: size }} accessibilityRole="image">
       {/* sabit çerçeve */}
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
-        <Path d={frame.outer} fill={t.blue} />
+        <Path d={frame.outer} fill={WHEEL_FRAME} />
         <Path d={frame.inner} fill={alpha('#FFFFFF', 0.18)} />
         <Circle cx={c} cy={c} r={size * 0.405} fill="#FFFFFF" />
       </Svg>
@@ -97,8 +107,11 @@ export function WheelView({
             const p1 = pt(c, R, a1);
             const mid = (i + 0.5) * sa;
             const lines = wrapName(sliceName(s, lang));
-            const tp = pt(c, R * 0.58, mid);
-            const ep = pt(c, R * 0.86, mid);
+            const longest = Math.max(...lines.map((l) => l.length), 1);
+            // kalın sistem yazısında karakter genişliği ≈ 0.6 × punto; satır halkaya sığacak kadar küçülür
+            const fs = Math.max(8, Math.min(fsBase, avail / (longest * 0.6)));
+            const tp = pt(c, rText, mid);
+            const ep = pt(c, rEmoji, mid);
             return (
               <G key={s.id}>
                 <Path
@@ -124,7 +137,7 @@ export function WheelView({
                   ))}
                 </G>
                 <G rotation={mid} origin={`${ep.x}, ${ep.y}`}>
-                  <SvgText x={ep.x} y={ep.y + size * 0.03} fontSize={size * 0.082} textAnchor="middle">
+                  <SvgText x={ep.x} y={ep.y + emo * 0.36} fontSize={emo} textAnchor="middle">
                     {s.emoji}
                   </SvgText>
                 </G>

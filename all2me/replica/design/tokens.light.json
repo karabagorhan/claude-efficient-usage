@@ -1,59 +1,81 @@
 {
-  "_about": "All2Me AÇIK tema, src/theme/index.ts (light + PASTELS.light + GRADIENTS) rollerinden çıkarıldı (replica-design tokens.json biçimi). 'component' grubu: tema dışında ekranlarda sabit yazılmış ama tekrar eden renkler (dosya adı _sources'ta). Kontrol: python3 -I contrast.py tokens.light.json",
+  "_about": "All2Me AÇIK tema (düzeltme turu sonrası), src/theme/index.ts (light + PASTELS.light + GRADIENTS) rollerinden ve ekranlarda tekrar eden sabit renklerden çıkarıldı (replica-design tokens.json biçimi). Çiftler uygulamadaki GERÇEK kullanımı yansıtır (metin rolü ↔ zemini). Kontrol: python3 -I contrast.py tokens.light.json",
   "_sources": {
-    "component-ink": "#14171A sabit: app/action.tsx, app/(tabs)/wheel.tsx, app/onboarding.tsx (görev seçimi halkası), TemplateCard",
-    "component-on-color": "#FFFFFF sabit: tab pembe hap etiketi (app/(tabs)/_layout.tsx), onboarding seviye hapları (app/onboarding.tsx), new-task FeatureCard, streak afişi",
-    "component-wheel-soft": "#5A4A78: app/(tabs)/wheel.tsx SOFT",
-    "component-streak-unit": "#F5A35A: app/streak.tsx 'day streak' (açık tema)"
+    "component-ink": "#14171A: Seri afişi yazısı ve başlığı (app/streak.tsx INK), Harekete Geç kart yazısı",
+    "component-on-color": "#FFFFFF: sekme Çark hapı (app/(tabs)/_layout.tsx, zemin t.pink), Yeni Görev FeatureCard (GRADIENTS.ai/lucky), Araçlar afişleri, çark/harekete geç başlıkları (büyük)",
+    "component-wheel-soft": "#5A4A78: app/(tabs)/wheel.tsx SOFT (çark altı bilgi satırı)",
+    "component-streak-number": "#C2410C: app/streak.tsx büyük gün sayısı (açık tema)",
+    "component-streak-unit": "#B45309: app/streak.tsx 'gün üst üste / days in a row' (açık tema)",
+    "component-action-earned": "#5B3FD6: app/action.tsx '+N puan kazandın' (zemin: action gradyanının açık ucu #E9E2FF → #FFFFFF)",
+    "gradient-love-*": "app/(tabs)/tools.tsx 'Kendine 100 İyilik' afişi; gradient-quote-*: 'Günün sözü' afişi",
+    "decorative (çift yok)": "border (#E6E6EF: kart ayırıcı/sayfa noktası, bileşen sınırı değil), çark çerçevesi #17A398, pastel dilimler"
   },
   "color": {
     "bg": "#F7F7FF",
     "card": "#FFFFFF",
     "card-alt": "#EEEEF6",
     "text": "#14171A",
-    "text-dim": "#6B7280",
-    "text-faint": "#A3A8B3",
+    "text-dim": "#5B6370",
+    "text-faint": "#6B7280",
     "border": "#E6E6EF",
+    "border-input": "#858A95",
     "primary": "#14171A",
     "on-primary": "#FFFFFF",
     "on-pastel": "#14171A",
-    "coral": "#FF6B3D",
+    "coral": "#EE4D7E",
     "purple": "#7C5CFC",
-    "pink": "#FF7AE0",
+    "pink": "#A93BC9",
     "blue": "#3B6CF6",
     "orange": "#FF8A1F",
     "success": "#22C55E",
-    "danger": "#EF4444",
+    "danger": "#DC2626",
     "warn": "#F59E0B",
+    "danger-text": "#DC2626",
+    "success-text": "#15803D",
+    "warn-text": "#B45309",
+    "purple-text": "#6D4AE8",
+    "on-danger": "#FFFFFF",
+    "on-accent": "#14171A",
     "tab-bar": "#FFFFFF",
     "tab-active": "#14171A",
-    "tab-inactive": "#A3A8B3",
+    "tab-inactive": "#6B7280",
     "pastel": {
-      "blue": "#CFE2FF",
-      "green": "#DCF5B5",
-      "purple": "#E6D9FB",
-      "mint": "#C9F2E7",
-      "peach": "#FCE2C0",
-      "pink": "#FBD5F7",
-      "yellow": "#FBEF7E"
+      "blue": "#BBDDF7",
+      "green": "#C9EBB0",
+      "purple": "#D7CCFF",
+      "mint": "#B8EEDD",
+      "peach": "#FDCFB8",
+      "pink": "#F6C9E6",
+      "yellow": "#FFE28F"
     },
     "gradient": {
-      "wheel-top": "#FF7AE0",
-      "wheel-bottom": "#F3E9FF",
+      "wheel-top": "#A93BC9",
+      "wheel-mid": "#D58FE8",
+      "wheel-bottom": "#F5ECFF",
       "action-top": "#7C5CFC",
+      "action-light": "#E9E2FF",
       "streak-top": "#FF8A1F",
       "streak-mid": "#FFC37A",
       "streak-cream": "#FFF1E0",
-      "ai-start": "#5B7CFA",
-      "ai-mid": "#A66CFF",
-      "ai-end": "#F08BEA",
-      "lucky-start": "#6C6CF0"
+      "ai-start": "#4F5BD5",
+      "ai-mid": "#6F55DD",
+      "ai-end": "#8E4FE0",
+      "lucky-start": "#5B5BE0",
+      "lucky-end": "#6D4AE8",
+      "love-start": "#6D4AE8",
+      "love-mid": "#8E4FE0",
+      "love-end": "#A93BC9",
+      "quote-start": "#C2410C",
+      "quote-mid": "#BE185D",
+      "quote-end": "#A93BC9"
     },
     "component": {
       "ink": "#14171A",
       "on-color": "#FFFFFF",
       "wheel-soft": "#5A4A78",
-      "streak-unit": "#F5A35A"
+      "streak-number": "#C2410C",
+      "streak-unit": "#B45309",
+      "action-earned": "#5B3FD6"
     }
   },
   "pairs": [
@@ -88,11 +110,6 @@
     [
       "text-faint",
       "card"
-    ],
-    [
-      "text-faint",
-      "bg",
-      "large"
     ],
     [
       "on-primary",
@@ -139,48 +156,64 @@
       "pink"
     ],
     [
-      "danger",
+      "danger-text",
       "bg"
     ],
     [
-      "danger",
+      "danger-text",
       "card"
     ],
     [
-      "success",
+      "success-text",
       "bg"
     ],
     [
-      "success",
+      "success-text",
       "card"
     ],
     [
-      "warn",
+      "warn-text",
+      "bg"
+    ],
+    [
+      "warn-text",
       "card"
     ],
     [
-      "component-on-color",
+      "purple-text",
+      "bg"
+    ],
+    [
+      "purple-text",
+      "card"
+    ],
+    [
+      "on-danger",
       "danger"
     ],
     [
-      "component-on-color",
-      "success"
-    ],
-    [
-      "component-on-color",
+      "on-accent",
       "coral"
     ],
     [
-      "component-on-color",
+      "on-accent",
       "warn"
     ],
     [
-      "component-on-color",
-      "purple"
+      "on-accent",
+      "success"
+    ],
+    [
+      "on-accent",
+      "orange"
     ],
     [
       "component-on-color",
       "gradient-ai-start"
+    ],
+    [
+      "component-on-color",
+      "gradient-ai-mid"
     ],
     [
       "component-on-color",
@@ -192,7 +225,31 @@
     ],
     [
       "component-on-color",
-      "orange"
+      "gradient-lucky-end"
+    ],
+    [
+      "component-on-color",
+      "gradient-love-start"
+    ],
+    [
+      "component-on-color",
+      "gradient-love-mid"
+    ],
+    [
+      "component-on-color",
+      "gradient-love-end"
+    ],
+    [
+      "component-on-color",
+      "gradient-quote-start"
+    ],
+    [
+      "component-on-color",
+      "gradient-quote-mid"
+    ],
+    [
+      "component-on-color",
+      "gradient-quote-end"
     ],
     [
       "component-on-color",
@@ -209,7 +266,7 @@
       "gradient-wheel-bottom"
     ],
     [
-      "orange",
+      "component-streak-number",
       "gradient-streak-mid",
       "large"
     ],
@@ -219,17 +276,30 @@
       "large"
     ],
     [
-      "purple",
-      "bg"
+      "component-ink",
+      "orange"
     ],
     [
-      "border",
+      "component-ink",
+      "gradient-streak-top"
+    ],
+    [
+      "component-action-earned",
+      "gradient-action-light"
+    ],
+    [
+      "border-input",
       "card",
       "ui"
     ],
     [
-      "border",
+      "border-input",
       "bg",
+      "ui"
+    ],
+    [
+      "success-text",
+      "card",
       "ui"
     ]
   ]

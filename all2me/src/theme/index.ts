@@ -12,8 +12,12 @@ export interface Palette {
   cardAlt: string; // ikincil yüzey (segment, boş bar)
   text: string;
   textDim: string;
+  /** İkincil-soluk metin (placeholder, ipucu). AA'yı geçer; yalnız dekoratif öğe için daha soluk ton kullanma. */
   textFaint: string;
+  /** Kart/ayraç çizgisi (dekoratif) */
   border: string;
+  /** Etkileşimli öğe sınırı (input, pasif chip): UI kontrastı ≥ 3 */
+  borderInput: string;
   /** Ana hap buton zemini (açık: siyah, koyu: beyaz) */
   primary: string;
   /** primary üstündeki yazı */
@@ -28,6 +32,15 @@ export interface Palette {
   success: string;
   danger: string;
   warn: string;
+  /** Anlamsal renklerin METİN olarak kullanımı (zemin/kart üstünde AA ≥ 4.5). Dolgu için danger/success/warn/purple. */
+  dangerText: string;
+  successText: string;
+  warnText: string;
+  purpleText: string;
+  /** danger dolgusu üstündeki yazı */
+  onDanger: string;
+  /** Renkli haplar / vurgu dolguları (coral, warn, success, orange) üstündeki koyu yazı */
+  onAccent: string;
   me: string;
   partner: string;
   tabBar: string;
@@ -39,13 +52,13 @@ export interface Palette {
 
 /** Pastel kart renkleri: açık ve koyu tema karşılıkları. */
 export const PASTELS: Record<PastelKey, { light: string; dark: string }> = {
-  blue: { light: '#CFE2FF', dark: '#24364F' },
-  green: { light: '#DCF5B5', dark: '#2E3F1F' },
-  purple: { light: '#E6D9FB', dark: '#382C52' },
-  mint: { light: '#C9F2E7', dark: '#1F3F37' },
-  peach: { light: '#FCE2C0', dark: '#4A3520' },
-  pink: { light: '#FBD5F7', dark: '#4A2546' },
-  yellow: { light: '#FBEF7E', dark: '#4A4418' },
+  blue: { light: '#BBDDF7', dark: '#22384D' },
+  green: { light: '#C9EBB0', dark: '#2C3F22' },
+  purple: { light: '#D7CCFF', dark: '#362B55' },
+  mint: { light: '#B8EEDD', dark: '#1D3F35' },
+  peach: { light: '#FDCFB8', dark: '#4A3122' },
+  pink: { light: '#F6C9E6', dark: '#48243F' },
+  yellow: { light: '#FFE28F', dark: '#4A4119' },
 };
 
 /** Döngüsel pastel seçimi (liste sırası için). */
@@ -62,25 +75,32 @@ export const light: Palette = {
   card: '#FFFFFF',
   cardAlt: '#EEEEF6',
   text: '#14171A',
-  textDim: '#6B7280',
-  textFaint: '#A3A8B3',
+  textDim: '#5B6370',
+  textFaint: '#6B7280',
   border: '#E6E6EF',
+  borderInput: '#858A95',
   primary: '#14171A',
   onPrimary: '#FFFFFF',
   onPastel: '#14171A',
-  coral: '#FF6B3D',
+  coral: '#EE4D7E',
   purple: '#7C5CFC',
-  pink: '#FF7AE0',
+  pink: '#A93BC9',
   blue: '#3B6CF6',
   orange: '#FF8A1F',
   success: '#22C55E',
-  danger: '#EF4444',
+  danger: '#DC2626',
   warn: '#F59E0B',
+  dangerText: '#DC2626',
+  successText: '#15803D',
+  warnText: '#B45309',
+  purpleText: '#6D4AE8',
+  onDanger: '#FFFFFF',
+  onAccent: '#14171A',
   me: '#7C5CFC',
-  partner: '#FF6B3D',
+  partner: '#EE4D7E',
   tabBar: '#FFFFFF',
   tabActive: '#14171A',
-  tabInactive: '#A3A8B3',
+  tabInactive: '#6B7280',
   overlay: 'rgba(20,23,26,0.45)',
   pastel: pastelMap(false),
 };
@@ -92,24 +112,31 @@ export const dark: Palette = {
   cardAlt: '#232733',
   text: '#F3F4F6',
   textDim: '#9CA3AF',
-  textFaint: '#5E6472',
+  textFaint: '#868D99',
   border: '#2A2F3C',
+  borderInput: '#6B7280',
   primary: '#F3F4F6',
   onPrimary: '#0E1016',
   onPastel: '#F3F4F6',
-  coral: '#FF825C',
+  coral: '#FF7AA2',
   purple: '#957BFF',
-  pink: '#FF8FE6',
+  pink: '#A93BC9',
   blue: '#6A8DFF',
   orange: '#FF9D45',
   success: '#34D399',
   danger: '#F87171',
   warn: '#FBBF24',
+  dangerText: '#F87171',
+  successText: '#34D399',
+  warnText: '#FBBF24',
+  purpleText: '#A994FF',
+  onDanger: '#14171A',
+  onAccent: '#14171A',
   me: '#957BFF',
-  partner: '#FF825C',
+  partner: '#FF7AA2',
   tabBar: '#14161D',
   tabActive: '#F3F4F6',
-  tabInactive: '#5E6472',
+  tabInactive: '#7E8592',
   overlay: 'rgba(0,0,0,0.6)',
   pastel: pastelMap(true),
 };
@@ -125,16 +152,16 @@ export function useTheme(): Palette {
 type Grad = readonly [string, string, ...string[]];
 /** expo-linear-gradient için renk dizileri (yukarıdan aşağı). Koyu temada da aynı kullanılabilir. */
 export const GRADIENTS = {
-  /** Çark ekranı: pembe → açık lavanta */
-  wheel: ['#FF7AE0', '#F7A8F0', '#F3E9FF'],
+  /** Çark ekranı: orkide → açık lavanta (All2Me markası: Puf'un mor-pembesi) */
+  wheel: ['#A93BC9', '#D58FE8', '#F5ECFF'],
   /** Harekete Geç: mor → beyaz */
   action: ['#7C5CFC', '#A58BFF', '#E9E2FF', '#FFFFFF'],
   /** Seri ekranı: turuncu → krem */
   streak: ['#FF8A1F', '#FFC37A', '#FFF1E0', '#F7F7FF'],
   /** Akıllı planlayıcı kartı (yatay) */
-  ai: ['#5B7CFA', '#A66CFF', '#F08BEA'],
+  ai: ['#4F5BD5', '#6F55DD', '#8E4FE0'],
   /** Şanslı görev kartı */
-  lucky: ['#6C6CF0', '#7C5CFC'],
+  lucky: ['#5B5BE0', '#6D4AE8'],
   /** Onboarding kutlama */
   celebrate: ['#FFE7F8', '#F7F7FF'],
 } as const satisfies Record<string, Grad>;
@@ -165,3 +192,33 @@ export const alpha = (hex: string, a: number) =>
 
 /** Ruh hali skalası (5 seviye) renkleri; etiketler mood ad alanında. */
 export const MOOD_COLORS = ['#F87171', '#FB923C', '#FBBF24', '#A3E635', '#34D399'] as const;
+
+// ---------- Okunabilirlik yardımcısı ----------
+const lum = (hex: string) => {
+  const h = hex.replace('#', '').slice(0, 6);
+  const c = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+};
+/** WCAG kontrast oranı. */
+export const contrastRatio = (a: string, b: string) => {
+  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+const mix = (a: string, b: string, t: number) => {
+  const p = (h: string) => [0, 2, 4].map((i) => parseInt(h.replace('#', '').slice(i, i + 2), 16));
+  const [x, y] = [p(a), p(b)];
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('').toUpperCase();
+};
+/**
+ * Kullanıcının seçtiği renk (avatar rengi vb.) METİN olarak kullanılacaksa: tonu koruyup `bg` üstünde `min` orana
+ * ulaşana kadar koyulaştırır (koyu zeminde açar). Örn. puan sayıları `readable(me.color, t.card)`.
+ */
+export function readable(color: string, bg: string, min = 4.5): string {
+  if (!/^#[0-9a-fA-F]{6}/.test(color) || !/^#[0-9a-fA-F]{6}/.test(bg)) return color;
+  const toward = lum(bg) > 0.4 ? '#000000' : '#FFFFFF';
+  for (let t = 0; t <= 1; t += 0.05) {
+    const c = t === 0 ? color : mix(color, toward, t);
+    if (contrastRatio(c, bg) >= min) return c;
+  }
+  return toward;
+}

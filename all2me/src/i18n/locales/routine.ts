@@ -59,7 +59,7 @@ export default {
     },
     // Harekete Geç ekranı
     action: {
-      title: 'Harekete geçme zamanı!',
+      title: 'Sıra sende!',
       bonusLabel: 'Bonus görev',
       points: '+{{n}} puan',
       earned: '+{{n}} puan kazandın!',
@@ -127,7 +127,7 @@ export default {
       chores: '{{n}} overdue chores',
     },
     action: {
-      title: 'Time to take action!',
+      title: 'Your move!',
       bonusLabel: 'Bonus task',
       points: '+{{n}} pts',
       earned: 'You earned +{{n}} pts!',

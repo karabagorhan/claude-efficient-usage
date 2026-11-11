@@ -51,7 +51,8 @@ function GoalForm({ existing, area }: { existing?: Goal; area?: string }) {
   const [d, setD] = useState<GoalDraft>(() =>
     existing
       ? { ...existing, milestones: [...existing.milestones] }
-      : { title: '', area: isArea(area) ? area : 'career', measure: 'number', startValue: 0, current: 0, milestones: [], checkins: [] },
+      : // yeni hedefte "şu anki değer" boş başlar = başlangıç değeri (azalan hedef %0'dan başlar, BUG-001)
+        { title: '', area: isArea(area) ? area : 'career', measure: 'number', startValue: 0, current: undefined, milestones: [], checkins: [] },
   );
   const [startS, setStartS] = useState(numStr(d.startValue));
   const [targetS, setTargetS] = useState(numStr(d.targetValue));
@@ -63,7 +64,8 @@ function GoalForm({ existing, area }: { existing?: Goal; area?: string }) {
 
   const persist = () => {
     if (!canSave) return undefined;
-    return saveGoal({ ...d, id: existing?.id, startValue: numOf(startS) ?? 0, targetValue: numOf(targetS), checkins: undefined });
+    const startValue = numOf(startS) ?? 0;
+    return saveGoal({ ...d, id: existing?.id, startValue, current: d.current ?? startValue, targetValue: numOf(targetS), checkins: undefined });
   };
   const save = () => {
     if (persist()) close();
@@ -138,7 +140,7 @@ function GoalForm({ existing, area }: { existing?: Goal; area?: string }) {
           </Row>
           <Row between>
             <Txt variant="bodyBold">{tr('growth.goal.current')}</Txt>
-            <Stepper value={d.current ?? 0} step={1} min={0} onChange={(v) => set({ current: v, startValue: numOf(startS) ?? 0, targetValue: numOf(targetS) })} format={(v) => `${v}${d.unit ? ` ${d.unit}` : ''}`} width={84} />
+            <Stepper value={d.current ?? numOf(startS) ?? 0} step={1} min={0} onChange={(v) => set({ current: v, startValue: numOf(startS) ?? 0, targetValue: numOf(targetS) })} format={(v) => `${v}${d.unit ? ` ${d.unit}` : ''}`} width={84} />
           </Row>
         </>
       )}

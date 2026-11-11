@@ -86,7 +86,7 @@ function TimeField({ value, onChange, placeholder }: { value: string; onChange: 
         }}
       />
       {invalid ? (
-        <Txt variant="small" color={t.danger} style={{ marginTop: 6 }}>
+        <Txt variant="small" color={t.dangerText} style={{ marginTop: 6 }}>
           {tr('newtask.editor.reminderInvalid')}
         </Txt>
       ) : null}
@@ -305,7 +305,7 @@ export default function TaskEditor() {
             ))}
           </View>
           {days.length === 0 ? (
-            <Txt variant="small" color={t.danger} style={{ marginTop: 6 }}>
+            <Txt variant="small" color={t.dangerText} style={{ marginTop: 6 }}>
               {tr('newtask.editor.daysNone')}
             </Txt>
           ) : null}
@@ -384,7 +384,7 @@ export default function TaskEditor() {
               {tr('newtask.editor.privateHint')}
             </Txt>
           </View>
-          <Switch value={isPrivate} onValueChange={setIsPrivate} trackColor={{ true: t.purple, false: t.cardAlt }} />
+          <Switch value={isPrivate} onValueChange={setIsPrivate} trackColor={{ true: t.purple, false: t.borderInput }} accessibilityLabel={tr('task.private')} />
         </Row>
         <View style={{ height: 1, backgroundColor: t.border, marginVertical: 14 }} />
         <Row between gap={12}>
@@ -394,7 +394,7 @@ export default function TaskEditor() {
               {tr('newtask.editor.togetherHint')}
             </Txt>
           </View>
-          <Switch value={together} onValueChange={setTogether} trackColor={{ true: t.purple, false: t.cardAlt }} />
+          <Switch value={together} onValueChange={setTogether} trackColor={{ true: t.purple, false: t.borderInput }} accessibilityLabel={tr('task.together')} />
         </Row>
       </Card>
 
@@ -411,13 +411,13 @@ export default function TaskEditor() {
             <Txt variant="small" dim center style={{ marginTop: 4, marginBottom: 14 }}>
               {tr('task.archiveConfirm')}
             </Txt>
-            <PillButton label={tr('newtask.editor.deleteYes')} color={t.danger} textColor="#FFFFFF" onPress={remove} />
+            <PillButton label={tr('newtask.editor.deleteYes')} color={t.danger} textColor={t.onDanger} onPress={remove} />
             <View style={{ height: 10 }} />
             <PillButton label={tr('newtask.editor.keep')} kind="outline" onPress={() => setConfirmDel(false)} />
           </Card>
         ) : (
           <View style={{ marginTop: 12 }}>
-            <PillButton label={tr('task.archive')} kind="ghost" textColor={t.danger} icon="trash-outline" onPress={() => setConfirmDel(true)} />
+            <PillButton label={tr('task.archive')} kind="ghost" textColor={t.dangerText} icon="trash-outline" onPress={() => setConfirmDel(true)} />
           </View>
         )
       ) : null}

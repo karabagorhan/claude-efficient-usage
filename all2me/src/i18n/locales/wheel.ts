@@ -1,16 +1,16 @@
 export default {
   tr: {
     title: {
-      chores: 'Eğlenceli Ev İşi Çarkı',
-      selfcare: 'Kendine Bakım Çarkı',
-      move: 'Hareket Çarkı',
+      chores: 'Ev İşi Ruleti',
+      selfcare: 'Bakım Ruleti',
+      move: 'Hareket Ruleti',
     },
     name: {
       chores: 'Ev işleri',
       selfcare: 'Kendine bakım',
       move: 'Hareket',
     },
-    spin: 'Hadi çevir',
+    spin: 'Çevir bakalım',
     spinning: 'Dönüyor…',
     hint: 'Çevir, sürpriz bir görev yakala',
     pointer: 'İşaretçi',
@@ -37,16 +37,16 @@ export default {
   },
   en: {
     title: {
-      chores: 'Fun Chore Wheel',
-      selfcare: 'Self-Care Wheel',
-      move: 'Move Wheel',
+      chores: 'Chore Roulette',
+      selfcare: 'Pamper Roulette',
+      move: 'Move Roulette',
     },
     name: {
       chores: 'Chores',
       selfcare: 'Self-care',
       move: 'Movement',
     },
-    spin: "Let's Spin",
+    spin: 'Give it a whirl',
     spinning: 'Spinning…',
     hint: 'Spin and catch a surprise task',
     pointer: 'Pointer',

@@ -5,7 +5,7 @@ import { Bar, Card, Chip, EmptyState, Field, Header, IconButton, PillButton, Row
 import { IDEA_BY_ID, MEAL_IDEAS, type IdeaMeal, type MealIdea } from '../../src/data/mealIdeas';
 import { pickMessage } from '../../src/data/lifeMessages';
 import { dayKeyOf, weekdayOf } from '../../src/engine/dates';
-import { mealLog } from '../../src/features/life/actions';
+import { mealLog, mealRemove } from '../../src/features/life/actions';
 import { fastFoodFreeStreak, mealsTone, monthSpend, shoppingList, weekCounts, weekGrid } from '../../src/features/life/calc';
 import { MealWeekGrid } from '../../src/features/life/charts';
 import { defaultCurrency, fmtMoney } from '../../src/features/life/hooks';
@@ -190,7 +190,7 @@ function LogTab() {
                   ) : null}
                 </View>
               </Row>
-              <IconButton icon="trash-outline" size={20} color={th.textDim} label={t('common.btn.delete')} onPress={() => useMeals.getState().remove(e.id)} />
+              <IconButton icon="trash-outline" size={20} color={th.textDim} label={t('common.btn.delete')} onPress={() => mealRemove(e.id)} />
             </Row>
           ))
         )}

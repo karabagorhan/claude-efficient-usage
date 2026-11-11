@@ -113,7 +113,7 @@ export default function BadgesScreen() {
                       <Txt size={12} weight="700" color={color}>{t(`points.tier.${sel.tier}`)}</Txt>
                     </View>
                     <Txt dim center style={{ marginTop: 10 }}>{hid ? t('profile.badges.hiddenDesc') : L(sel.desc, lang)}</Txt>
-                    <Txt weight="700" center color={got ? th.success : th.textDim} style={{ marginTop: 10 }}>
+                    <Txt weight="700" center color={got ? th.successText : th.textDim} style={{ marginTop: 10 }}>
                       {got ? t('profile.badges.earnedAt', { date: fmtDay(dayKeyOf(new Date(earned[sel.id])), lang, 'short') }) : t('profile.badges.notEarned')}
                     </Txt>
                     <View style={{ alignSelf: 'stretch', marginTop: 18 }}>

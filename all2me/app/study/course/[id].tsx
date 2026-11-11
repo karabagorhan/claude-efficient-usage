@@ -149,7 +149,7 @@ function CourseForm({ id, onDone, onCancel }: { id?: string; onDone: (id: string
     >
       <Field label={tr('study.course.name')} value={name} onChangeText={setName} placeholder={tr('study.course.namePh')} autoFocus={!id} />
       <Row gap={10}>
-        <Field label={tr('study.course.code')} value={code} onChangeText={setCode} placeholder={tr('study.course.codePh')} containerStyle={{ flex: 1 }} autoCapitalize="characters" />
+        <Field label={tr('study.course.code')} value={code} onChangeText={(v) => setCode(v.toUpperCase())} placeholder={tr('study.course.codePh')} containerStyle={{ flex: 1 }} autoCapitalize="characters" />
         <Field label={tr('study.course.term')} value={term} onChangeText={setTerm} placeholder={tr('study.course.termPh')} containerStyle={{ flex: 1 }} />
       </Row>
       <Field label={tr('study.course.teacher')} value={teacher} onChangeText={setTeacher} placeholder={tr('study.course.teacherPh')} />
@@ -189,7 +189,7 @@ function CourseForm({ id, onDone, onCancel }: { id?: string; onDone: (id: string
             <Stepper value={hhmmToMinutes(s.end)} step={30} min={hhmmToMinutes(s.start) + 30} max={1439} onChange={(v) => updateSlot(i, { end: toHHMM(v) })} format={(v) => fmtTime(toHHMM(v), lang)} width={76} />
           </Row>
           <Pressable onPress={() => setSlots((ss) => ss.filter((_, j) => j !== i))} style={{ alignSelf: 'flex-end', marginTop: 6, padding: 4 }}>
-            <Txt variant="small" color={t.danger} weight="700">
+            <Txt variant="small" color={t.dangerText} weight="700">
               {tr('study.course.removeSlot')}
             </Txt>
           </Pressable>

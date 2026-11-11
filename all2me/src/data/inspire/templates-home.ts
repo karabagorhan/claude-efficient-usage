@@ -5,7 +5,7 @@ import type { Template } from './types';
 export const HOME_TEMPLATES: Template[] = [
   {
     id: 'clean-home-basics',
-    title: l('Evi Temiz Tut', 'Keep a Clean Home'),
+    title: l('Temiz Ev Temelleri', 'Tidy Home Basics'),
     desc: l('Günlük küçük hamlelerle ev kendiliğinden toplu kalır.', 'Small daily moves keep the whole home tidy.'),
     emoji: '🏠',
     cats: ['cleaning'],

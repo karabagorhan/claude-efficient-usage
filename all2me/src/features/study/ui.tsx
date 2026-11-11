@@ -17,9 +17,9 @@ import { countdown, type CountdownTone } from './calc';
 export function toneColors(tone: CountdownTone, t: ReturnType<typeof useTheme>): { bg: string; fg: string } {
   switch (tone) {
     case 'overdue':
-      return { bg: t.danger, fg: '#FFFFFF' };
+      return { bg: t.danger, fg: t.onDanger };
     case 'today':
-      return { bg: t.orange, fg: '#FFFFFF' };
+      return { bg: t.orange, fg: t.onAccent };
     case 'tomorrow':
       return { bg: t.pastel.yellow, fg: t.onPastel };
     case 'soon':
@@ -98,9 +98,12 @@ export function Stepper({
   width?: number;
 }) {
   const t = useTheme();
+  const tr = useT();
   const btn = (icon: 'remove' | 'add', d: number) => (
     <Pressable
       hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={tr(icon === 'add' ? 'common.a11y.increase' : 'common.a11y.decrease')}
       onPress={() => {
         tap();
         onChange(Math.max(min, Math.min(max, Math.round((value + d) * 100) / 100)));
@@ -134,15 +137,15 @@ export function ConfirmDelete({ label, confirmLabel, onConfirm }: { label: strin
   const t = useTheme();
   const tr = useT();
   const [ask, setAsk] = useState(false);
-  if (!ask) return <PillButton label={label} kind="ghost" icon="trash-outline" textColor={t.danger} onPress={() => setAsk(true)} />;
+  if (!ask) return <PillButton label={label} kind="ghost" icon="trash-outline" textColor={t.dangerText} onPress={() => setAsk(true)} />;
   return (
     <View style={{ backgroundColor: alpha(t.danger, 0.1), borderRadius: radius.lg, padding: 14, gap: 10 }}>
-      <Txt variant="bodyBold" center color={t.danger}>
+      <Txt variant="bodyBold" center color={t.dangerText}>
         {confirmLabel}
       </Txt>
       <Row gap={10}>
         <PillButton small label={tr('common.btn.cancel')} kind="outline" onPress={() => setAsk(false)} style={{ flex: 1 }} />
-        <PillButton small label={tr('common.btn.delete')} color={t.danger} textColor="#FFFFFF" onPress={onConfirm} style={{ flex: 1 }} />
+        <PillButton small label={tr('common.btn.delete')} color={t.danger} textColor={t.onDanger} onPress={onConfirm} style={{ flex: 1 }} />
       </Row>
     </View>
   );
@@ -163,6 +166,7 @@ export function ToggleRow({ label, sub, value, onChange }: { label: string; sub?
       </View>
       <Switch
         value={value}
+        accessibilityLabel={label}
         onValueChange={(v) => {
           tap();
           onChange(v);

@@ -9,14 +9,15 @@ import { useCore } from '../../src/store/core';
 import { useLove } from '../../src/store/slices/love';
 import { GUTTER, pastelFor, radius, useTheme } from '../../src/theme';
 
+// Beyaz yazı iki uçta da AA (≥ 4.5): kart sayacı 18px kalın, büyük metin sayılmaz.
 const CARD_GRADS: Array<readonly [string, string]> = [
-  ['#7C5CFC', '#C3A6FF'],
-  ['#3B6CF6', '#8CC1FF'],
-  ['#14B8A6', '#9BE8C9'],
-  ['#EC4899', '#F9A8D4'],
-  ['#FF8A1F', '#FFC37A'],
-  ['#8B5CF6', '#F08BEA'],
-  ['#0EA5E9', '#7DD3FC'],
+  ['#6D4AE8', '#8E4FE0'],
+  ['#1D4ED8', '#2563EB'],
+  ['#0F766E', '#0E7490'],
+  ['#BE185D', '#DB2777'],
+  ['#C2410C', '#B45309'],
+  ['#7C3AED', '#A93BC9'],
+  ['#0369A1', '#0E7490'],
 ];
 
 export default function LoveScreen() {
@@ -108,7 +109,7 @@ export default function LoveScreen() {
                     <Txt variant="h1" color="#fff" style={{ fontSize: 26, lineHeight: 34 }}>
                       {L(item, lang)}
                     </Txt>
-                    <Txt variant="caption" color="#ffffffcc">
+                    <Txt variant="caption" color="#fff">
                       {done[index] ? t('love.doneOn', { day: fmtDay(done[index], lang, 'short') }) : ' '}
                     </Txt>
                   </LinearGradient>
@@ -122,10 +123,20 @@ export default function LoveScreen() {
             <IconButton icon="chevron-forward" size={28} label={t('love.next')} onPress={() => goTo(idx + 1)} bg={th.card} />
           </Row>
           <View style={{ marginTop: 14 }}>
-            <PillButton label={isDone ? t('love.doneMark') : t('love.doneToday')} kind={isDone ? 'outline' : 'primary'} onPress={mark} />
+            {isDone ? (
+              // Yapıldı durumu bir düğme değil; geri alma ayrı ve açık bir eylem (BUG-010)
+              <View style={{ alignItems: 'center', gap: 4 }}>
+                <Txt variant="bodyBold" center color={th.successText}>
+                  {t('love.doneMark')}
+                </Txt>
+                <PillButton label={t('love.undo')} icon="arrow-undo" kind="ghost" small onPress={mark} />
+              </View>
+            ) : (
+              <PillButton label={t('love.doneToday')} onPress={mark} />
+            )}
           </View>
           {isDone ? (
-            <Txt variant="small" dim center style={{ marginTop: 10 }}>
+            <Txt variant="small" dim center style={{ marginTop: 6 }}>
               {t('love.wellDone')}
             </Txt>
           ) : null}

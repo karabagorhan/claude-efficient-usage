@@ -80,7 +80,7 @@ function GrowthSettingsCard() {
       <ToggleRow label={tr('growth.settings.morning')} sub={tr('growth.settings.morningSub')} value={settings.morningTop3} onChange={(v) => setSettings({ morningTop3: v })} />
       <ToggleRow label={tr('growth.settings.review')} sub={tr('growth.settings.reviewSub')} value={settings.fridayReview} onChange={(v) => setSettings({ fridayReview: v })} />
       {!globalOn ? (
-        <Txt variant="small" color={t.warn} style={{ marginTop: 6 }}>
+        <Txt variant="small" color={t.warnText} style={{ marginTop: 6 }}>
           {tr('growth.settings.globalOff')}
         </Txt>
       ) : null}

@@ -12,7 +12,7 @@ import { useTheme } from '../../src/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const WHEEL_SLICES = ['#FF7AE0', '#FF8A1F', '#FBEF7E', '#9BE15D', '#4FD1C5', '#3B6CF6', '#7C5CFC', '#FF6B3D'];
+const WHEEL_SLICES = ['#A93BC9', '#FF8A1F', '#FFE28F', '#9BE15D', '#4FD1C5', '#3B6CF6', '#7C5CFC', '#EE4D7E'];
 
 /** Renkli çark simgesi (sekme çubuğu için, özgün çizim). */
 export function WheelIcon({ size = 30 }: { size?: number }) {
@@ -22,7 +22,7 @@ export function WheelIcon({ size = 30 }: { size?: number }) {
   const pt = (a: number) => `${c + r * Math.cos(a)} ${c + r * Math.sin(a)}`;
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Circle cx={c} cy={c} r={15} fill="#3B6CF6" />
+      <Circle cx={c} cy={c} r={15} fill="#17A398" />
       <Circle cx={c} cy={c} r={13.2} fill="#fff" />
       {WHEEL_SLICES.map((col, i) => {
         const a0 = (i / n) * Math.PI * 2 - Math.PI / 2;

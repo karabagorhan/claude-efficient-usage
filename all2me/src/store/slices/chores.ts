@@ -68,6 +68,8 @@ export const useChores = create<ChoresState>()(
         const c = get().chores[id];
         if (!c) return null;
         const day = dayKey ?? dayKeyOf();
+        // Aynı iş aynı gün bir kez sayılır (BUG-004): ikinci dokunuş yeni kayıt / sayaç üretmez.
+        if (Object.values(get().history).some((h) => h.choreId === id && h.dayKey === day)) return null;
         const log: ChoreLog = { id: uuid(), choreId: id, dayKey: day, at: new Date().toISOString() };
         set((s) => {
           const next = { ...c, lastDone: day, doneCount: c.doneCount + 1 };

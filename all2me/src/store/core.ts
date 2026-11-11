@@ -161,6 +161,8 @@ export interface CoreState {
   canBackfill: () => boolean;
   completeLinked: (link: HabitLink, dayKey?: string) => Completion | null;
   setLinkedProgress: (link: HabitLink, value: number, dayKey?: string) => Completion | null;
+  /** Kaynak kayıt geri alınınca / silinince bu türdeki bağlı görev(ler)in o günkü tamamlamasını geri alır (puan + bonuslar yeniden hesaplanır). Geri alınan sayısını döner. */
+  undoLinked: (link: HabitLink, dayKey?: string) => number;
   awardBonus: (b: AwardBonusInput) => AwardBonusResult;
   revokeBonus: (id: string) => void;
 
@@ -466,6 +468,18 @@ export const useCore = create<CoreState>()(
             }
           }
           return first;
+        },
+
+        undoLinked: (link, dayKey) => {
+          const day = dayKey ?? today();
+          let n = 0;
+          for (const h of linkedHabits(link)) {
+            if (get().completions[completionId(h.id, day)]) {
+              get().undo(h.id, day);
+              n++;
+            }
+          }
+          return n;
         },
 
         awardBonus: (b) => {

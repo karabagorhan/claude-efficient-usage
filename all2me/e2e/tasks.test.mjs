@@ -12,16 +12,16 @@ export default [
       await s.expectText(s.t('newtask.title'), 'Yeni Görev sayfası');
       await s.expectText(s.t('newtask.suggested'));
       await s.shot('task-newtask-page');
-      await s.tap('Tırnak kes', { exact: false });
+      await s.tap('Tırnak bakımı', { exact: false });
       await s.expectText(s.t('newtask.editor.titleNew'), 'düzenleyici ön dolu açılmalı');
       const v = await s.page.getByPlaceholder(s.t('task.namePlaceholder')).inputValue();
-      assert.match(v, /Tırnak kes/i, 'ad ön dolu olmalı');
+      assert.match(v, /Tırnak bakımı/i, 'ad ön dolu olmalı');
       await s.btn(s.t('common.btn.save'));
       await s.page.waitForTimeout(700);
       assert.equal(s.path().split('?')[0], '/', 'kaydedince ana ekrana dönmeli (modal tamamen kapanmalı)');
-      await s.expectText('Tırnak kes');
+      await s.expectText('Tırnak bakımı');
       const c = await s.store('core');
-      assert.ok(Object.values(c.habits).some((h) => /Tırnak kes/i.test(h.title) && h.source === 'newtask:suggest'));
+      assert.ok(Object.values(c.habits).some((h) => /Tırnak bakımı/i.test(h.title) && h.source === 'newtask:suggest'));
     },
   },
   {
@@ -54,6 +54,7 @@ export default [
       const evs = (await events(s)).filter((e) => e.type === 'completion' && e.dayKey === s.meta.today);
       assert.equal(evs.length, 2);
       await s.shot('task-completed');
+      await s.page.waitForTimeout(700); // tamamlamadan sonraki 600 ms çift dokunuş kilidi (BUG-003)
       await card(s, 'Kahvaltı yap').click();
       await s.expectText('1/5 görev', 'geri alınca ilerleme düşmeli');
       assert.equal(await dayPts(s), p0, 'geri alınca puan eski değere dönmeli');
@@ -204,6 +205,7 @@ export default [
       const pts = await dayPts(s);
       assert.ok(pts >= 25, `kota dolunca haftalık bonus puana yansımalı (rozet=${pts}, olaylar=${JSON.stringify(all.map((e) => [e.type, e.points]))})`);
       void evs;
+      await s.page.waitForTimeout(400); // çift dokunuş kilidinin (600 ms) dışında geri al
       await card(s, 'Koşu').click();
       await s.page.waitForTimeout(400);
       assert.equal(await dayPts(s), 0, 'geri alınca bonus da düşmeli');
@@ -223,6 +225,7 @@ export default [
       const comp = evs.filter((e) => e.type === 'completion').reduce((a, e) => a + e.points, 0);
       assert.ok(full > comp, `mükemmel gün bonusu rozete yansımalı (rozet=${full}, görev toplamı=${comp}, perfect=${perfect && perfect.points})`);
       await s.shot('task-perfect-day');
+      await s.page.waitForTimeout(300); // çift dokunuş kilidinin (600 ms) dışında geri al
       await card(s, 'C işi').click(); // geri al
       await s.page.waitForTimeout(500);
       const after = await dayPts(s);

@@ -41,16 +41,16 @@ export interface TemplateItem {
 /** Poster renk çiftleri: [zemin, vurgu] */
 export const PALETTES = {
   rose: ['#F9D5E5', '#D6568C'],
-  sky: ['#CFE2FF', '#3B6CF6'],
-  lime: ['#DCF5B5', '#5E9B1C'],
-  lav: ['#E6D9FB', '#7C5CFC'],
-  mint: ['#C9F2E7', '#14917A'],
-  peach: ['#FCE2C0', '#E5791A'],
-  sun: ['#FBEF7E', '#A8820A'],
+  sky: ['#BBDDF7', '#3B6CF6'],
+  lime: ['#C9EBB0', '#5E9B1C'],
+  lav: ['#D7CCFF', '#7C5CFC'],
+  mint: ['#B8EEDD', '#14917A'],
+  peach: ['#FDCFB8', '#E5791A'],
+  sun: ['#FFE28F', '#A8820A'],
   coral: ['#FFD3C7', '#E2502A'],
   cream: ['#F6EBDD', '#9A6B3C'],
   sage: ['#D9E8D0', '#4F7A4A'],
-  blush: ['#FBD5F7', '#C23FB5'],
+  blush: ['#F6C9E6', '#C23FB5'],
   ocean: ['#BFE6F2', '#13789A'],
 } as const satisfies Record<string, readonly [string, string]>;
 export type PaletteKey = keyof typeof PALETTES;

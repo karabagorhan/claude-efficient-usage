@@ -6,7 +6,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-native';
 
-const COLORS = ['#FF6B3D', '#7C5CFC', '#FF7AE0', '#3B6CF6', '#FF8A1F', '#FBEF7E', '#34D399', '#CFE2FF'];
+const COLORS = ['#EE4D7E', '#7C5CFC', '#A93BC9', '#3B6CF6', '#FF8A1F', '#FFE28F', '#34D399', '#BBDDF7'];
 
 export function Confetti({
   fire,

@@ -102,7 +102,7 @@ function StudySettingsCard() {
       <ToggleRow label={tr('study.settings.remindItems')} sub={tr('study.settings.remindItemsSub')} value={settings.remindItems} onChange={(v) => setSettings({ remindItems: v })} />
       <ToggleRow label={tr('study.settings.weeklyPlan')} sub={tr('study.settings.weeklyPlanSub')} value={settings.weeklyPlan} onChange={(v) => setSettings({ weeklyPlan: v })} />
       {!globalOn ? (
-        <Txt variant="small" color={t.warn} style={{ marginTop: 6 }}>
+        <Txt variant="small" color={t.warnText} style={{ marginTop: 6 }}>
           {tr('study.settings.globalOff')}
         </Txt>
       ) : null}
@@ -180,7 +180,7 @@ function Board({ onAdd, goTab }: { onAdd: () => void; goTab: (t: Tab) => void })
 
       {/* Özet döşemeleri */}
       <Row gap={10}>
-        <StatTile value={String(d.overdue)} label={tr('study.stat.overdue')} bg={d.overdue ? t.danger : t.card} fg={d.overdue ? '#FFFFFF' : t.text} />
+        <StatTile value={String(d.overdue)} label={tr('study.stat.overdue')} bg={d.overdue ? t.danger : t.card} fg={d.overdue ? t.onDanger : t.text} />
         <StatTile value={String(d.dueWeek)} label={tr('study.stat.dueWeek')} bg={t.pastel.blue} fg={t.onPastel} />
         <StatTile value={tr('study.hoursShort', { n: d.load.hours })} label={tr('study.stat.load')} bg={t.pastel.peach} fg={t.onPastel} />
       </Row>
@@ -213,7 +213,7 @@ function Board({ onAdd, goTab }: { onAdd: () => void; goTab: (t: Tab) => void })
               {tr('study.board.goalOf', { goal: dur(goalMin) })}
             </Txt>
           </View>
-          <Txt variant="h3" color={d.weekMin >= goalMin ? t.success : t.purple}>
+          <Txt variant="h3" color={d.weekMin >= goalMin ? t.successText : t.purpleText}>
             {tr('study.pct', { n: Math.min(999, Math.round((d.weekMin / Math.max(1, goalMin)) * 100)) })}
           </Txt>
         </Row>
@@ -581,8 +581,10 @@ function MilestoneRow({ m, first, last, current, editing, onEdit }: { m: ThesisM
               <TextInput
                 value={title}
                 onChangeText={setTitle}
-                onEndEditing={() => save({ id: m.id, title })}
-                onBlur={() => save({ id: m.id, title })}
+                accessibilityLabel={tr('study.thesis.name')}
+                // yalnız gerçekten değiştiyse kaydet: odaklanıp çıkmak varsayılan (çevrilen) adı sabitlemesin
+                onEndEditing={() => title.trim() && title !== milestoneTitle(m, lang) && save({ id: m.id, title })}
+                onBlur={() => title.trim() && title !== milestoneTitle(m, lang) && save({ id: m.id, title })}
                 style={{ backgroundColor: t.bg, color: t.text, borderRadius: radius.md, borderWidth: 1, borderColor: t.border, paddingHorizontal: 14, paddingVertical: 10, fontSize: 16 }}
               />
               <Label>{tr('study.thesis.target')}</Label>

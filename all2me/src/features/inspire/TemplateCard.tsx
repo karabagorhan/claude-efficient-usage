@@ -16,10 +16,13 @@ export const CARD_RATIO = 1.45;
 export function FavHeart({ id, size = 28, bg = 'rgba(255,255,255,0.85)' }: { id: string; size?: number; bg?: string }) {
   const fav = useFavorites((s) => s.favorites.includes(id));
   const toggle = useFavorites((s) => s.toggleFavorite);
+  const t = useT();
   return (
     <Pressable
       hitSlop={8}
       accessibilityRole="button"
+      accessibilityLabel={t(fav ? 'inspire.detail.unfavorite' : 'inspire.detail.favorite')}
+      accessibilityState={{ selected: fav }}
       onPress={() => {
         tap();
         toggle(id);
@@ -104,7 +107,7 @@ function PosterBody({ tpl, w, lang, t }: { tpl: Template; w: number; lang: Lang;
     <View>
       {groups.map((g) => (
         <View key={g.s} style={{ marginBottom: 6 * k }}>
-          <Text style={{ fontSize: fs - 1.5, fontWeight: '800', color: accent, letterSpacing: 0.6 }}>{t(`task.slot.${g.s}`).toUpperCase()}</Text>
+          <Text style={{ fontSize: fs - 1.5, fontWeight: '800', color: INK, opacity: 0.72, letterSpacing: 0.6 }}>{t(`task.slot.${g.s}`).toUpperCase()}</Text>
           {g.items.slice(0, 2).map((i, idx) => (
             <Text key={idx} numberOfLines={1} style={{ fontSize: fs, fontWeight: '600', color: INK, marginTop: 1 }}>
               {i.emoji} {name(i)}

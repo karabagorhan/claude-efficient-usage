@@ -264,6 +264,11 @@ export default [
       const left = Object.keys((await s.store('reflection')).entries).length;
       // Beklenen: etiket onay istediğine göre, ilk dokunuşta kayıt hâlâ durmalı (onay adımı)
       assert.equal(left, 1, 'tek dokunuşla onaysız silindi (etiket: "' + s.t('reflection.confirmDelete') + '")');
+      // onay adımı: soru görünür, "Evet, sil" siler
+      await s.expectText(s.t('reflection.deleteAsk'));
+      await s.btn(s.t('reflection.deleteYes'));
+      await s.page.waitForTimeout(500);
+      assert.equal(Object.keys((await s.store('reflection')).entries).length, 0, 'onaydan sonra silinmeli');
     },
   },
   {

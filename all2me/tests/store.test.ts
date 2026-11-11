@@ -116,6 +116,25 @@ assert.equal(S().completeLinked('drink'), null, 'ikinci kez sayılmaz');
 assert.ok(pointsOnDay(S(), ME, t0) > before);
 assert.equal(S().completeLinked('mood'), null);
 
+// ---- undoLinked (BUG-002): kaynak kayıt geri alınınca bağlı görev + puanı geri alınır ----
+const withLinked = pointsOnDay(S(), ME, t0);
+assert.equal(S().undoLinked('drink'), 1, 'bağlı su görevi geri alındı');
+assert.ok(!S().completions[`c:hW:${t0}`], 'tamamlama silindi');
+assert.equal(pointsOnDay(S(), ME, t0), before, 'puan bağlı tamamlamadan önceki değere döner');
+assert.equal(S().undoLinked('drink'), 0, 'tamamlanmamışken no-op');
+assert.equal(S().undoLinked('meal'), 0, 'bu türde bağlı görev yoksa no-op');
+assert.ok(withLinked > before);
+// hedefin altındaki ilerleme yeniden tamamlamaz; hedefe yeniden ulaşınca tekrar tamamlanır
+assert.equal(S().setLinkedProgress('drink', 7), null);
+assert.ok(S().completeLinked('drink'), 'geri alındıktan sonra yeniden tamamlanabilir');
+// yemek bağlantısı: aynı akış (ev yemeği kaydı silinince)
+S().saveHabit({ id: 'hM', title: 'Ev yemeği', icon: '🍲', link: 'meal', createdAt: new Date(Date.now() - 3 * 86400000).toISOString() });
+assert.ok(S().completeLinked('meal'));
+const pm = pointsOnDay(S(), ME, t0);
+assert.equal(S().undoLinked('meal'), 1);
+assert.ok(pointsOnDay(S(), ME, t0) < pm, 'yemek kaydı silinince puan düşer');
+S().archiveHabit('hM');
+
 // ---- awardBonus ----
 const b1 = S().awardBonus({ id: 'wheel:1', points: 10, label: 'Lavabo', group: 'wheel', perDay: 2 });
 assert.ok(b1.ok, 'ilk bonus');
@@ -180,5 +199,43 @@ assert.equal(S().habits[hid].reminderTime, undefined, 'hatırlatıcı temizlenir
 // ---- arşiv ----
 S().archiveHabit('hW');
 assert.equal(myHabits(S()).some((h: any) => h.id === 'hW'), false);
+
+// ---- Gelişim: azalan hedef (BUG-001) ----
+{
+  const { useGrowth } = require('../src/store/slices/growth');
+  const { goalProgress } = require('../src/features/growth/calc');
+  const G = () => useGrowth.getState();
+  const bonusOf = (id: string) => S().events[`bonus:${ME}:growth:goal:${id}`];
+  // şu anki değer verilmezse başlangıç değeri sayılır: 90 → 80 hedefi %0'dan başlar, tamamlanmaz, bonus yok
+  const gid = G().saveGoal({ title: 'Kilo ver', area: 'health', measure: 'number', startValue: 90, targetValue: 80 });
+  assert.equal(G().goals[gid].current, 90, 'current = startValue');
+  assert.equal(goalProgress(G().goals[gid]), 0, 'azalan hedef %0');
+  assert.ok(!G().goals[gid].doneDay && !bonusOf(gid), 'kaydetmek hedefi tamamlamaz');
+  // ilerleme start → target yönünde
+  G().saveGoal({ id: gid, title: 'Kilo ver', current: 85 });
+  assert.equal(goalProgress(G().goals[gid]), 0.5);
+  G().saveGoal({ id: gid, title: 'Kilo ver', current: 80 });
+  assert.ok(G().goals[gid].doneDay && bonusOf(gid), 'hedefe inince tamamlanır ve bonus verilir');
+  // ters yöne gitmek (kilo almak) ilerleme saymaz
+  const g2 = G().saveGoal({ title: 'Kilo 2', measure: 'number', startValue: 90, targetValue: 80, current: 95 });
+  assert.equal(goalProgress(G().goals[g2]), 0);
+  // "tamamlanmış doğan" yeni hedef bonus vermez (puan avcılığı yok)
+  const g3 = G().saveGoal({ title: 'Hazır', measure: 'number', startValue: 0, targetValue: 1, current: 1 });
+  assert.ok(G().goals[g3].doneDay, 'tamamlandı işaretlenir');
+  assert.ok(!bonusOf(g3), 'ama oluşturulurken bonus verilmez');
+}
+
+// ---- Ev işleri: aynı gün ikinci "yaptım" yeni kayıt üretmez (BUG-004) ----
+{
+  const { useChores } = require('../src/store/slices/chores');
+  const C = () => useChores.getState();
+  const cid = C().upsert({ name: 'Bulaşık', emoji: '🍽️', area: 'kitchen', every: 1 });
+  const id = typeof cid === 'string' ? cid : Object.keys(C().chores)[0];
+  assert.ok(C().done(id, t0), 'ilk işaret kaydedilir');
+  assert.equal(C().done(id, t0), null, 'aynı gün ikinci işaret yok sayılır');
+  assert.equal(Object.values(C().history).filter((h: any) => h.choreId === id && h.dayKey === t0).length, 1);
+  assert.equal(C().chores[id].doneCount, 1);
+  assert.ok(C().done(id, addDays(t0, 1)), 'ertesi gün yeniden sayılır');
+}
 
 console.log('✅ store testleri geçti');
