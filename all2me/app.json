@@ -60,7 +60,8 @@
         }
       ],
       "expo-localization",
-      "expo-asset"
+      "expo-asset",
+      "expo-status-bar"
     ],
     "owner": "karabagorhans-team",
     "extra": {

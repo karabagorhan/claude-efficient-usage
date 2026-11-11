@@ -252,7 +252,7 @@ export const BODY_TEMPLATES: Template[] = [
     items: [
       it('🧼', 'Elleri ılık suyla yıka', 'Wash hands with warm water', 'evening', { d: 'mini' }),
       it('🧴', 'El kremi sür', 'Apply hand cream', 'evening', { d: 'mini' }),
-      it('✂️', 'Tırnakları kes', 'Trim nails', 'evening', { w: [6], d: 'easy' }),
+      it('✂️', 'Tırnak bakımı', 'Nail care', 'evening', { w: [6], d: 'easy' }),
       it('🪨', 'Tırnakları törpüle', 'File nails', 'evening', { w: [6], d: 'mini' }),
       it('🌿', 'Tırnak diplerine yağ sür', 'Oil the cuticles', 'evening', { w: [6], d: 'mini' }),
       it('🎨', 'İstersen oje sür', 'Paint them if you like', 'evening', { w: [6], d: 'easy' }),

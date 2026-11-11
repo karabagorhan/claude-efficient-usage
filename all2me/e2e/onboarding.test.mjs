@@ -28,7 +28,9 @@ async function runOnboarding(s, { name }) {
   await s.shot(`onb-${s.lang}-2-result`);
   await s.btn(s.t('common.btn.next'));
   await s.expectText(s.t('onboarding.tasks.title'));
-  await s.btn(/\d+/);
+  // "N görevi ekle" düğmesi (görev satırları da artık rol=button; adı rakam içerebildiği için düğme adı sözlükten kurulur)
+  const addN = s.t('onboarding.tasks.addN', { n: '@@' }).split('@@').map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\d+');
+  await s.btn(new RegExp(`^${addN}`));
   await s.expectText(s.t('onboarding.pair.title'), 'partner ekranı');
   await s.shot(`onb-${s.lang}-3-pair`);
   await s.btn(s.t('settings.pairing.localContinue'));

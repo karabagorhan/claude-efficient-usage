@@ -15,9 +15,9 @@ export const sliceName = (s: WheelSlice, lang: Lang): string => (s.label?.trim()
 /** Dilim rengi (komşu dilimler farklı olsun diye kıyıda kaydırılır). */
 export const slicePastel = (i: number, n: number): PastelKey => (i === n - 1 && n > 1 && (n - 1) % 7 === 0 ? pastelFor(i + 1) : pastelFor(i));
 
-/** En çok 2 satır, satır başına 10 karakter; uzun ad kısaltılır. */
+/** En çok 2 satır, satır başına 13 karakter (yazı boyu halkaya göre küçülür); daha uzun ad kısaltılır. */
 export function wrapName(name: string): string[] {
-  const clip = (s: string) => (s.length > 10 ? `${s.slice(0, 9)}…` : s);
+  const clip = (s: string) => (s.length > 13 ? `${s.slice(0, 12)}…` : s);
   const text = name.trim();
   if (text.length <= 9) return [text];
   const words = text.split(/\s+/);

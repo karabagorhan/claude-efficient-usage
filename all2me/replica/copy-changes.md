@@ -2,7 +2,7 @@
 
 Tarih: 2026-11-11. Kaynak: `replica/brand-sweep.md` §3 + referans görüntülerle (s01–s17) satır satır karşılaştırma. Referansla birebir/çok yakın EN metinler ve onların TR çevirileri All2Me'nin kendi sesiyle yeniden yazıldı (kısa, sıcak, maskot Puf'un "birlikte" tonu). Genel sözcükler (Timer, Sleep, Water, Mood, Workout, Reflection, Continue, All…) ve SPEC'teki dört metrik adı (Öz-denetim / Konsantrasyon / Üretkenlik / Enerji) bilinçli olarak korundu.
 
-**Toplam: 94 metin** (TR ve EN ayrı sayıldı; veri dosyalarında bir satır = bir TR+EN çifti). Ayrıca 3 yorum/README anması güncellendi. TR/EN anahtar eşitliği ve `src/i18n/plurals.ts` (EN tekil) denetimi: 0 hata.
+**Toplam: 95 metin** (TR ve EN ayrı sayıldı; veri dosyalarında bir satır = bir TR+EN çifti). Ayrıca 3 yorum/README anması güncellendi. TR/EN anahtar eşitliği ve `src/i18n/plurals.ts` (EN tekil) denetimi: 0 hata.
 
 | # | dosya | anahtar / yer | eski | yeni | neden |
 |---|---|---|---|---|---|
@@ -100,6 +100,7 @@ Tarih: 2026-11-11. Kaynak: `replica/brand-sweep.md` §3 + referans görüntüler
 | 92 | `src/data/wheels.ts` | wheel slice c9 | `'Ayakkabı diz', 'Arrange Shoes'` | `'Ayakkabıları sırala', 'Line Up Shoes'` | s09 dilimi birebir |
 | 93 | `src/data/wheels.ts` | wheel slice c8 | `'Bulaşık makinesini boşalt', 'Empty Dishwasher'` | `'Makineyi boşalt', 'Unload Dishes'` | s09 "Empty Trash" kalıbı + kesilme |
 | 94 | `src/data/quotes.ts` | quote consistency | `Q('Tutarlılık, yoğunluktan daha çok yol aldırır.', 'Consistency takes you farther than intensity.')` | `Q('Her gün biraz, bir günde çoktan iyidir.', 'A little every day beats a lot in one day.')` | s16 "Consistency pays off" ile aynı fikir/sözcük |
+| 95 | `src/data/inspire/templates-body.ts` | şablon kalemi | `'Tırnakları kes', 'Trim nails'` | `'Tırnak bakımı', 'Nail care'` | #86 ile tutarlı (düzeltme turu sonu) |
 
 ## Yeni anahtarlar / davranışa bağlı metin değişiklikleri
 

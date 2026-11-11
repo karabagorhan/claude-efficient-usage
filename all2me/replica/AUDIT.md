@@ -44,3 +44,28 @@ küçük işler; 8-12 gerçek düzen kusurları; 13 yayın öncesi marka geçiş
   JPEG sıkıştırması ve durum çubuğu puanı etkiliyor (nötrlenmiş ölçüm ayrıca verildi).
 - Bildirim, ses, alarm, Supabase senkronu bu denetimde çalıştırılmadı (README'deki sınırlar geçerli).
 - Kontrast gradyanlarda tek durak rengine göre ölçüldü; gerçek piksel zemini gradyan boyunca değişir.
+
+## Düzeltme turu (2026-11-11)
+
+Bu tur yukarıdaki 16 maddeyi ve `bugs.md`'deki 10 hatayı kapattı. Yapıldı: önce bir ajan (kullanım limitine takılana kadar), kalanı ve doğrulama ikinci ajan. Her maddenin durumu kodda ve testte ayrıca kontrol edildi.
+
+| # | durum | ne yapıldı / neden |
+|---|---|---|
+| 1 | Yapıldı | 94 EN+TR metin yeniden yazıldı (`copy-changes.md`); `brand-sweep.md` §3'teki eski metinler `src/ app/ scripts/ README.md` içinde grep ile aratıldı, birebir kalan yok; tek artık `templates-body.ts` içindeki şablon kalemi "Tırnakları kes / Trim nails" idi, bu turda "Tırnak bakımı / Nail care" yapıldı (`copy-changes.md` #95). |
+| 2 | Yapıldı | İlham kategori/bölüm adları ve "overeating" yansıma konusu yeniden adlandırıldı. |
+| 3 | Yapıldı | `textFaint`, `tabInactive`, yeni `borderInput` (`Field`, `Chip`, `Switch` kapalı iz). |
+| 4 | Yapıldı | Çark hapı ve etiketi kontrastlı (token + contrast.py). |
+| 5 | Yapıldı | Onboarding seviye hapları `onAccent`, seçim halkası `onPastel`. |
+| 6 | Yapıldı | `GRADIENTS.ai/lucky`, 100 Yol / Araçlar afiş gradyanları koyulaştırıldı (beyaz yazı AA). |
+| 7 | Yapıldı | Seri sayısı/birimi/afiş yazısı. |
+| 8 | Yapıldı | `WheelView`: yazı / emoji ayrı halkalar, yazı boyu halkaya göre küçülür, 2 satır; bu turda satır kırpma sınırı 10 → 13 karakter ("Ayakkabıları sırala" "Ayakkabıl…" olmasın diye). |
+| 9 | Yapıldı | `dangerText`, `successText`, `warnText`, `purpleText`, `onDanger`, `onAccent` rolleri ve kullanım yerleri. |
+| 10 | Yapıldı | Yeni Görev başlığı `Screen` `header`'ında sabit. |
+| 11 | Yapıldı | `SectionHeader` 2 satır + kısa özgün başlıklar. |
+| 12 | Yapıldı | Araçlar: ruh hali başlığı `numberOfLines=2`, yüzler küçüldü, su kartı tek satır (ilerleme damlada). |
+| 13 | Kısmen | Mercan `#FF6B3D` → `#EE4D7E`, çark pembesi `#FF7AE0` → `#A93BC9`, çark çerçevesi mavi → turkuaz `#17A398`, 7 pastel ton/açıklık kaydırıldı (Δ artık referanstan belirgin uzak). Mor `#7C5CFC`, turuncu, `#3B6CF6` mavi bilinçli korundu (genel kütüphane/ateş renkleri, düşük risk; `brand-sweep.md` §2). Kontrast korundu: tokens yeniden üretildi, `contrast.py` açık 54/54, koyu 45/45 AA. |
+| 14 | Yapıldı | Onboarding sonuç başlığı `h1` (EN 2 satır içinde) + kısa özgün başlık. |
+| 15 | Yapıldı | `RECORD_AUDIO` `permissions`'tan çıkarıldı, `android.blockedPermissions`'a alındı, `expo-audio` eklentisine `recordAudioAndroid:false` + `microphonePermission:false` verildi. Seçenek adı `node_modules/expo-audio/plugin/src/withAudio.ts` kaynağından doğrulandı; `npx expo config --json` çıktısında izin listesinde RECORD_AUDIO yok. Yerel derleme (prebuild/APK) bu turda çalıştırılmadı. |
+| 16 | Yapıldı | Onboarding evet/hayır ve Harekete Geç butonlarına yatay iç boşluk (referans: dar, ortalı grup). |
+
+Test ve doğrulama sonuçları için ana rapora bakın; `bugs.md` her hatanın durumunu ve test kimliğini taşır.

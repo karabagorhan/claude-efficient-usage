@@ -372,9 +372,9 @@ export function rawKeys(text) {
 }
 
 export async function openSession(env, opts = {}) {
-  const { lang = 'tr', theme = 'light', seed = true, at, width = 390, height = 844, seedOpts = {}, extraInit = {}, storage = true } = opts;
+  const { lang = 'tr', theme = 'light', seed = true, at, width = 390, height = 844, dsf = 1, seedOpts = {}, extraInit = {}, storage = true } = opts;
   const now = resolveNow(at);
-  const ctx = await env.browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, colorScheme: theme === 'dark' ? 'dark' : 'light', locale: lang === 'tr' ? 'tr-TR' : 'en-US' });
+  const ctx = await env.browser.newContext({ viewport: { width, height }, deviceScaleFactor: dsf, colorScheme: theme === 'dark' ? 'dark' : 'light', locale: lang === 'tr' ? 'tr-TR' : 'en-US' });
   const offset = now - Date.now();
   const sd = makeSeed({ now, lang, theme, ...seedOpts });
   const init = seed ? { ...sd.init, ...extraInit } : { 'all2me-settings-v1': JSON.stringify({ state: { lang, theme, onboarded: false, units: 'ml', notifications: true }, version: 1 }), ...extraInit };
