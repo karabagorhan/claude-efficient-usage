@@ -45,3 +45,11 @@
 - Doğrulama: komutların gerçek sonucu, hangi görüntülere baktın, ne gördün.
 - Doğrulanmayan / eksik kalan / varsayım yaptığın yerler. Cihazda denemediğin şeyi "çalışıyor" diye yazma.
 - Ortak koddan istediğin değişiklikler (varsa).
+
+## Ek (2. faz, 2026-11-11)
+- Testler: `npm test` + ilgili e2e alt kümesi. E2E paralel ajanlarla çakışmasın diye kendi dist klasörünle ve az iş parçacığıyla:
+  `node e2e/run.mjs --build --dist dist-<AJAN> --jobs 2 [filtre...]`; işin sonunda bir kez filtresiz tam koşu
+  (`node e2e/run.mjs --build --dist dist-<AJAN> --jobs 2`) — 243 testin hepsi geçmeli; yeni özelliğin için yeni e2e
+  testleri ekle (e2e/<ajan>.test.mjs). Bitince `dist-<AJAN>`'ı sil.
+- Metinler özgün olmalı (replica/copy-changes.md'deki kural): referans uygulamanın metnini kullanma.
+- Kontrast: yeni renk/metin çifti eklersen `python3 -I /home/user/jakeschincariol/replica-skill/replica-design/contrast.py replica/design/tokens.light.json` (ve dark) ile AA'yı koru; yeni rol eklediysen tokens dosyalarına ekle.
