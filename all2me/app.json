@@ -61,7 +61,14 @@
       ],
       "expo-localization",
       "expo-asset",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "All2Me, teslim tarihlerini ve görevlerini takvimine eklemek için takvim erişimi ister.",
+          "remindersPermission": "All2Me, hatırlatıcılarını Anımsatıcılar'a eklemek için erişim ister."
+        }
+      ]
     ],
     "owner": "karabagorhans-team",
     "extra": {

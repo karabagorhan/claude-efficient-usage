@@ -67,5 +67,7 @@ export const routes = {
   studyItem: (id: string, p: { courseId?: string; type?: string } = {}) => `/study/item/${encodeURIComponent(id)}${qs(p)}`,
   /** İş ve kişisel gelişim */
   growth: () => '/growth',
+  /** Haftalık rapor ve içgörüler; week = hafta başı YYYY-MM-DD (Pazartesi) */
+  report: (week?: string) => `/report${qs({ week })}`,
   growthGoal: (id: string) => `/growth/goal/${encodeURIComponent(id)}`,
 } as const;

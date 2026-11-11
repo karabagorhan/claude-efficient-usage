@@ -27,6 +27,7 @@ import planner from './locales/planner';
 import points from './locales/points';
 import profile from './locales/profile';
 import reflection from './locales/reflection';
+import report from './locales/report';
 import routine from './locales/routine';
 import settings from './locales/settings';
 import sleep from './locales/sleep';
@@ -45,7 +46,7 @@ export * from './types';
 export * from './dates';
 
 const NAMESPACES: Record<string, NamespaceFile> = {
-  alarm, common, drink, duel, growth, inspire, life, study, love, meditate, mood, motivation, newtask, onboarding, planner, points,
+  alarm, common, drink, duel, growth, inspire, life, study, report, love, meditate, mood, motivation, newtask, onboarding, planner, points,
   profile, reflection, routine, settings, sleep, soundscape, streak, tabs, task, timer, toast, tools, wheel, workout,
 };
 

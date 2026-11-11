@@ -121,6 +121,7 @@ export default function RootLayout() {
           <Stack.Screen name="study/course/[id]" />
           <Stack.Screen name="study/item/[id]" options={modal} />
           <Stack.Screen name="growth/index" />
+          <Stack.Screen name="report" />
           <Stack.Screen name="growth/goal/[id]" options={modal} />
         </Stack.Protected>
         <Stack.Protected guard={!ready}>
