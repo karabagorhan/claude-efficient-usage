@@ -365,7 +365,7 @@ export class Session {
 }
 
 /** Ham i18n anahtarı (`ns.key`) görünür metinde mi? Bilinen ad alanı öneklerine bakar. */
-export const NS = ['alarm', 'common', 'drink', 'duel', 'growth', 'inspire', 'life', 'study', 'love', 'meditate', 'mood', 'motivation', 'newtask', 'onboarding', 'planner', 'points', 'profile', 'reflection', 'routine', 'settings', 'sleep', 'soundscape', 'streak', 'tabs', 'task', 'timer', 'toast', 'tools', 'wheel', 'workout'];
+export const NS = ['alarm', 'common', 'drink', 'duel', 'growth', 'inspire', 'life', 'study', 'love', 'meditate', 'mood', 'motivation', 'newtask', 'onboarding', 'planner', 'points', 'profile', 'reflection', 'report', 'routine', 'settings', 'sleep', 'soundscape', 'streak', 'tabs', 'task', 'timer', 'toast', 'tools', 'wheel', 'workout'];
 export function rawKeys(text) {
   const re = new RegExp(`(?<![\\w./@-])(?:${NS.join('|')})\\.[a-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9]+)*`, 'g');
   return [...new Set((text.match(re) || []).filter((m) => !/\.(com|org|net|io|app)$/i.test(m)))];

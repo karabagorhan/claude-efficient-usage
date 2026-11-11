@@ -46,7 +46,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "tsx tests/engine.test.ts && tsx tests/store.test.ts && tsx tests/life.test.ts && tsx tests/study.test.ts && tsx src/features/planner/plan.test.ts",
+    "test": "tsx tests/engine.test.ts && tsx tests/store.test.ts && tsx tests/life.test.ts && tsx tests/study.test.ts && tsx src/features/planner/plan.test.ts && tsx tests/report.test.ts",
     "typecheck": "tsc --noEmit",
     "shots": "node scripts/shots.mjs",
     "e2e": "node e2e/run.mjs"
