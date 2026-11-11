@@ -80,7 +80,7 @@ export function choreDone(id: string): boolean {
   const log = s.done(id, day);
   if (!log) return false;
   const core = useCore.getState();
-  core.awardBonus({
+  const bonus = core.awardBonus({
     id: `chore:done:${id}:${day}`,
     points: BONUS.chore.points,
     labelKey: 'life.chores.bonusLabel',
@@ -88,7 +88,8 @@ export function choreDone(id: string): boolean {
     perDay: BONUS.chore.perDay,
     dayKey: day,
   });
-  core.logActivity('choreDone', day);
+  // rozet sayacı: aynı işi aynı gün tekrar işaretlemek sayılmaz
+  if (bonus.ok || bonus.reason !== 'duplicate') core.logActivity('choreDone', day);
   if (s.activityDay !== day) {
     core.logActivity('chore', day);
     useChores.getState().markActivity(day);

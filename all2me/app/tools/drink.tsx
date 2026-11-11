@@ -9,7 +9,6 @@ import { fromMl, goalStep, quickAmounts, toMl } from '../../src/features/tools/u
 import { DAYS_SHORT, fmtTime, useLang, useT } from '../../src/i18n';
 import { scheduleGroup } from '../../src/lib/notifications';
 import { buildDrinkNotifs } from '../../src/lib/reminders';
-import { routes } from '../../src/lib/routes';
 import { myHabits, useCore } from '../../src/store/core';
 import { useSettings } from '../../src/store/settings';
 import { useDrink, type DrinkReminder } from '../../src/store/slices/drink';

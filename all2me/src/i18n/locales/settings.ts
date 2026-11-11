@@ -5,7 +5,7 @@ export default {
     language: 'Dil',
     units: 'Birim',
     theme: { label: 'Tema', system: 'Sistem', light: 'Açık', dark: 'Koyu' },
-    reminders: { label: 'Hatırlatıcılar', hint: 'Görev, su, uyku ve alarm bildirimleri' },
+    reminders: { label: 'Hatırlatıcılar', hint: 'Tüm bildirimler: görevler, su, uyku, alarm ve yaşam takibi. Kapatınca hepsi iptal edilir.' },
     partner: {
       title: 'Partner ve senkron',
       none: 'Henüz partnerin yok',
@@ -74,7 +74,7 @@ export default {
     language: 'Language',
     units: 'Units',
     theme: { label: 'Theme', system: 'System', light: 'Light', dark: 'Dark' },
-    reminders: { label: 'Reminders', hint: 'Task, water, sleep and alarm notifications' },
+    reminders: { label: 'Reminders', hint: 'All notifications: tasks, water, sleep, alarms and life tracking. Turning off cancels them all.' },
     partner: {
       title: 'Partner & sync',
       none: 'No partner yet',

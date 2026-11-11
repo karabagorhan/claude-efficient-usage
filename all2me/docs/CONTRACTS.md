@@ -62,6 +62,7 @@ DAYS_SHORT[lang][weekday]         // weekday 0 = Pazartesi (engine ile aynı)
 - **Ekranda sabit metin yok.** Her metin sözlükten (`t`) ya da içerik verisinden (`L(loc, lang)`) gelir. Emoji serbest.
 - Parametre değeri `Loc` olabilir; `t` onu dile göre çözer: `t('toast.newBadge', { name: badge.name })`.
 - Eksik anahtar: diğer dile düşer, o da yoksa **anahtarın kendisi** görünür + geliştirmede bir kez `console.warn`.
+- İngilizce tekil: `params.n === 1` iken `src/i18n/plurals.ts` (`EN_ONE`) içindeki tekil metin kullanılır ("1 day").
 - Kullanıcı içeriği (görev adı) çevrilmez; şablondan eklenen görevin `title`'ı eklendiği andaki dilde saklanır.
 
 ### Ad alanı dosya kalıbı (yalnız kendi dosyanı doldur)
@@ -205,7 +206,8 @@ Puan sabitleri: `CONFIG` (`src/engine/config`), ör. `CONFIG.bonus.wheel = {poin
 
 ## 6. Ayarlar — `src/store/settings.ts` (`useSettings`, anahtar `all2me-settings-v1`)
 `{hydrated, lang: 'tr'|'en', units: 'ml'|'oz', theme: 'system'|'light'|'dark', notifications: boolean, onboarded: boolean}`
-+ `setLang, setUnits, setTheme, setNotifications, setOnboarded, resetSettings`. İlk açılışta `lang` cihaz dilinden
++ `setLang, setUnits, setTheme, setNotifications, setOnboarded, resetSettings`. Toplu sıfırlama: `resetAllData()`
+(`src/store/resetAll.ts`; yeni dilim eklenirse `SLICES` listesine ekle). İlk açılışta `lang` cihaz dilinden
 (`deviceLang()`: tr değilse en). Onboarding bitince: `useCore.getState().setMe(...)` **ve** `useSettings.getState().setOnboarded(true)`
 — kök koruma ikisine bakar ve kendiliğinden ana sekmelere geçer. "Verileri sıfırla": `useCore.getState().resetAll()` +
 `resetSettings()` + her dilimin `reset()`'i.
@@ -245,7 +247,7 @@ const { habitId } = useLocalSearchParams<{ habitId?: string }>();
 | `/inspire/favorites` | kart | — |
 | `/inspire/search` | kart | `q?` |
 | `/inspire/quiz/[id]` | modal | test id |
-| `/tools/timer` | kart | `habitId?` (bitince `complete`), `minutes?` |
+| `/tools/timer` | kart | `habitId?` (bitince `complete`), `minutes?`, `tag?` (`focus\|lesson\|homework\|article\|work`) |
 | `/tools/drink, sleep, reflection, meditate, workout, motivation, soundscape, alarm, love` | kart | — |
 | `/tools/reflection-write` | modal | `topicId?` |
 | `/tools/mood` | modal | — |
@@ -269,8 +271,11 @@ scheduleOne(group, item): Promise<string|null>;  cancelOne(id);  cancelGroup(gro
 NotifItem = { title, body?, url? /*dokununca açılır*/, sound?, trigger:
   {kind:'daily', hour, minute} | {kind:'weekly', weekday /*0=Pzt*/, hour, minute} | {kind:'date', date} | {kind:'interval', seconds, repeats?} }
 ```
-- Gruplar: `habit` (çekirdek; görev hatırlatıcıları otomatik, dokununca `/action?habitId=`), `drink`, `sleep`, `alarm`,
-  `timer`, `mood` — her ajan yalnız kendi grubunu yönetir. **`cancelAllScheduledNotificationsAsync` çağırma.**
+- Gruplar (`NOTIF_GROUPS`): `habit` (çekirdek; görev hatırlatıcıları otomatik, dokununca `/action?habitId=`), `drink`, `sleep`,
+  `alarm`, `timer`, `mood`, `smoke`, `meals`, `chores`, `study`, `growth` — her özellik yalnız kendi grubunu yönetir.
+  **`cancelAllScheduledNotificationsAsync` çağırma.** Toplu iptal: `cancelGroups(groups)`. Kök düzen bildirim anahtarı
+  kapanınca tüm grupları iptal eder; açılınca / dil değişince `resyncAllReminders()` (`src/lib/reminders.ts`) kullanılan
+  takipçileri yeniden kurar — yeni grup eklenirse oraya da ekle.
 - Metinler `translate('ns.key')` ile, kurulum anındaki dilde. Ayarlarda bildirimler kapalıysa `scheduleGroup` yalnız iptal eder.
 - Web'de bildirim API'leri no-op (false/null döner); ekran bunu hata saymasın.
 

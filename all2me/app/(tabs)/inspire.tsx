@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { Header, IconButton, IconTile, Row, Screen, SectionHeader, Txt } from '../../src/components/ui';
+import { Header, IconButton, IconTile, Row, Screen, SectionHeader } from '../../src/components/ui';
 import { CATEGORIES, FEATURED, PALETTES, QUIZZES, SECTIONS, templatesInSection, type Template } from '../../src/data/inspire';
-import { CARD_RATIO, QuizCard, TemplateCard } from '../../src/features/inspire/TemplateCard';
+import { QuizCard, TemplateCard } from '../../src/features/inspire/TemplateCard';
 import { L, useLang, useT } from '../../src/i18n';
 import { routes } from '../../src/lib/routes';
 import { GUTTER, useTheme } from '../../src/theme';

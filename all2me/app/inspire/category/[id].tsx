@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { EmptyState, Header, Screen, Txt } from '../../../src/components/ui';
+import { EmptyState, Header, Screen } from '../../../src/components/ui';
 import { getCategory, getSection, templatesInCategory, templatesInSection, type CategoryId, type SectionId } from '../../../src/data/inspire';
 import { TemplateGrid } from '../../../src/features/inspire/TemplateGrid';
 import { L, useLang, useT } from '../../../src/i18n';

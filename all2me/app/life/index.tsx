@@ -73,10 +73,10 @@ export default function LifeHub() {
         pastel="purple"
         overline={t('life.hub.study.title')}
         title={
-          next
-            ? t('life.hub.study.next', { title: next.title, date: fmtDay(next.due, lang, 'short') })
-            : study.overdue > 0
-              ? t('life.hub.study.overdue', { n: study.overdue })
+          study.overdue > 0
+            ? t('life.hub.study.overdue', { n: study.overdue })
+            : next
+              ? t('life.hub.study.next', { title: next.title, date: fmtDay(next.due, lang, 'short') })
               : t('life.hub.study.none')
         }
         onPress={() => router.push(routes.study())}

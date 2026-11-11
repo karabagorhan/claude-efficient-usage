@@ -7,7 +7,7 @@ import { LOVE100 } from '../../src/data/love100';
 import { L, fmtDay, useLang, useT } from '../../src/i18n';
 import { useCore } from '../../src/store/core';
 import { useLove } from '../../src/store/slices/love';
-import { GUTTER, PASTEL_KEYS, alpha, pastelFor, radius, useTheme } from '../../src/theme';
+import { GUTTER, pastelFor, radius, useTheme } from '../../src/theme';
 
 const CARD_GRADS: Array<readonly [string, string]> = [
   ['#7C5CFC', '#C3A6FF'],

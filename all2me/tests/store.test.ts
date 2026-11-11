@@ -170,6 +170,13 @@ assert.ok(!has('goal1'), 'hedef rozeti henüz yok');
 S().awardBonus({ id: 'growth:goal:g1', points: 30, group: 'growth', perDay: 5 });
 assert.ok(has('goal1'), 'ilk hedef rozeti (bonus olayından)');
 
+// ---- makeHabit: açıkça undefined verilen alan varsayılanı ezmez; düzenlemede undefined temizler ----
+const hid = S().saveHabit({ title: 'Undef', icon: '✅', kind: undefined, difficulty: undefined, reminderTime: '08:00' });
+assert.equal(S().habits[hid].kind, 'check');
+assert.equal(S().habits[hid].difficulty, 'easy');
+S().saveHabit({ id: hid, title: 'Undef', icon: '✅', reminderTime: undefined });
+assert.equal(S().habits[hid].reminderTime, undefined, 'hatırlatıcı temizlenir');
+
 // ---- arşiv ----
 S().archiveHabit('hW');
 assert.equal(myHabits(S()).some((h: any) => h.id === 'hW'), false);

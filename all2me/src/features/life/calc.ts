@@ -3,7 +3,7 @@ import { addDays, eachDay, parseDayKey, weekStartKey, weekdayOf } from '../../en
 import { IDEA_BY_ID } from '../../data/mealIdeas';
 import type { MsgTone } from '../../data/lifeMessages';
 import type { Loc } from '../../engine/types';
-import type { Chore, ChoreLog, MealEntry, MealKind, MealSlot, SmokeLog, SmokePlan, SmokeTrigger } from './types';
+import type { Chore, ChoreLog, MealEntry, MealKind, MealSlot, SmokePlan, SmokeTrigger } from './types';
 
 export const daysBetween = (a: string, b: string): number =>
   Math.round((parseDayKey(b).getTime() - parseDayKey(a).getTime()) / 86400000);

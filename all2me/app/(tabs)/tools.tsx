@@ -17,7 +17,7 @@ import { useDrink, drinkTotalOn } from '../../src/store/slices/drink';
 import { useMood } from '../../src/store/slices/mood';
 import { useSleep } from '../../src/store/slices/sleep';
 import { useSettings } from '../../src/store/settings';
-import { GRADIENTS, GUTTER, alpha, radius, useTheme, type PastelKey } from '../../src/theme';
+import { GUTTER, alpha, radius, useTheme, type PastelKey } from '../../src/theme';
 
 const TOOLS: Array<{ id: Parameters<typeof routes.tool>[0]; emoji: string; pastel: PastelKey }> = [
   { id: 'timer', emoji: '⏳', pastel: 'purple' },

@@ -94,12 +94,11 @@ export const habitDefaults = {
 
 /** Varsayılanları doldurur; id yoksa üretir. */
 export function makeHabit(d: HabitDraft): Omit<Habit, 'ownerId' | 'archived' | 'createdAt'> & { createdAt?: string } {
-  return {
-    ...habitDefaults,
-    schedule: { days: [] },
-    ...d,
-    id: d.id ?? uuid(),
-  };
+  // `{kind: undefined}` gibi açıkça tanımsız alanlar varsayılanı ezmesin (diğer alanlarda undefined = temizle)
+  const out: any = { ...habitDefaults, schedule: { days: [] }, ...d, id: d.id ?? uuid() };
+  for (const [k, v] of Object.entries(habitDefaults)) if (out[k] === undefined) out[k] = v;
+  if (!out.schedule) out.schedule = { days: [] };
+  return out;
 }
 
 export interface AwardBonusInput {
@@ -746,6 +745,21 @@ export const useCore = create<CoreState>()(
         return out;
       },
       onRehydrateStorage: () => () => {
+        // eski sürüm onboarding'i `kind: undefined` görev yazabiliyordu: eksik varsayılanları tamamla
+        const s = useCore.getState();
+        const fixed: Record<string, Stamped<Habit>> = {};
+        for (const h of Object.values(s.habits)) {
+          if (h.ownerId !== s.me?.id) continue;
+          const miss = Object.entries(habitDefaults).filter(([k]) => (h as any)[k] === undefined);
+          if (miss.length) fixed[h.id] = { ...h, ...Object.fromEntries(miss), _u: now() } as Stamped<Habit>;
+        }
+        const ids = Object.keys(fixed);
+        if (ids.length) {
+          useCore.setState((st) => ({
+            habits: { ...st.habits, ...fixed },
+            dirty: { ...st.dirty, ...Object.fromEntries(ids.map((id) => [dk('habit', id), 0 as const])) },
+          }));
+        }
         useCore.setState({ hydrated: true });
       },
     },

@@ -145,7 +145,9 @@ export default function DuelScreen() {
   const myShare = total === 0 ? 0.5 : mine.points / total;
   const winnerName = st.winnerId === myId ? me.name : st.winnerId === pId ? partner.name : null;
   const banner = winnerName
-    ? { text: t('duel.banner.winner', { name: winnerName, title: t(`points.champion.${period}`) }), color: th.warn }
+    ? isCurrent
+      ? { text: t('duel.banner.leading', { name: winnerName, title: t(`points.champion.${period}`) }), color: th.warn }
+      : { text: t('duel.banner.winner', { name: winnerName, title: t(`points.champion.${period}`) }), color: th.warn }
     : st.tie && st.qualified
       ? { text: t('duel.banner.tie'), color: th.textDim }
       : !st.qualified

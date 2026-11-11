@@ -1,20 +1,30 @@
 # Bütünleştirme yapılacakları (yönetici notu)
 
-- [ ] Tüm dilimlerin `reset()`'lerini tek yerden çağıran `resetAllSlices()` (src/store/resetAll.ts) + Ayarlar'daki
-      "Verileri sıfırla" bunu kullansın (onboard ajanı: şu an yalnız AsyncStorage anahtarları + core + settings).
-- [ ] Rutin panosuna yaşam takibi kartları: yaklaşan teslim (useStudySummary), sigara bugün x/limit, ev işi gecikmiş.
-- [ ] Yeni rozetler: limitte 7 gün (sigara), fast food'suz 7 gün, 20 ev işi, 10 okul öğesi, ilk hedef tamam.
-- [ ] `src/features/planner/plan.test.ts` → node:assert tip hatası (tsconfig exclude ya da tests/ altına taşı).
-- [ ] Onboarding "Konsantrasyon" etiketi kesiliyordu; 13px düzeltmesi sonrası yeniden görüntü alınmadı.
-- [ ] sleep.ts locale `qualityLabel` dizisi Dict'e uymuyor (toolsa ajanı bitince kontrol).
-- [ ] Bildirim izni: ilk hatırlatıcı kurulumunda iste; ayarlar kapalıyken tüm gruplar iptal.
-- [ ] Uygulama ikonu / splash özgün değil (Expo varsayılanı).
-- [ ] `npm test` betiğine yeni testleri ekle (life, study, planner).
-- [ ] Tüm ekranların TR/EN + koyu tema tam tur görüntüsü, referansla karşılaştırma.
-- [ ] Expo Go SDK uyumu notu (README).
-- [ ] Rutin (`app/(tabs)/index.tsx`): bağlı göreve dokununca `router.push(routes.linkTarget(h.link))` (yeni: smoke/meal/chore/study/growth).
-- [ ] Görev düzenleyici (`app/task/[id].tsx`): `difficulty` URL parametresini oku; new-task önerileri zorluğu `routes.createTask({difficulty})` ile geçsin.
-- [ ] Rutin selamı TR'de iki satır düzeltmesi sonrası yeniden görüntü.
+- [x] Tüm dilimlerin `reset()`'lerini tek yerden çağıran `resetAllSlices()` / `resetAllData()` (src/store/resetAll.ts):
+      19 dilim + core.resetAll + resetSettings + `all2me-` AsyncStorage anahtarları + tüm bildirim grupları.
+      Ayarlar'daki "Verileri sıfırla" bunu kullanıyor (web'de sayfa yenileme kaldırıldı).
+- [x] Rutin panosuna yaşam takibi özet şeridi (`src/features/routine/LifeStrip.tsx`): yaklaşan/gecikmiş teslim
+      (useStudySummary), sigara bugün x/limit (plan varsa), gecikmiş ev işi (ev işi geçmişi varsa); dokununca ilgili ekran.
+- [x] Yeni rozetler: `smoke7` (limitte 7 gün), `nofast7` (fast food'suz 7 gün), `chores20`, `study10`, `goal1`.
+      Değerlendirme çekirdekte: `activity` (`smokeOk`, `fastFood`, `meal`, `choreDone`, `goalDone`) + bonus olayları
+      (`refId` `study:item:*`, `growth:goal:*`). Testler `tests/store.test.ts`.
+- [x] `src/features/planner/plan.test.ts` → tsconfig `**/*.test.ts` hariç tutuyor; `npm test` içinde çalışıyor.
+- [x] Onboarding "Konsantrasyon" etiketi: yeniden görüntü alındı, kesilme yok.
+- [x] sleep.ts locale `qualityLabel` (sayısal anahtarlı nesne) Dict ile uyumlu; tsc 0 hata, i18n taraması temiz.
+- [x] Bildirim izni: ilk hatırlatıcı kurulurken isteniyor (boş grupta izin istenmez). Ayarlar'da bildirimler
+      kapatılınca `cancelGroups(NOTIF_GROUPS)` tüm grupları iptal ediyor; açılınca / dil değişince
+      `resyncAllReminders()` (src/lib/reminders.ts) kullanılan takipçileri yeniden kuruyor.
+- [x] Uygulama ikonu / splash: özgün Puf maskotu, `scripts/gen-icons.mjs` ile üretiliyor (koyu splash dahil).
+- [x] `npm test` betiği: engine, store, life, study, planner.
+- [x] Tüm ekranların TR + ana ekranların EN ve koyu tema tam tur görüntüsü (scratchpad `shots/final`).
+- [x] Expo Go SDK uyumu notu (README).
+- [x] Rutin: bağlı göreve dokununca `router.push(routes.linkTarget(h.link))` (tüm bağlantı türleri).
+- [x] Görev düzenleyici `difficulty` URL parametresini okuyor; Yeni Görev önerileri zorluğu geçiriyor.
+- [x] Rutin selamı TR iki satır: yeniden görüntü alındı.
 - [x] task.link.* yeni bağlantı adları (yönetici ekledi), shots.mjs sorgu parametreli rota düzeltmesi, routes.linkTarget.
-- [ ] reflection.tsx: elle kurulan '/tools/reflection-write?entryId=' yerine routes.reflectionWrite(undefined, id) kullan; EN /tools başlık düzeltmesi sonrası yeniden görüntü.
-- [ ] Zamanlayıcı rotasına `tag` parametresi (routes.timer({tag})) — okul/gelişim Odaklan bunu kullansın; şu an setTag ile.
+- [x] reflection.tsx `routes.reflectionWrite(undefined, id)` kullanıyor; EN /tools başlığı yeniden görüntülendi.
+- [x] Zamanlayıcı rotasına `tag` parametresi (`routes.timer({tag})`); okul/gelişim "Odaklan" bunu kullanıyor.
+
+## Bilinçli olarak açık kalanlar
+- Gerçek cihazda bildirim / ses / alarm / haptik denemesi yapılmadı; Supabase senkronu uçtan uca denenmedi.
+- Ev işleri partnerle paylaşılmıyor (sonraki sürüm).

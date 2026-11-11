@@ -12,6 +12,7 @@ export default {
     next: 'Sonraki dönem',
     banner: {
       winner: '🏆 {{name}} · {{title}}',
+      leading: '🔥 {{name}} önde · {{title}} olmaya aday',
       tie: '🤝 Beraberlik',
       notQualified: 'Şampiyonluk için minimum eşik henüz sağlanmadı',
     },
@@ -51,6 +52,7 @@ export default {
     next: 'Next period',
     banner: {
       winner: '🏆 {{name}} · {{title}}',
+      leading: '🔥 {{name}} is ahead · on track for {{title}}',
       tie: '🤝 It’s a tie',
       notQualified: 'The minimum for a championship isn’t reached yet',
     },

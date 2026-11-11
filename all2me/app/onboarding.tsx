@@ -4,7 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Confetti } from '../src/components/Confetti';
 import { Mascot } from '../src/components/Mascot';
 import { RingGauge } from '../src/components/RingGauge';
-import { Avatar, Bar, Card, Field, IconButton, PastelCard, PillButton, Screen, Txt } from '../src/components/ui';
+import { Avatar, Bar, Field, IconButton, PastelCard, PillButton, Screen, Txt } from '../src/components/ui';
 import { METRICS, QUESTIONS, metricLevel } from '../src/features/onboarding/questions';
 import { QuestionArt } from '../src/features/onboarding/QuestionArt';
 import { DEFAULT_SELECTED, rankStarter, type QuestionId } from '../src/features/onboarding/starter';

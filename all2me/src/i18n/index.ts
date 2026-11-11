@@ -7,6 +7,7 @@
  */
 import { useCallback } from 'react';
 import { useSettings } from '../store/settings';
+import { EN_ONE } from './plurals';
 import type { Dict, Lang, Loc, Msg, MsgParams, NamespaceFile } from './types';
 
 import alarm from './locales/alarm';
@@ -88,7 +89,7 @@ export const hasKey = (key: string): boolean => key in FLAT.tr || key in FLAT.en
 
 /** React dışı çeviri. Eksik anahtar: diğer dile düşer; o da yoksa anahtarın kendisi + bir kez uyarı. */
 export function translate(key: string, params?: MsgParams, lang: Lang = currentLang()): string {
-  let s = FLAT[lang][key];
+  let s = lang === 'en' && params && Number(params.n) === 1 && EN_ONE[key] ? EN_ONE[key] : FLAT[lang][key];
   if (s === undefined) {
     const other = FLAT[lang === 'tr' ? 'en' : 'tr'][key];
     warnOnce(`missing key "${key}" for ${lang}`);

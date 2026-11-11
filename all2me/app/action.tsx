@@ -176,7 +176,7 @@ export default function Action() {
             </Txt>
           ) : null}
           <PillButton label={tr('common.btn.done')} onPress={done} disabled={!valid || alreadyDone} />
-          <PillButton label={tr('common.btn.later')} kind="outline" onPress={close} style={{ backgroundColor: '#FFFFFFDD' }} />
+          <PillButton label={tr('common.btn.later')} kind="outline" onPress={close} textColor="#14171A" style={{ backgroundColor: '#FFFFFFDD', borderColor: '#14171A' }} />
           {alreadyDone ? (
             <Txt variant="small" color={INK} center>
               {tr('routine.action.alreadyDone')}

@@ -8,7 +8,6 @@ import { TimeStepper } from '../../src/features/tools/TimeStepper';
 import { DAYS_SHORT, useLang, useT } from '../../src/i18n';
 import { scheduleGroup } from '../../src/lib/notifications';
 import { buildSleepNotifs } from '../../src/lib/reminders';
-import { routes } from '../../src/lib/routes';
 import { useCore } from '../../src/store/core';
 import { sleepMinutes, useSleep } from '../../src/store/slices/sleep';
 import { radius, useTheme } from '../../src/theme';

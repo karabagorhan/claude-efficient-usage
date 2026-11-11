@@ -7,7 +7,7 @@ import { MedNote, StatTile, fmtClock, useNow } from '../../src/features/toolsb';
 import { L, fmtDay, useLang, useT } from '../../src/i18n';
 import { useCore } from '../../src/store/core';
 import { useMeditate } from '../../src/store/slices/meditate';
-import { alpha, pastelColor, radius, useTheme } from '../../src/theme';
+import { alpha, pastelColor, useTheme } from '../../src/theme';
 
 const MIN_SCALE = 0.5;
 const SIZE = 250;

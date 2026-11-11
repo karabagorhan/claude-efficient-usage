@@ -3,17 +3,17 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 import { RingGauge } from '../../src/components/RingGauge';
 import { Bar, Card, Chip, EmptyState, Header, IconButton, PillButton, Row, Screen, SectionHeader, Segmented, Txt } from '../../src/components/ui';
 import { thesisDef } from '../../src/data/thesisMilestones';
 import { addDays, weekStartKey, weekdayOf } from '../../src/engine/dates';
-import { courseProgress, dailyStudyMinutes, overdueCount, readingTotals, splitMinutes, studyCheerKey, studyMinutes, upcoming, weekDays, weekLoad, dueThisWeekCount } from '../../src/features/study/calc';
+import { courseProgress, dailyStudyMinutes, overdueCount, readingTotals, studyCheerKey, studyMinutes, upcoming, weekDays, weekLoad, dueThisWeekCount } from '../../src/features/study/calc';
 import { milestoneTitle, slotsText, useDuration } from '../../src/features/study/format';
 import { ensureStudyNotifSync } from '../../src/features/study/notify';
 import { DeadlineRow, PaperCard, TypePicker } from '../../src/features/study/rows';
-import { isClosed, STUDY_TAGS, TYPE_META, type Course, type StudyItem, type StudyTimerTag, type ThesisMilestone } from '../../src/features/study/types';
+import { isClosed, STUDY_TAGS, TYPE_META, type StudyTimerTag, type ThesisMilestone } from '../../src/features/study/types';
 import { CheckCircle, ConfirmDelete, CountdownBadge, DateField, Label, MiniBars, Stepper, ToggleRow } from '../../src/features/study/ui';
 import { DAYS_SHORT, fmtDay, fmtTime, L, useLang, useT } from '../../src/i18n';
 import { routes } from '../../src/lib/routes';
