@@ -4,18 +4,12 @@
  */
 import { DAYS_LONG, fmtDay, type Lang } from '../../i18n';
 import { CURRENCY_SYMBOL, type Currency } from '../life/types';
-import type { Delta, WeekComparison, WeekStats } from './calc';
+import { num, type Delta, type WeekComparison, type WeekStats } from './calc';
 import type { Insight, Suggestion } from './insights';
 import { SLEEP_HI } from './insights';
 
+export { num };
 export type TFn = (key: string, params?: Record<string, string | number>) => string;
-
-/** Ondalık biçim: TR virgül, EN nokta; sondaki ",0" atılır. */
-export function num(x: number, lang: Lang, digits = 1): string {
-  const s = (Math.round(x * 10 ** digits) / 10 ** digits).toFixed(digits);
-  const trimmed = digits > 0 ? s.replace(/\.0+$/, '') : s;
-  return lang === 'tr' ? trimmed.replace('.', ',') : trimmed;
-}
 
 const pct = (x: number) => Math.round(x * 100);
 

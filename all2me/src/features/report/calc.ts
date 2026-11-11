@@ -12,6 +12,7 @@ import { dayCounts, moneySaved, reductionLimit } from '../life/calc';
 import type { ChoreLog, MealEntry, SmokePlan, SmokePricing } from '../life/types';
 import type { StudyItem, StudyLog } from '../study/types';
 import type { TopTask } from '../growth/types';
+import type { Lang } from '../../i18n/types';
 import type { DrinkEntry } from '../../store/slices/drink';
 import type { MoodEntry } from '../../store/slices/mood';
 import type { SleepEntry } from '../../store/slices/sleep';
@@ -222,8 +223,13 @@ export interface WeekStats {
   growth: { topDays: number; plannedDays: number } | null;
 }
 
+/** Ondalık biçim: TR virgül, EN nokta; sondaki ",0" atılır. */
+export function num(x: number, lang: Lang, digits = 1): string {
+  const s = (Math.round(x * 10 ** digits) / 10 ** digits).toFixed(digits);
+  const trimmed = digits > 0 ? s.replace(/\.0+$/, '') : s;
+  return lang === 'tr' ? trimmed.replace('.', ',') : trimmed;
+}
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
-const round1 = (x: number) => Math.round(x * 10) / 10;
 
 /**
  * Bir haftanın istatistikleri. `limitDays` verilirse yalnız haftanın ilk N günü sayılır
