@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 interface SoundscapeState {
   hydrated: boolean;
@@ -21,7 +21,8 @@ export const useSoundscape = create<SoundscapeState>()(
     {
       name: 'all2me-soundscape-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ volume: s.volume }),
       onRehydrateStorage: () => () => {
         useSoundscape.setState({ hydrated: true });

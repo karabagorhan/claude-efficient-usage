@@ -3,10 +3,10 @@
  * Araç verileri burada DEĞİL; src/store/slices/* içinde.
  * Kullanıcıya görünen metin saklanmaz: toast/hata = { key, params } (src/i18n `tMsg`).
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from './safeStorage';
 import { useMemo } from 'react';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { BADGES } from '../data/badges';
 import { evaluateBadges, userTotals } from '../engine/badges';
 import { CONFIG } from '../engine/config';
@@ -66,7 +66,15 @@ export type ActivityKind =
   /** tamamlanan gelişim hedefi (sayaç önemli) */
   | 'goalDone';
 
-export type Toast = Msg & { emoji?: string };
+/**
+ * Üst toast. `action` verilirse toast üzerinde bir düğme görünür (ör. "Geri al") ve süre uzar;
+ * `run` yalnız bellekte tutulur (toast kuyruğu kalıcı değildir).
+ */
+export type Toast = Msg & { emoji?: string; action?: { labelKey: string; run: () => void } };
+
+/** Rutin sıralama modu: saate göre otomatik ya da elle (`habit.order`). */
+export type TaskOrderMode = 'auto' | 'manual';
+export type MoveDir = 'up' | 'down' | 'top';
 
 export type DocKind = 'profile' | 'habit' | 'completion' | 'event' | 'badge' | 'nudge';
 type Stamped<T> = T & { _u: number };
@@ -152,10 +160,21 @@ export interface CoreState {
   // görevler
   saveHabit: (h: HabitDraft) => string;
   archiveHabit: (id: string) => void;
+  /** Arşivlemeyi geri alır ("Geri al" toast'ı). */
+  unarchiveHabit: (id: string) => void;
+  /**
+   * Görevi `peers` (ekranda görünen, sıralı aynı bölüm görevleri) içinde taşır ve `order` alanlarını yazar.
+   * Bölümdeki görünmeyen görevlerin sırası korunur. Değişen görev sayısını döner.
+   */
+  moveHabit: (id: string, dir: MoveDir, peers: string[]) => number;
   addHabitsFromTemplates: (items: HabitDraft[]) => number;
 
   // tamamlama
-  complete: (habitId: string, dayKey?: string, opts?: { backfill?: boolean }) => Completion | null;
+  /**
+   * `advance: true` = "Önceden yap": yalnız bugünden SONRAKİ bir gün için; puan 0, puan olayı yok,
+   * seri/liderlik/rozete sayılmaz; o gün geldiğinde tamamlanmış görünür.
+   */
+  complete: (habitId: string, dayKey?: string, opts?: { backfill?: boolean; advance?: boolean }) => Completion | null;
   undo: (habitId: string, dayKey?: string) => void;
   addProgress: (habitId: string, dayKey: string, delta: number) => number;
   canBackfill: () => boolean;
@@ -251,6 +270,14 @@ export const useCore = create<CoreState>()(
         });
       };
 
+      /** Benim görevlerim arasında en büyük sıra + 1 (yeni görev en sona). */
+      const nextOrder = (): number => {
+        const s = get();
+        let max = -1;
+        for (const h of Object.values(s.habits)) if (h.ownerId === s.me?.id && typeof h.order === 'number' && Number.isFinite(h.order)) max = Math.max(max, h.order);
+        return max + 1;
+      };
+
       const myComps = (): Completion[] => {
         const s = get();
         return Object.values(s.completions).filter((c) => c.userId === s.me?.id);
@@ -322,6 +349,7 @@ export const useCore = create<CoreState>()(
           const habit: Habit = {
             ...(existing ?? {}),
             ...h,
+            order: h.order ?? existing?.order ?? nextOrder(),
             ownerId: me.id,
             createdAt: existing?.createdAt ?? h.createdAt ?? new Date().toISOString(),
             archived: existing?.archived ?? false,
@@ -335,6 +363,36 @@ export const useCore = create<CoreState>()(
           if (!h) return;
           put('habits', 'habit', { ...h, archived: true });
           recomputeBonuses(today());
+        },
+
+        unarchiveHabit: (id) => {
+          const h = get().habits[id];
+          if (!h || !h.archived) return;
+          put('habits', 'habit', { ...h, archived: false });
+          recomputeBonuses(today());
+        },
+
+        moveHabit: (id, dir, peers) => {
+          const s = get();
+          const list = peers.filter((p) => s.habits[p]);
+          const i = list.indexOf(id);
+          if (i < 0) return 0;
+          const next = moveInList(list, i, dir);
+          if (next === list) return 0;
+          // mevcut sıra değerlerini (artan) yeni diziliş sırasıyla yeniden dağıt; eksik/çakışan değer varsa
+          // en küçük değerden başlayan ardışık değerler kullan
+          const cur = list.map((p) => s.habits[p].order);
+          const valid = cur.every((v) => typeof v === 'number' && Number.isFinite(v)) && new Set(cur).size === cur.length;
+          const base = valid ? 0 : Math.min(0, ...cur.filter((v): v is number => typeof v === 'number' && Number.isFinite(v)));
+          const values = valid ? [...(cur as number[])].sort((a, b) => a - b) : list.map((_, k) => base + k);
+          let changed = 0;
+          next.forEach((hid, k) => {
+            const h = get().habits[hid];
+            if (h.order === values[k]) return;
+            put('habits', 'habit', { ...h, order: values[k] });
+            changed++;
+          });
+          return changed;
         },
 
         addHabitsFromTemplates: (items) => {
@@ -351,6 +409,7 @@ export const useCore = create<CoreState>()(
             titles.add(it.title);
             put('habits', 'habit', {
               ...makeHabit({ ...it, id: undefined }),
+              order: nextOrder(),
               ownerId: s.me.id,
               createdAt: new Date().toISOString(),
               archived: false,
@@ -368,6 +427,25 @@ export const useCore = create<CoreState>()(
           const day = dayKey ?? today();
           const id = completionId(habitId, day);
           if (s.completions[id]) return null; // çift sayım yok
+
+          if (opts?.advance) {
+            // yalnız ileri tarih; puan yok, olay yok, bonus/rozet hesabına girmez
+            if (day <= today()) return null;
+            const adv: Completion = {
+              id,
+              habitId,
+              userId: me.id,
+              dayKey: day,
+              completedAt: new Date().toISOString(),
+              points: 0,
+              base: 0,
+              multiplier: 1,
+              earlyBonus: 0,
+              advance: true,
+            };
+            put('completions', 'completion', adv);
+            return adv;
+          }
 
           const mine = myComps();
           const streakDays = currentStreak(habit, mine, day) + 1;
@@ -750,7 +828,8 @@ export const useCore = create<CoreState>()(
     },
     {
       name: 'all2me-core-v1',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       version: 1,
       partialize: (s) => {
         const { hydrated, toasts, ...rest } = s as any;
@@ -804,6 +883,37 @@ export const myHabits = (s: CoreState): Habit[] =>
 /** O gün Rutin'de görünecek görevlerim (planlı olanlar + haftalık kotalılar). */
 export const habitsOnDay = (s: CoreState, day: string): Habit[] =>
   myHabits(s).filter((h) => h.createdAt.slice(0, 10) <= day && (h.schedule.weeklyQuota ? true : isPlannedOn(h, day)));
+
+/** Diziyi taşınmış yeni dizi olarak döner (değişiklik yoksa aynı dizi). */
+export function moveInList<T>(list: T[], i: number, dir: MoveDir): T[] {
+  const j = dir === 'top' ? 0 : dir === 'up' ? i - 1 : i + 1;
+  if (i < 0 || i >= list.length || j < 0 || j >= list.length || j === i) return list;
+  const out = [...list];
+  const [x] = out.splice(i, 1);
+  out.splice(j, 0, x);
+  return out;
+}
+
+const ord = (h: Habit) => (typeof h.order === 'number' && Number.isFinite(h.order) ? h.order : Number.MAX_SAFE_INTEGER);
+const byManual = (a: Habit, b: Habit) => ord(a) - ord(b) || (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0) || a.id.localeCompare(b.id);
+const timeOf = (h: Habit) => h.reminderTime ?? h.dueTime ?? null;
+
+/**
+ * Rutin sıralaması. `manual`: `order`, sonra oluşturulma. `auto`: hatırlatıcı (yoksa hedef) saatine göre,
+ * saatsizler sonda; eşitlikte elle sıra.
+ */
+export function sortHabits(list: Habit[], mode: TaskOrderMode): Habit[] {
+  const out = [...list];
+  if (mode === 'manual') return out.sort(byManual);
+  return out.sort((a, b) => {
+    const ta = timeOf(a);
+    const tb = timeOf(b);
+    if (ta && tb && ta !== tb) return ta < tb ? -1 : 1;
+    if (ta && !tb) return -1;
+    if (!ta && tb) return 1;
+    return byManual(a, b);
+  });
+}
 
 export const habitsBySlot = (list: Habit[]): Record<Slot, Habit[]> => {
   const out: Record<Slot, Habit[]> = { morning: [], afternoon: [], evening: [], anytime: [] };

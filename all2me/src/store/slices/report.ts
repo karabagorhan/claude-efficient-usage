@@ -3,9 +3,9 @@
  * Rutin panosundaki "Haftanı gör" bandının kapatma durumu: kapatılan gün anahtarı saklanır
  * (aynı gün tekrar görünmez; Pazartesi ile Pazar ayrı günlerdir).
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 interface ReportState {
   hydrated: boolean;
@@ -26,7 +26,8 @@ export const useReportPrefs = create<ReportState>()(
     {
       name: 'all2me-report-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ bannerDismissedDay: s.bannerDismissedDay }),
       onRehydrateStorage: () => () => {
         useReportPrefs.setState({ hydrated: true });

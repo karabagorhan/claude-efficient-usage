@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppErrorBoundary, CrashProbe } from '../src/components/ErrorBoundary';
 import { ToastHost } from '../src/components/ToastHost';
 import { installAlarmResponder } from '../src/features/toolsb/alarmSchedule';
 import { onNotificationOpen, rescheduleReminders } from '../src/lib/notifications';
@@ -65,7 +66,17 @@ function Boot() {
   return null;
 }
 
+/** Kök: hata sınırı (kurtarma ekranı, src/components/ErrorBoundary.tsx) uygulamanın tamamını sarar. */
 export default function RootLayout() {
+  return (
+    <AppErrorBoundary>
+      <CrashProbe />
+      <RootLayoutInner />
+    </AppErrorBoundary>
+  );
+}
+
+function RootLayoutInner() {
   const t = useTheme();
   const coreReady = useCore((s) => s.hydrated);
   const settingsReady = useSettings((s) => s.hydrated);
@@ -101,6 +112,7 @@ export default function RootLayout() {
           <Stack.Screen name="stats" />
           <Stack.Screen name="badges" />
           <Stack.Screen name="settings" />
+          <Stack.Screen name="settings-reminders" />
           <Stack.Screen name="wheel-edit" options={modal} />
           <Stack.Screen name="inspire/[id]" />
           <Stack.Screen name="inspire/category/[id]" />

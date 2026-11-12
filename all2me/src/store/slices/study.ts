@@ -3,9 +3,9 @@
  * Puan: öğe bitti/teslim → awardBonus(study:item:<id>, türe göre); geri alınırsa revokeBonus.
  * Alt görev / sayfa / çalışma kaydı → completeLinked('study') + günde bir logActivity('study').
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { addDays, dayKeyOf } from '../../engine/dates';
 import type { PastelKey } from '../../engine/types';
 import { uuid } from '../../lib/id';
@@ -271,7 +271,7 @@ export const useStudy = create<StudyState>()(
     {
       name: 'all2me-study-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
       partialize: (s) => ({
         courses: s.courses,
         items: s.items,
@@ -281,7 +281,7 @@ export const useStudy = create<StudyState>()(
         activityDay: s.activityDay,
       }),
       merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<StudyState>;
+        const p = safeMerge(persisted, current) as Partial<StudyState>;
         return { ...current, ...p, settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) } };
       },
       onRehydrateStorage: () => () => {

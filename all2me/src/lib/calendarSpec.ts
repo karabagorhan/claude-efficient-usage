@@ -4,7 +4,7 @@
  * Gün/saat YEREL saat dilimindedir. Haftanın günü engine ile aynı: 0 = Pazartesi.
  */
 
-export type RecurFreq = 'daily' | 'weekly';
+export type RecurFreq = 'daily' | 'weekly' | 'monthly';
 
 export interface EventSpec {
   title: string;
@@ -103,9 +103,33 @@ export function courseEventSpecs(p: { title: string; notes?: string; slots: Clas
  * Hatırlatıcılı görev: her gün / günlük kota -> tek günlük tekrarlı olay; belirli günler -> gün başına bir haftalık olay.
  * Hatırlatma saatinde başlar, HABIT_MINUTES sürer, HABIT_DAYS gün tekrarlar.
  */
-export function habitEventSpecs(p: { title: string; time: string; days: number[]; weeklyQuota?: boolean; notes?: string }, from: Date = new Date()): EventSpec[] {
+export function habitEventSpecs(
+  p: { title: string; time: string; days: number[]; weeklyQuota?: boolean; notes?: string; every?: { unit: 'day' | 'week' | 'month'; n: number; anchor: string } },
+  from: Date = new Date(),
+): EventSpec[] {
   if (!TIME_RE.test(p.time)) return [];
   const base = { title: p.title, notes: p.notes, alarmOffsets: [0] as number[] };
+  if (p.every && !p.weeklyQuota) {
+    // esnek tekrar: çapa gününden başlayan, aralıklı tekrar (gün / hafta / ay). Haftalıkta günler seçiliyse gün başına bir olay.
+    const n = Math.max(1, Math.floor(p.every.n));
+    const anchor = localDate(p.every.anchor, p.time);
+    if (!anchor) return [];
+    const freq: RecurFreq = p.every.unit === 'day' ? 'daily' : p.every.unit === 'week' ? 'weekly' : 'monthly';
+    const starts: Date[] = [];
+    if (p.every.unit === 'week' && p.days.length) {
+      const ws = addDaysDate(anchor, -weekdayIndex(anchor));
+      for (const d of [...new Set(p.days)].sort()) {
+        const st = addDaysDate(ws, d);
+        starts.push(st.getTime() < anchor.getTime() ? addDaysDate(st, 7 * n) : st);
+      }
+    } else starts.push(anchor);
+    return starts.map((start) => ({
+      ...base,
+      startDate: start,
+      endDate: addMinutes(start, HABIT_MINUTES),
+      recurrence: { frequency: freq, interval: n, endDate: addDaysDate(start.getTime() > from.getTime() ? start : from, HABIT_DAYS) },
+    }));
+  }
   const daily = p.weeklyQuota || p.days.length === 0 || p.days.length === 7;
   if (daily) {
     let start = localDate(ymd(from), p.time)!;

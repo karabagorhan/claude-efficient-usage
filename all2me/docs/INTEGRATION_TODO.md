@@ -29,14 +29,34 @@
 - Gerçek cihazda bildirim / ses / alarm / haptik denemesi yapılmadı; Supabase senkronu uçtan uca denenmedi.
 - Ev işleri partnerle paylaşılmıyor (sonraki sürüm).
 
-## Faz 3 — yorum araştırmasından (replica/entrepreneur.md §5), faz 2 ajanları bitince
-- [ ] Hatırlatıcı sağlığı ekranı: izin durumu, test bildirimi, sessiz saatler, günlük bildirim üst sınırı (Ayarlar altında).
-- [ ] Rutin'de görev sırası: saate göre otomatik + elle sıralama; kaydırarak sil/arşivle + geri al toast'ı.
-- [ ] "Önceden işaretle": ileri tarihli görevi puansız işaretleyebilme (unuttum hakkı metnini netleştir).
-- [ ] Esnek tekrar: her N gün / hafta / ay + başlangıç (çapa) tarihi (engine isPlannedOn + testler + düzenleyici).
-- [ ] Açılış hata sınırı (ErrorBoundary) + kurtarma ekranı (yeniden dene / verileri dışa aktarmadan sıfırla uyarısı).
-- [ ] Destek kaynakları (iş ortaklığı yok, genel bilgi) + testlerde "tanı değildir" etiketi kontrolü.
-- [ ] Geri bildirim / hata bildir: paylaş menüsüyle tanı metni (sürüm, platform, dil); adres yok (kullanıcıya sorulacak).
-- [ ] "Hep ücretsiz" mesajı Ayarlar > Hakkında'da (onboarding'e onb2 ekliyor).
+## Faz 3 — yorum araştırmasından (replica/entrepreneur.md §5) — 2026-11-12
+- [x] Hatırlatıcı sağlığı ekranı (`app/settings-reminders.tsx`, Ayarlar > Hatırlatıcılar): izin durumu + İzin ver / Ayarları aç,
+      Android tam zamanlı alarm izni (alarm ekranının `exactAlarmStatus` kontrolü), 5 sn test bildirimi ('test' grubu),
+      gruplara göre planlı sayılar, sessiz saatler ve günlük üst sınır (`src/lib/notifBudget.ts`, `scheduleGroup`/`scheduleOne`
+      içinde; alarm/zamanlayıcı/test muaf), son kurulumun etkisi. Planlama işlemleri sıraya alındı (yarış koşulu yok).
+- [x] Rutin'de görev sırası: Ayarlar > Görev sırası (saate göre / elle), uzun bas menüsü (Düzenle · Yukarı · Aşağı · En üste · Sil),
+      `habit.order` (senkronlanır; yeni görev en sona), `moveHabit`, `sortHabits`; kaydırarak sil (`SwipeRow`, PanResponder) +
+      "Geri al" toast'ı (`Toast.action`, `unarchiveHabit`).
+- [x] "Önceden işaretle": ileri tarihli gün → `complete(id, day, {advance:true})`, puan 0, olay yok; seri/liderlik/rozet/mükemmel gün
+      hesabına girmez (görev serisinde nötr; testler `tests/engine.test.ts`, `tests/store.test.ts`). Unuttum hakkı metni netleşti.
+- [x] Esnek tekrar: `Schedule.every {unit, n, anchor}`; `isPlannedOn`, seri, rozet, rapor, rutin, hatırlatıcı (sonraki 8 oluşum),
+      takvim (interval/monthly); düzenleyicide "Her N gün / hafta / ay" + başlangıç günü + önizleme. Ay sonu ve 03:00 testleri.
+- [x] Açılış hata sınırı (`src/components/ErrorBoundary.tsx`) + kurtarma ekranı (yeniden dene / ayrıntıyı paylaş / onaylı sıfırla);
+      kalıcı durumda bozuk JSON ya da tür uyuşmazlığı dilimi çökertmez (`src/store/safeStorage.ts`, tüm dilimler).
+- [x] Destek kaynakları: Ayarlar > "Zor bir gün mü?" (numara yok, acil durum notu, iş ortaklığı yok). "Tanı değildir" notu
+      İlham testleri (`inspire.quiz.notDiagnosis`), onboarding sonucu ve rutin tipi testinde zaten vardı (e2e kapsıyor).
+- [x] Geri bildirim / hata bildir: Ayarlar'da not + Paylaş (`src/lib/diagnostics.ts`: sürüm, `Updates.updateId`, platform, dil,
+      tarih); web'de Web Share yoksa panoya kopyalar. E-posta adresi yok.
+- [x] "Hep ücretsiz" mesajı Ayarlar > Hakkında'da (+ "veriler cihazda, hesap gerekmez").
 - (Kullanıcı yedekle/geri yükle'yi seçmedi — yapılmayacak. Widget: Expo Go'da yok.)
-- [ ] E2E F02-E16 (yeni görev ilk 24 saat %50) faz 2 sırasında sürekli düşüyor; F23-E4, F07-E1 tam koşuda kararsız — faz 2 bitince incele.
+- [x] E2E kararsızlığı: F07-E1 nedeni test deseniydi (`/AI/i` rastgele plandaki "email", "stairs", "Air" kelimelerine uyuyordu;
+      plan tohumu Date'e bağlı) → `\bAI\b` + iki planı da denetler. F23-E4: expo-router web'de URL'yi ekran çizildikten sonra yazıyor;
+      yük altında geri tuşu URL yazılmadan basılınca bir önceki girdiye dönülüyordu → her adımda `waitForURL`. F02-E16 faz 2 sonrası
+      kararlı (baseline'da geçti).
+- [x] Görev düzenleyicide başlık alanı (`TextInput`, `minWidth` yok) web'de sayfayı 31 px yatay kaydırıyordu → `minWidth: 0`.
+
+## Bilinçli olarak açık kalanlar (faz 3 sonrası)
+- Gerçek cihazda (iOS/Android) bildirim, test bildirimi, sessiz saat/üst sınır, alarm, takvim, paylaşım menüsü, kaydırma jesti,
+  ses ve haptik denenmedi. Supabase senkronu uçtan uca denenmedi (`habit.order` ve `completion.advance` alanları belge verisinin
+  parçası olarak gider; sunucu şeması değişmedi).
+- Üst sınır nedeniyle kırpılan düşük öncelikli hatırlatıcılar yer açılınca kendiliğinden geri gelmez ("Yeniden kur" gerekir).

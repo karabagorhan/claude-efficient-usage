@@ -99,7 +99,11 @@ export default [
       await s.page.waitForTimeout(900);
       await s.page.mouse.up();
       await s.page.waitForTimeout(600);
-      await s.expectText(s.t('newtask.editor.titleEdit'), 'uzun basış düzenleyiciyi açmalı');
+      // faz 3: uzun basış görev menüsünü açar (Düzenle · Yukarı · Aşağı · En üste · Sil); Düzenle → düzenleyici
+      await s.expectText(s.t('routine.menu.edit'), 'uzun basış görev menüsünü açmalı');
+      await s.btn(s.t('routine.menu.edit'));
+      await s.page.waitForTimeout(500);
+      await s.expectText(s.t('newtask.editor.titleEdit'), 'menüden düzenleyici açılmalı');
       const input = s.page.getByPlaceholder(s.t('task.namePlaceholder'));
       assert.equal(await input.inputValue(), 'Masayı topla');
       await input.fill('Masayı topla ve sil');

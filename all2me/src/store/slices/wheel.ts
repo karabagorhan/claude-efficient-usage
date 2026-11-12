@@ -1,7 +1,7 @@
 /** Çark dilimi: özelleştirilmiş çarklar, seçili çark, son sonuç. Yalnız cihazda. */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { DEFAULT_WHEELS, MAX_SLICES, MIN_SLICES, WHEEL_IDS, type WheelId, type WheelSlice } from '../../data/wheels';
 
 export interface WheelResult {
@@ -47,7 +47,8 @@ export const useWheel = create<WheelState>()(
     {
       name: 'all2me-wheel-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ custom: s.custom, selected: s.selected, last: s.last }),
       onRehydrateStorage: () => () => {
         useWheel.setState({ hydrated: true });

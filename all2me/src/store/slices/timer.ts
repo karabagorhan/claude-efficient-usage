@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 
 /** Çalışma oturumu etiketleri (yüksek lisans takibi bunları okur) */
@@ -62,7 +62,8 @@ export const useTimer = create<TimerState>()(
     {
       name: 'all2me-timer-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ sessions: s.sessions, lastMinutes: s.lastMinutes, lastMode: s.lastMode, lastTag: s.lastTag }),
       // eski kayıtlarda tag yoksa 'focus' say
       migrate: (p: any) => p,

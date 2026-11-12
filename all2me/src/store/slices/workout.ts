@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 
 export interface WorkoutSession {
@@ -36,7 +36,8 @@ export const useWorkout = create<WorkoutState>()(
     {
       name: 'all2me-workout-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ sessions: s.sessions }),
       onRehydrateStorage: () => () => {
         useWorkout.setState({ hydrated: true });

@@ -238,4 +238,98 @@ assert.equal(myHabits(S()).some((h: any) => h.id === 'hW'), false);
   assert.ok(C().done(id, addDays(t0, 1)), 'ertesi gün yeniden sayılır');
 }
 
+// ---- Faz 3: önceden işaretle (advance), arşivi geri al, elle sıralama ----
+{
+  const core = require('../src/store/core');
+  const tomorrow = addDays(t0, 1);
+  const hid = S().saveHabit({ id: 'hAdv', title: 'Önceden', icon: '⏩', createdAt: new Date(Date.now() - 3 * 86400000).toISOString() });
+  const evBefore = Object.keys(S().events).length;
+  const xpBefore = totalsFor(S(), ME).xp;
+  // bugün ve geçmiş için önceden işaretleme yok
+  assert.equal(S().complete(hid, t0, { advance: true }), null, 'bugün için advance reddedilir');
+  const a = S().complete(hid, tomorrow, { advance: true });
+  assert.ok(a && a.advance === true && a.points === 0, 'ileri tarih: puansız işaret');
+  assert.equal(Object.keys(S().events).length, evBefore, 'puan olayı yazılmaz');
+  assert.equal(totalsFor(S(), ME).xp, xpBefore, 'XP değişmez');
+  assert.ok(core.isDone(S(), hid, tomorrow), 'o gün tamamlanmış görünür');
+  assert.equal(S().complete(hid, tomorrow), null, 'o gün geldiğinde yeniden puan alınmaz (çift sayım yok)');
+  assert.equal(pointsOnDay(S(), ME, tomorrow), 0, 'o günün puanı 0');
+  assert.ok(!S().activeDays().has(tomorrow), 'gün serisine sayılmaz');
+  assert.ok(S().dirty['completion|c:hAdv:' + tomorrow] === 0, 'senkron kuyruğunda');
+  // geri alınabilir
+  S().undo(hid, tomorrow);
+  assert.ok(!core.isDone(S(), hid, tomorrow));
+
+  // arşivle → geri al
+  S().archiveHabit(hid);
+  assert.ok(!core.myHabits(S()).some((h: any) => h.id === hid), 'arşivlenen listeden çıkar');
+  S().unarchiveHabit(hid);
+  assert.ok(core.myHabits(S()).some((h: any) => h.id === hid), 'geri alınca listeye döner');
+  assert.equal(S().habits[hid].archived, false);
+
+  // sıra: yeni görev en sona (en büyük order + 1); düzenleme sırayı korur
+  const o1 = S().saveHabit({ title: 'Sıra 1', icon: '1️⃣', slot: 'evening' });
+  const o2 = S().saveHabit({ title: 'Sıra 2', icon: '2️⃣', slot: 'evening', reminderTime: '07:00' });
+  const o3 = S().saveHabit({ title: 'Sıra 3', icon: '3️⃣', slot: 'evening' });
+  assert.ok(typeof S().habits[o1].order === 'number');
+  assert.equal(S().habits[o2].order, S().habits[o1].order + 1);
+  assert.equal(S().habits[o3].order, S().habits[o2].order + 1);
+  const ord1 = S().habits[o1].order;
+  S().saveHabit({ id: o1, title: 'Sıra 1 (düzenlendi)', icon: '1️⃣', slot: 'evening' });
+  assert.equal(S().habits[o1].order, ord1, 'düzenleme sırayı değiştirmez');
+  const evening = () => core.myHabits(S()).filter((h: any) => [o1, o2, o3].includes(h.id));
+  const ids3 = (mode: 'auto' | 'manual') => core.sortHabits(evening(), mode).map((h: any) => h.id);
+  assert.deepEqual(ids3('manual'), [o1, o2, o3]);
+  assert.deepEqual(ids3('auto'), [o2, o1, o3], 'otomatik: saatli önce');
+  // elle taşı: o3'ü en üste, sonra o1'i aşağı
+  S().moveHabit(o3, 'top', ids3('manual'));
+  assert.deepEqual(ids3('manual'), [o3, o1, o2]);
+  S().moveHabit(o1, 'down', ids3('manual'));
+  assert.deepEqual(ids3('manual'), [o3, o2, o1]);
+  assert.equal(S().moveHabit(o3, 'up', ids3('manual')), 0, 'en üstteki yukarı gitmez');
+  assert.ok(S().dirty['habit|' + o3] === 0, 'sıra senkron kuyruğunda (görev belgesi)');
+  // eski (order alanı olmayan) görevlerle de çalışır
+  const legacy = ['hA', 'hB'].filter((x) => S().habits[x]);
+  for (const id of legacy) useStore.setState((st: any) => ({ habits: { ...st.habits, [id]: { ...st.habits[id], order: undefined } } }));
+  S().moveHabit('hB', 'up', ['hA', 'hB']);
+  assert.ok(S().habits.hB.order < S().habits.hA.order, 'order yoksa sıralı değer atanır');
+  assert.deepEqual(core.moveInList([1, 2, 3], 2, 'top'), [3, 1, 2]);
+}
+
+// ---- Faz 3: kalıcı durum bozuksa dilim çökmez ----
+{
+  const { parseStored, safeMerge } = require('../src/store/safeStorage');
+  assert.equal(parseStored('{bozuk').ok, false);
+  assert.equal(parseStored('[1,2]').ok, false);
+  assert.equal(parseStored('{"state":"x"}').ok, false);
+  assert.deepEqual(parseStored(null), { ok: true, value: null });
+  assert.equal(parseStored('{"state":{"a":1},"version":1}').ok, true);
+  const def = { list: [] as number[], map: {} as Record<string, number>, me: null as any, n: 1, fn: () => 1 };
+  const m = safeMerge({ list: 'oops', map: [1], me: { id: 'x' }, n: 5, fn: 'kötü' }, def);
+  assert.deepEqual(m.list, [], 'tür uyuşmazlığı → varsayılan');
+  assert.deepEqual(m.map, {});
+  assert.deepEqual(m.me, { id: 'x' }, 'null varsayılan her türü kabul eder');
+  assert.equal(m.n, 5);
+  assert.equal(typeof m.fn, 'function', 'işlev ezilmez');
+  assert.equal(safeMerge('çöp', def), def);
+}
+{
+  // AsyncStorage'da bozuk JSON: rehydrate çökmez, varsayılanla devam eder, ham değer yedeklenir
+  const { useMood } = require('../src/store/slices/mood');
+  mem['all2me-mood-v1'] = '{"state": {bozuk';
+  const warns: string[] = [];
+  const ow = console.warn;
+  console.warn = (...a: any[]) => { warns.push(a.join(' ')); };
+  let threw = false;
+  (async () => {
+    try { await useMood.persist.rehydrate(); } catch { threw = true; }
+    console.warn = ow;
+    assert.equal(threw, false, 'rehydrate fırlatmaz');
+    assert.equal(useMood.getState().hydrated, true);
+    assert.ok(warns.some((w) => w.includes('bozuk kayıt')), 'konsol uyarısı');
+    assert.equal(mem['all2me-mood-v1-corrupt'], '{"state": {bozuk', 'ham değer yedeklenir');
+    console.log('✅ bozuk kalıcı durum testi geçti');
+  })();
+}
+
 console.log('✅ store testleri geçti');

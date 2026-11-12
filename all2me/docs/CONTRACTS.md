@@ -299,3 +299,22 @@ NotifItem = { title, body?, url? /*dokununca açılır*/, sound?, trigger:
 - Native modül gerektiren paket (Expo Go'da çalışmalı). Ağ isteği/API anahtarı (Supabase senkronu hariç).
 - `Date#toISOString().slice(0,10)` ile gün anahtarı; Pazar-başlangıçlı gün dizini (engine: 0 = Pazartesi).
 - `git add/commit/push`.
+
+## 13. Faz 3 eklemeleri (2026-11-12)
+- **Tipler** (`src/engine/types.ts`): `Habit.order?: number` (elle sıra, senkronlanır; yeni görev en sona), `Schedule.every?:
+  {unit:'day'|'week'|'month', n, anchor:'YYYY-MM-DD'}` (esnek tekrar; `week`te `days` doluysa o günler, boşsa çapanın günü;
+  `month`ta kısa aylarda ayın son günü), `Completion.advance?: true` ("Önceden yap": puan 0, olay yok; seri/liderlik/rozet
+  dışında — `countsForScore(c)` kullan). Motor: `isPlannedOn`, `everyMatches`, `validEvery`, `nextPlannedDays`, `diffDays`, `diffMonths`.
+- **Çekirdek**: `complete(id, day, {advance:true})` (yalnız bugünden sonraki gün), `unarchiveHabit(id)`, `moveHabit(id, 'up'|'down'|'top', peers)`,
+  `sortHabits(list, 'auto'|'manual')`, `moveInList`. Toast: `pushToast({key, params, emoji, action: {labelKey, run}})` → düğmeli toast (5 sn).
+- **Ayarlar**: `taskOrder: 'auto'|'manual'`, `quietHours: {enabled, start, end}`, `dailyCap` (0 = sınırsız, varsayılan 12) +
+  `setTaskOrder`, `setQuietHours`, `setDailyCap`.
+- **Bildirimler**: `scheduleGroup` / `scheduleOne` sessiz saatleri ve günlük üst sınırı uygular (`src/lib/notifBudget.ts`; `alarm`,
+  `timer`, `test` muaf; öncelik: habit/study > sleep/chores/meals/growth/smoke > report > mood > drink/motivation). İşlemler sıraya
+  alınır. Yardımcılar: `permissionInfo`, `requestPermission`, `openAppSettings`, `scheduledCounts`, `sendTestNotification`,
+  `getBudgetLog`; `resyncEverything()` (`src/lib/reminders.ts`).
+- **Kalıcı durum**: yeni dilim `storage: safeJSONStorage(), merge: safeMerge` kullanır (`src/store/safeStorage.ts`): bozuk JSON / tür
+  uyuşmazlığı varsayılana düşer, ham değer `<anahtar>-corrupt` olarak yedeklenir.
+- **Kök**: `AppErrorBoundary` (`src/components/ErrorBoundary.tsx`) kök düzeni sarar. Rota: `/settings-reminders` (`routes.settingsReminders()`).
+- **Tanı / paylaşım**: `buildDiagnostics({note, error})`, `shareText(text, title)` (`src/lib/diagnostics.ts`).
+

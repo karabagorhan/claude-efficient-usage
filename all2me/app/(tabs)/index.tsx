@@ -12,7 +12,11 @@ import { Card, EmptyState, PillButton, Row, Screen, SectionHeader, Txt, success,
 import { addDays, weekStartKey } from '../../src/engine/dates';
 import { currentStreak, isPlannedOn } from '../../src/engine/points';
 import type { Habit, Slot } from '../../src/engine/types';
+import { applyCalendar, dropCalendar } from '../../src/features/calendar/apply';
 import { DuelCard } from '../../src/features/routine/DuelCard';
+import { SwipeRow, swipedRecently } from '../../src/features/routine/SwipeRow';
+import { TaskMenu } from '../../src/features/routine/TaskMenu';
+import { calKey, habitSpecs, isInCalendar } from '../../src/lib/calendar';
 import { WeekBand } from '../../src/features/report/WeekBand';
 import { LifeStrip } from '../../src/features/routine/LifeStrip';
 import { WeekStrip } from '../../src/features/routine/WeekStrip';
@@ -23,12 +27,15 @@ import {
   habitsBySlot,
   pointsOnDay,
   selectTodayPoints,
+  sortHabits,
   today,
+  type MoveDir,
   useActiveDays,
   useCore,
   useDayStreak,
   useHabitsOnDay,
 } from '../../src/store/core';
+import { useSettings } from '../../src/store/settings';
 import { radius, useTheme } from '../../src/theme';
 
 const SLOTS: Slot[] = ['morning', 'afternoon', 'evening', 'anytime'];
@@ -63,22 +70,30 @@ export default function ScreenRoutine() {
   const streak = useDayStreak();
   const active = useActiveDays();
 
+  const orderMode = useSettings((s) => s.taskOrder);
   const [sel, setSel] = useState(todayKey);
   const [burst, setBurst] = useState(0);
+  const [menuId, setMenuId] = useState<string | null>(null);
   const justDone = useRef<Record<string, number>>({});
 
   const list = useHabitsOnDay(sel);
   const hasAny = useMemo(() => Object.values(habits).some((h) => h.ownerId === me?.id && !h.archived), [habits, me?.id]);
   const normal = useMemo(() => list.filter((h) => !h.schedule.weeklyQuota), [list]);
-  const quota = useMemo(() => list.filter((h) => h.schedule.weeklyQuota), [list]);
-  const bySlot = useMemo(() => habitsBySlot(normal), [normal]);
+  const quota = useMemo(() => sortHabits(list.filter((h) => h.schedule.weeklyQuota), orderMode), [list, orderMode]);
+  const bySlot = useMemo(() => {
+    const b = habitsBySlot(normal);
+    for (const k of SLOTS) b[k] = sortHabits(b[k], orderMode);
+    return b;
+  }, [normal, orderMode]);
   const myComps = useMemo(() => Object.values(completions).filter((c) => c.userId === me?.id), [completions, me?.id]);
 
   const isToday = sel === todayKey;
   const isYesterday = sel === addDays(todayKey, -1);
+  /** ileri tarih: "Önceden yap" (puansız işaret) */
+  const isFuture = sel > todayKey;
   // backfillUsed değişince yeniden hesaplanır
   const backfillOk = useMemo(() => isYesterday && useCore.getState().canBackfill(), [isYesterday, backfillUsed]);
-  const canEdit = isToday || backfillOk;
+  const canEdit = isToday || backfillOk || isFuture;
 
   const doneOn = (id: string, day = sel) => Boolean(completions[completionId(id, day)]);
   const doneCount = normal.filter((h) => doneOn(h.id)).length;
@@ -129,8 +144,25 @@ export default function ScreenRoutine() {
     useCore.getState().pushToast('toast.undone');
   };
 
+  /** İleri tarih: puansız önceden işaret / geri al. */
+  const toggleAdvance = (h: Habit) => {
+    const core = useCore.getState();
+    if (doneOn(h.id)) {
+      if (inLock(h)) return;
+      core.undo(h.id, sel);
+      core.pushToast('toast.undone');
+      return;
+    }
+    const c = core.complete(h.id, sel, { advance: true });
+    if (c) {
+      justDone.current[h.id] = Date.now();
+      core.pushToast({ key: 'routine.advance.marked', emoji: '⏩' });
+    }
+  };
+
   const onPress = (h: Habit) => {
-    if (!canEdit) return;
+    if (!canEdit || swipedRecently()) return;
+    if (isFuture) return toggleAdvance(h);
     if (doneOn(h.id)) {
       if (isToday) undoNow(h);
       return;
@@ -153,7 +185,8 @@ export default function ScreenRoutine() {
   };
 
   const onToggle = (h: Habit) => {
-    if (!canEdit) return;
+    if (!canEdit || swipedRecently()) return;
+    if (isFuture) return toggleAdvance(h);
     if (doneOn(h.id)) {
       if (isToday) undoNow(h);
       return;
@@ -163,26 +196,64 @@ export default function ScreenRoutine() {
 
   const edit = (h: Habit) => router.push(routes.editTask(h.id));
 
+  /** Kartın bulunduğu bölümün (zaman dilimi ya da haftalık hedefler) ekrandaki sıralı listesi. */
+  const peersOf = (h: Habit): Habit[] => (h.schedule.weeklyQuota ? quota : bySlot[h.slot ?? 'anytime']);
+
+  /** Sil = arşivle; 5 sn "Geri al" toast'ı arşivi geri alır (takvim kaydı da geri yazılır). */
+  const remove = (h: Habit) => {
+    const key = calKey.habit(h.id);
+    const inCal = isInCalendar(key);
+    dropCalendar(key);
+    useCore.getState().archiveHabit(h.id);
+    useCore.getState().pushToast({
+      key: 'routine.deleted',
+      params: { title: h.title },
+      emoji: '🗑️',
+      action: {
+        labelKey: 'routine.undo',
+        run: () => {
+          useCore.getState().unarchiveHabit(h.id);
+          if (inCal) void applyCalendar(key, true, habitSpecs(h.id));
+          useCore.getState().pushToast({ key: 'routine.restored', emoji: '↩️' });
+        },
+      },
+    });
+  };
+
+  const move = (h: Habit, dir: MoveDir) => {
+    const ids = peersOf(h).map((x) => x.id);
+    if (orderMode !== 'manual') {
+      useSettings.getState().setTaskOrder('manual');
+      useCore.getState().pushToast({ key: 'routine.orderManual', emoji: '↕️' });
+    }
+    useCore.getState().moveHabit(h.id, dir, ids);
+  };
+
   const renderCard = (h: Habit, opts?: { overline?: string }) => {
     const done = doneOn(h.id);
     const c = completions[completionId(h.id, sel)];
-    const interactive = canEdit && (isToday || !done);
+    const interactive = canEdit && (isToday || isFuture || !done);
     return (
-      <TaskCard
-        key={h.id}
-        habit={h}
-        done={done}
-        progress={progress[`${h.id}|${sel}`] ?? 0}
-        streak={h.schedule.weeklyQuota ? undefined : currentStreak(h, myComps, sel)}
-        points={c?.points}
-        overline={opts?.overline}
-        readOnly={!interactive}
-        onPress={() => onPress(h)}
-        onToggle={() => onToggle(h)}
-        onLongPress={() => edit(h)}
-      />
+      <SwipeRow key={h.id} label={tr('routine.swipeDelete')} onDelete={() => remove(h)}>
+        <TaskCard
+          habit={h}
+          done={done}
+          progress={progress[`${h.id}|${sel}`] ?? 0}
+          streak={h.schedule.weeklyQuota ? undefined : currentStreak(h, myComps, sel)}
+          points={c?.advance ? undefined : c?.points}
+          overline={c?.advance ? tr('routine.advance.done') : opts?.overline}
+          readOnly={!interactive}
+          onPress={() => onPress(h)}
+          onToggle={() => onToggle(h)}
+          onLongPress={() => setMenuId(h.id)}
+        />
+      </SwipeRow>
     );
   };
+
+  const menuHabit = menuId ? (habits[menuId] as Habit | undefined) ?? null : null;
+  const menuPeers = menuHabit ? peersOf(menuHabit) : [];
+  const menuIndex = menuHabit ? menuPeers.findIndex((x) => x.id === menuHabit.id) : -1;
 
   const pct = normal.length ? doneCount / normal.length : 0;
   const allDone = normal.length > 0 && doneCount === normal.length;
@@ -258,11 +329,25 @@ export default function ScreenRoutine() {
               </View>
             </Row>
           </Card>
+        ) : isFuture ? (
+          <Card bg={t.pastel.blue} style={{ marginTop: 16 }}>
+            <Row gap={12}>
+              <Txt size={28}>⏩</Txt>
+              <View style={{ flex: 1 }}>
+                <Txt variant="bodyBold" color={t.onPastel}>
+                  {tr('routine.advance.title')}
+                </Txt>
+                <Txt variant="small" color={t.onPastel}>
+                  {tr('routine.advance.body')}
+                </Txt>
+              </View>
+            </Row>
+          </Card>
         ) : !isToday ? (
           <Row gap={6} style={{ marginTop: 16 }}>
             <Ionicons name="lock-closed-outline" size={14} color={t.textDim} />
             <Txt variant="small" dim>
-              {sel < todayKey ? tr('task.readOnlyDay') : tr('routine.readOnlyFuture')}
+              {tr('task.readOnlyDay')}
             </Txt>
           </Row>
         ) : null}
@@ -356,6 +441,27 @@ export default function ScreenRoutine() {
         <Ionicons name="add" size={32} color={t.onPrimary} />
       </Pressable>
       <Confetti fire={burst} />
+      <TaskMenu
+        habit={menuHabit}
+        index={menuIndex}
+        count={menuPeers.length}
+        auto={orderMode === 'auto'}
+        onClose={() => setMenuId(null)}
+        onEdit={() => {
+          const h = menuHabit;
+          setMenuId(null);
+          if (h) edit(h);
+        }}
+        onMove={(dir) => {
+          if (menuHabit) move(menuHabit, dir);
+          setMenuId(null);
+        }}
+        onDelete={() => {
+          const h = menuHabit;
+          setMenuId(null);
+          if (h) remove(h);
+        }}
+      />
     </View>
   );
 }

@@ -3,9 +3,9 @@
  * `events`: bizim kimliğimiz ('item:<id>' | 'course:<id>' | 'habit:<id>') -> cihaz takvimindeki olay kimlikleri.
  * `calendarId`: "All2Me" takviminin cihazdaki kimliği.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 interface CalendarState {
   hydrated: boolean;
@@ -38,7 +38,8 @@ export const useCalendar = create<CalendarState>()(
     {
       name: 'all2me-calendar-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ calendarId: s.calendarId, events: s.events }),
       onRehydrateStorage: () => () => {
         useCalendar.setState({ hydrated: true });

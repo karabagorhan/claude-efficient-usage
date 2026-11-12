@@ -1,8 +1,34 @@
 import { CONFIG } from './config';
-import { addDays, dayKeyOf, hhmmToMinutes, parseDayKey, weekStartKey, weekdayOf } from './dates';
-import type { Completion, Habit, PointEvent } from './types';
+import { addDays, dayKeyOf, daysInMonth, diffDays, diffMonths, hhmmToMinutes, parseDayKey, weekStartKey, weekdayOf } from './dates';
+import { countsForScore, type Completion, type Every, type Habit, type PointEvent, type Schedule } from './types';
 
-const active = (c: Completion) => !c.undone;
+/** Puan/seri hesabına giren tamamlama (geri alınmamış, önceden işaretlenmemiş). */
+const active = countsForScore;
+
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Geçerli esnek tekrar mı? (bozuk/eksik veri planı bozmasın: geçersizse yok sayılır) */
+export function validEvery(e: Every | undefined): e is Every {
+  return Boolean(e && (e.unit === 'day' || e.unit === 'week' || e.unit === 'month') && Number.isFinite(e.n) && e.n >= 1 && DAY_RE.test(e.anchor ?? ''));
+}
+
+/** Esnek tekrara göre o gün planlı mı (çapa öncesi değil). */
+export function everyMatches(every: Every, days: Schedule['days'], dayKey: string): boolean {
+  const n = Math.max(1, Math.floor(every.n));
+  if (dayKey < every.anchor) return false;
+  if (every.unit === 'day') return diffDays(every.anchor, dayKey) % n === 0;
+  if (every.unit === 'week') {
+    const weeks = Math.round(diffDays(weekStartKey(every.anchor), weekStartKey(dayKey)) / 7);
+    if (weeks % n !== 0) return false;
+    const wd = weekdayOf(dayKey);
+    return days && days.length ? days.includes(wd) : wd === weekdayOf(every.anchor);
+  }
+  // month: ayın çapa günü; kısa aylarda ayın son günü
+  const months = diffMonths(every.anchor, dayKey);
+  if (months % n !== 0) return false;
+  const want = Math.min(Number(every.anchor.slice(8, 10)), daysInMonth(dayKey));
+  return Number(dayKey.slice(8, 10)) === want;
+}
 
 /** Bir görev o gün planlı mı? (Kotalı görevler her gün "planlı" sayılmaz.) */
 export function isPlannedOn(habit: Habit, dayKey: string): boolean {
@@ -10,8 +36,20 @@ export function isPlannedOn(habit: Habit, dayKey: string): boolean {
   if (dayKey < habit.createdAt.slice(0, 10)) return false;
   if (habit.schedule.weeklyQuota) return false;
   const days = habit.schedule.days;
+  if (validEvery(habit.schedule.every)) return everyMatches(habit.schedule.every, days, dayKey);
   if (!days || days.length === 0) return true;
   return days.includes(weekdayOf(dayKey));
+}
+
+/** Görevin `from` gününden (dahil) itibaren planlı olduğu ilk `count` gün (en çok `horizon` gün ileri bakar). */
+export function nextPlannedDays(habit: Habit, from: string, count: number, horizon = 400): string[] {
+  const out: string[] = [];
+  let k = from;
+  for (let i = 0; i < horizon && out.length < count; i++) {
+    if (isPlannedOn({ ...habit, archived: false }, k)) out.push(k);
+    k = addDays(k, 1);
+  }
+  return out;
 }
 
 export function multiplierForStreak(streakDays: number): number {
@@ -28,6 +66,10 @@ export function multiplierForStreak(streakDays: number): number {
 export function currentStreak(habit: Habit, completions: Completion[], today: string): number {
   const done = new Set(
     completions.filter((c) => c.habitId === habit.id && active(c)).map((c) => c.dayKey),
+  );
+  // önceden işaretlenen günler nötr: seriyi ne artırır ne bozar
+  const advance = new Set(
+    completions.filter((c) => c.habitId === habit.id && !c.undone && c.advance).map((c) => c.dayKey),
   );
   const created = habit.createdAt.slice(0, 10);
 
@@ -52,7 +94,7 @@ export function currentStreak(habit: Habit, completions: Completion[], today: st
   let k = today;
   for (let i = 0; i < 400; i++) {
     if (k < created) break;
-    if (isPlannedOn(habit, k)) {
+    if (isPlannedOn(habit, k) && !advance.has(k)) {
       if (done.has(k)) streak++;
       else if (k !== today) break;
     }
@@ -152,7 +194,11 @@ export function computeDayBonuses(
   dayKey: string,
   newbieProtection = false,
 ): DayBonuses {
-  const planned = habits.filter((h) => h.ownerId === userId && isPlannedOn(h, dayKey));
+  // önceden işaretlenen görevler o gün için nötr: plandan da tamamlananlardan da çıkar (bonus hesabına girmez)
+  const advanced = new Set(
+    completions.filter((c) => c.userId === userId && c.dayKey === dayKey && !c.undone && c.advance).map((c) => c.habitId),
+  );
+  const planned = habits.filter((h) => h.ownerId === userId && isPlannedOn(h, dayKey) && !advanced.has(h.id));
   const done = new Set(
     completions.filter((c) => c.userId === userId && c.dayKey === dayKey && active(c)).map((c) => c.habitId),
   );

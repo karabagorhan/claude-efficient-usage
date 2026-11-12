@@ -1,10 +1,10 @@
 import { addDays } from './dates';
-import type { Completion } from './types';
+import { countsForScore, type Completion } from './types';
 
-/** Kullanıcının en az 1 (geri alınmamış) tamamlaması olan gün anahtarları. */
+/** Kullanıcının en az 1 (geri alınmamış, önceden işaretlenmemiş) tamamlaması olan gün anahtarları. */
 export function activeDaySet(completions: Iterable<Completion>, userId: string): Set<string> {
   const out = new Set<string>();
-  for (const c of completions) if (c.userId === userId && !c.undone) out.add(c.dayKey);
+  for (const c of completions) if (c.userId === userId && countsForScore(c)) out.add(c.dayKey);
   return out;
 }
 

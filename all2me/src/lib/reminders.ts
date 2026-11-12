@@ -10,7 +10,7 @@ import { syncReportNotifs } from '../features/report/notify';
 import { buildStudyNotifs } from '../features/study/notify';
 import { rescheduleAlarms } from '../features/toolsb/alarmSchedule';
 import { translate } from '../i18n';
-import { useCore } from '../store/core';
+import { myHabits, useCore } from '../store/core';
 import { useAlarm } from '../store/slices/alarm';
 import { useChores } from '../store/slices/chores';
 import { useDrink, type DrinkReminder } from '../store/slices/drink';
@@ -19,7 +19,7 @@ import { useMeals } from '../store/slices/meals';
 import { useSleep } from '../store/slices/sleep';
 import { useSmoke } from '../store/slices/smoke';
 import { useStudy } from '../store/slices/study';
-import { cancelGroups, NOTIF_GROUPS, parseHHMM, scheduleGroup, type NotifItem } from './notifications';
+import { cancelGroups, NOTIF_GROUPS, parseHHMM, rescheduleReminders, scheduleGroup, type NotifItem } from './notifications';
 import { routes } from './routes';
 
 /** Su hatırlatıcıları: 09:00-21:00 arası her `every` saatte bir (0 = kapalı). */
@@ -68,6 +68,13 @@ export async function resyncAllReminders(): Promise<void> {
   // haftalık rapor (Pazar 19:00): profil kurulduysa
   if (useCore.getState().me) jobs.push(syncReportNotifs());
   await Promise.all(jobs.map((j) => j.catch(() => {})));
+}
+
+/** Görevler dahil her şeyi yeniden kurar (sessiz saat / üst sınır değişince; Hatırlatıcı sağlığı ekranı). */
+export async function resyncEverything(): Promise<void> {
+  const core = useCore.getState();
+  if (core.me) await rescheduleReminders(myHabits(core)).catch(() => {});
+  await resyncAllReminders();
 }
 
 /** Bildirimler kapatılınca: 'habit' dahil uygulamanın bütün grupları iptal edilir. */

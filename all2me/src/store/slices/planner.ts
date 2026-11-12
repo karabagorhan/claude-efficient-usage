@@ -1,7 +1,7 @@
 /** Planlayıcı dilimi: son cevaplar (yalnız cihazda). */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import type { PlanAnswers } from '../../features/planner/plan';
 
 interface PlannerState {
@@ -22,7 +22,8 @@ export const usePlanner = create<PlannerState>()(
     {
       name: 'all2me-planner-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ answers: s.answers }),
       onRehydrateStorage: () => () => {
         usePlanner.setState({ hydrated: true });

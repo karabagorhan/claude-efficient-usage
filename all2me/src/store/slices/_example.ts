@@ -7,9 +7,9 @@
  *  - Kullanıcıya görünen metin SAKLAMA; i18n anahtarı ya da kullanıcı girdisi sakla.
  *  - Görev bağlantısı gerekiyorsa çekirdek store'u çağır: useCore.getState().completeLinked('drink').
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 
 export interface ExampleEntry {
@@ -54,7 +54,8 @@ export const useExample = create<ExampleState>()(
     {
       name: 'all2me-example-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       // fonksiyonları ve hydrated bayrağını saklama
       partialize: (s) => ({ entries: s.entries }),
       onRehydrateStorage: () => () => {

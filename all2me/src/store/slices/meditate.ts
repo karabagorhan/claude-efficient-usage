@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 
 export interface MeditateSession {
@@ -41,7 +41,8 @@ export const useMeditate = create<MeditateState>()(
     {
       name: 'all2me-meditate-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ sessions: s.sessions, lastPattern: s.lastPattern, lastMinutes: s.lastMinutes }),
       onRehydrateStorage: () => () => {
         useMeditate.setState({ hydrated: true });

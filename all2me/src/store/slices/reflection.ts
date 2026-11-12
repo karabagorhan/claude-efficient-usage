@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 import { uuid } from '../../lib/id';
 
@@ -48,7 +48,8 @@ export const useReflection = create<ReflectionState>()(
     {
       name: 'all2me-reflection-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ entries: s.entries }),
       onRehydrateStorage: () => () => {
         useReflection.setState({ hydrated: true });

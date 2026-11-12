@@ -17,11 +17,33 @@ export interface Loc {
 /** 0 = Pazartesi ... 6 = Pazar */
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
+/** Esnek tekrar birimi. */
+export type EveryUnit = 'day' | 'week' | 'month';
+
+/**
+ * Esnek tekrar: çapa (başlangıç) gününden itibaren her `n` gün / hafta / ayda bir.
+ * - day: çapadan bu yana geçen gün sayısı n'nin katıysa.
+ * - week: çapanın haftasından bu yana geçen hafta sayısı n'nin katıysa; o haftada `days` boşsa çapanın
+ *   haftanın günü, doluysa `days` içindeki günler.
+ * - month: çapadan bu yana geçen ay sayısı n'nin katıysa, ayın çapa günü (ay daha kısaysa ayın son günü:
+ *   31 → Şubat'ta 28/29, Nisan'da 30).
+ * Çapadan önceki günler planlı değildir.
+ */
+export interface Every {
+  unit: EveryUnit;
+  /** 1..365 */
+  n: number;
+  /** YYYY-MM-DD (gün anahtarı) */
+  anchor: string;
+}
+
 export interface Schedule {
   /** Planlı günler. Boşsa her gün. */
   days: Weekday[];
   /** Haftalık kota (ör. haftada 3). Varsa days yok sayılır; seri birimi haftadır. */
   weeklyQuota?: number;
+  /** Esnek tekrar (her N gün / hafta / ay). Varsa ve kota yoksa plan bundan hesaplanır. */
+  every?: Every;
 }
 
 export interface Habit {
@@ -53,6 +75,12 @@ export interface Habit {
   together: boolean;
   createdAt: string; // ISO
   archived: boolean;
+  /**
+   * Elle sıralama değeri (küçük önce). Rutin "elle" modunda zaman dilimi içinde bu alana göre sıralanır;
+   * yeni görev en sona eklenir (en büyük + 1). Eski görevlerde yoksa oluşturulma zamanı kullanılır.
+   * Senkronlanır (görev belgesinin parçası).
+   */
+  order?: number;
 }
 
 export interface Completion {
@@ -68,7 +96,15 @@ export interface Completion {
   earlyBonus: number;
   /** Geri alındıysa true */
   undone?: boolean;
+  /**
+   * "Önceden yap": ileri tarihli gün için önceden işaretlendi. Puan 0, puan olayı yok; liderlik, seri ve
+   * rozetlere SAYILMAZ (görev serisinde o gün nötrdür: ne artırır ne bozar). O gün geldiğinde tamamlanmış görünür.
+   */
+  advance?: boolean;
 }
+
+/** Puan / seri / rozet hesabına giren tamamlama: geri alınmamış ve önceden işaretlenmemiş. */
+export const countsForScore = (c: Pick<Completion, 'undone' | 'advance'>) => !c.undone && !c.advance;
 
 export interface PointEvent {
   id: string;

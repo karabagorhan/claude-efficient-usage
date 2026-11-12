@@ -58,6 +58,18 @@ export function periodRange(period: 'day' | 'week' | 'month', anchor: string): [
   return [s, addDays(s, daysInMonth(anchor) - 1)];
 }
 
+/** b - a (gün). Öğlen tabanlı olduğu için yaz saati kaymasından etkilenmez. */
+export function diffDays(a: string, b: string): number {
+  return Math.round((parseDayKey(b).getTime() - parseDayKey(a).getTime()) / 86400000);
+}
+
+/** b'nin ayı - a'nın ayı (takvim ayı farkı). */
+export function diffMonths(a: string, b: string): number {
+  const [ya, ma] = a.split('-').map(Number);
+  const [yb, mb] = b.split('-').map(Number);
+  return (yb - ya) * 12 + (mb - ma);
+}
+
 export function eachDay(from: string, to: string): string[] {
   const out: string[] = [];
   let k = from;

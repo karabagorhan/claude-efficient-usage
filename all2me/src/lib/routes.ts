@@ -48,6 +48,8 @@ export const routes = {
   stats: () => '/stats',
   badges: () => '/badges',
   settings: () => '/settings',
+  /** Ayarlar > Hatırlatıcı sağlığı (izin, test bildirimi, sessiz saatler, günlük üst sınır) */
+  settingsReminders: () => '/settings-reminders',
   wheelEdit: (wheelId?: string) => `/wheel-edit${qs({ wheelId })}`,
   inspireTemplate: (id: string) => `/inspire/${encodeURIComponent(id)}`,
   inspireCategory: (id: string) => `/inspire/category/${encodeURIComponent(id)}`,

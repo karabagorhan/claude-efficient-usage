@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 
 interface LoveState {
@@ -38,7 +38,8 @@ export const useLove = create<LoveState>()(
     {
       name: 'all2me-love-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ done: s.done, index: s.index }),
       onRehydrateStorage: () => () => {
         useLove.setState({ hydrated: true });

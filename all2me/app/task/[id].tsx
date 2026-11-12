@@ -6,9 +6,13 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, Switch, Text, TextInput, View } from 'react-native';
 import { Card, Chip, Header, IconButton, PillButton, Row, Screen, Txt, tap, warn } from '../../src/components/ui';
 import { CONFIG } from '../../src/engine/config';
+import { addDays } from '../../src/engine/dates';
+import { nextPlannedDays, validEvery } from '../../src/engine/points';
 import {
   PASTEL_KEYS,
   type Difficulty,
+  type EveryUnit,
+  type Habit,
   type HabitKind,
   type HabitLink,
   type PastelKey,
@@ -18,8 +22,8 @@ import {
 import { applyCalendar, dropCalendar } from '../../src/features/calendar/apply';
 import { CalendarRow } from '../../src/features/calendar/CalendarRow';
 import { calKey, habitSpecs, isInCalendar } from '../../src/lib/calendar';
-import { DAYS_SHORT, useLang, useT } from '../../src/i18n';
-import { useCore, type HabitDraft } from '../../src/store/core';
+import { DAYS_SHORT, fmtDay, useLang, useT } from '../../src/i18n';
+import { today, useCore, type HabitDraft } from '../../src/store/core';
 import { radius, useTheme } from '../../src/theme';
 
 const EMOJIS = [
@@ -33,6 +37,9 @@ const DIFFS: Difficulty[] = ['mini', 'easy', 'medium', 'hard', 'epic'];
 const QUICK_TIMES = ['07:00', '09:00', '12:00', '18:00', '21:00'];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const LINKS: HabitLink[] = ['drink', 'mood', 'reflection', 'smoke', 'meal', 'chore', 'study', 'growth'];
+const UNITS: EveryUnit[] = ['day', 'week', 'month'];
+const EVERY_MAX: Record<EveryUnit, number> = { day: 90, week: 26, month: 12 };
+type Mode = 'daily' | 'days' | 'quota' | 'every';
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
@@ -134,9 +141,13 @@ export default function TaskEditor() {
       kind: (h?.kind ?? p.kind ?? 'check') as HabitKind,
       target: h?.target ?? p.target ?? (p.kind === 'timer' ? 10 : 1),
       step: h?.step ?? 1,
-      mode: (h?.schedule.weeklyQuota ? 'quota' : h?.schedule.days?.length ? 'days' : 'daily') as 'daily' | 'days' | 'quota',
-      days: (h?.schedule.days ?? []) as Weekday[],
+      mode: (h?.schedule.weeklyQuota ? 'quota' : validEvery(h?.schedule.every) ? 'every' : h?.schedule.days?.length ? 'days' : 'daily') as Mode,
+      days: (validEvery(h?.schedule.every) ? [] : (h?.schedule.days ?? [])) as Weekday[],
       quota: h?.schedule.weeklyQuota ?? 3,
+      everyUnit: (validEvery(h?.schedule.every) ? h!.schedule.every!.unit : 'day') as EveryUnit,
+      everyN: validEvery(h?.schedule.every) ? h!.schedule.every!.n : 2,
+      everyAnchor: validEvery(h?.schedule.every) ? h!.schedule.every!.anchor : today(),
+      everyDays: (validEvery(h?.schedule.every) ? (h?.schedule.days ?? []) : []) as Weekday[],
       difficulty: (h?.difficulty ?? p.difficulty ?? 'easy') as Difficulty,
       reminder: h?.reminderTime ?? '',
       due: h?.dueTime ?? '',
@@ -158,6 +169,10 @@ export default function TaskEditor() {
   const [mode, setMode] = useState(initial.mode);
   const [days, setDays] = useState<Weekday[]>(initial.days);
   const [quota, setQuota] = useState(initial.quota);
+  const [everyUnit, setEveryUnit] = useState<EveryUnit>(initial.everyUnit);
+  const [everyN, setEveryN] = useState(initial.everyN);
+  const [everyAnchor, setEveryAnchor] = useState(initial.everyAnchor);
+  const [everyDays, setEveryDays] = useState<Weekday[]>(initial.everyDays);
   const [difficulty, setDifficulty] = useState<Difficulty>(initial.difficulty);
   const [reminder, setReminder] = useState(initial.reminder);
   const [due, setDue] = useState(initial.due);
@@ -188,7 +203,12 @@ export default function TaskEditor() {
       kind,
       target: kind === 'check' ? undefined : target,
       step: kind === 'counter' && step > 1 ? step : undefined,
-      schedule: mode === 'quota' ? { days: [], weeklyQuota: quota } : { days: mode === 'days' ? [...days].sort() : [] },
+      schedule:
+        mode === 'quota'
+          ? { days: [], weeklyQuota: quota }
+          : mode === 'every'
+            ? { days: everyUnit === 'week' ? [...everyDays].sort() : [], every: { unit: everyUnit, n: everyN, anchor: everyAnchor } }
+            : { days: mode === 'days' ? [...days].sort() : [] },
       difficulty,
       reminderTime: reminder || undefined,
       dueTime: due || undefined,
@@ -213,6 +233,20 @@ export default function TaskEditor() {
   };
 
   const toggleDay = (d: Weekday) => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
+  const toggleEveryDay = (d: Weekday) => setEveryDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
+  // önizleme: sıradaki 3 planlı gün (bugünden ya da başlangıçtan)
+  const nextDays = useMemo(() => {
+    if (mode !== 'every') return [];
+    const probe = {
+      id: 'probe',
+      createdAt: '2000-01-01T00:00:00.000Z',
+      archived: false,
+      schedule: { days: everyUnit === 'week' ? everyDays : [], every: { unit: everyUnit, n: everyN, anchor: everyAnchor } },
+    } as unknown as Habit;
+    const from = everyAnchor > today() ? everyAnchor : today();
+    return nextPlannedDays(probe, from, 3, 800);
+  }, [mode, everyUnit, everyN, everyAnchor, everyDays]);
+  const everyLabelKey = everyUnit === 'day' ? 'task.schedule.everyDay' : everyUnit === 'week' ? 'task.schedule.everyWeek' : 'task.schedule.everyMonth';
   const bg = t.pastel[pastel];
 
   return (
@@ -228,7 +262,7 @@ export default function TaskEditor() {
             placeholderTextColor={t.isDark ? '#ffffff77' : '#14171A77'}
             maxLength={60}
             autoFocus={isNew && !title}
-            style={{ flex: 1, fontSize: 20, fontWeight: '800', color: t.onPastel, paddingVertical: 6 }}
+            style={{ flex: 1, minWidth: 0, fontSize: 20, fontWeight: '800', color: t.onPastel, paddingVertical: 6 }}
           />
         </Row>
       </Card>
@@ -302,7 +336,63 @@ export default function TaskEditor() {
         <Chip label={tr('task.schedule.daily')} active={mode === 'daily'} onPress={() => setMode('daily')} />
         <Chip label={tr('task.schedule.days')} active={mode === 'days'} onPress={() => setMode('days')} />
         <Chip label={tr('task.schedule.weeklyLabel')} active={mode === 'quota'} onPress={() => setMode('quota')} />
+        <Chip label={tr('task.schedule.everyLabel')} active={mode === 'every'} onPress={() => setMode('every')} />
       </View>
+      {mode === 'every' ? (
+        <Card style={{ marginTop: 12 }}>
+          <Txt variant="small" dim style={{ marginBottom: 8 }}>
+            {tr('newtask.editor.everyEvery')}
+          </Txt>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            {UNITS.map((u) => (
+              <Chip
+                key={u}
+                label={tr(`task.schedule.unit.${u}`)}
+                active={everyUnit === u}
+                onPress={() => {
+                  setEveryUnit(u);
+                  setEveryN((n) => Math.min(n, EVERY_MAX[u]));
+                }}
+              />
+            ))}
+          </View>
+          <Stepper value={everyN} min={1} max={EVERY_MAX[everyUnit]} onChange={setEveryN} label={tr(everyLabelKey, { n: everyN })} />
+          {everyUnit === 'week' ? (
+            <View style={{ marginTop: 14 }}>
+              <Txt variant="small" dim style={{ marginBottom: 8 }}>
+                {tr('newtask.editor.everyWeekDays')}
+              </Txt>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {DAYS_SHORT[lang].map((d, i) => (
+                  <Chip key={i} label={d} active={everyDays.includes(i as Weekday)} onPress={() => toggleEveryDay(i as Weekday)} />
+                ))}
+              </View>
+            </View>
+          ) : null}
+          <Txt variant="small" dim style={{ marginTop: 14, marginBottom: 8 }}>
+            {tr('newtask.editor.everyStart')}
+          </Txt>
+          <Row gap={10}>
+            <IconButton icon="chevron-back" size={22} bg={t.cardAlt} label={tr('newtask.editor.prevDay')} onPress={() => setEveryAnchor((a) => addDays(a, -1))} />
+            <Txt variant="bodyBold" center style={{ flex: 1 }}>
+              {fmtDay(everyAnchor, lang)}
+            </Txt>
+            <IconButton icon="chevron-forward" size={22} bg={t.cardAlt} label={tr('newtask.editor.nextDay')} onPress={() => setEveryAnchor((a) => addDays(a, 1))} />
+          </Row>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+            <Chip label={tr('newtask.editor.today')} active={everyAnchor === today()} onPress={() => setEveryAnchor(today())} />
+            <Chip label={tr('newtask.editor.tomorrow')} active={everyAnchor === addDays(today(), 1)} onPress={() => setEveryAnchor(addDays(today(), 1))} />
+          </View>
+          <Txt variant="small" dim style={{ marginTop: 10 }}>
+            {everyUnit === 'month' ? tr('newtask.editor.everyMonthHint', { d: Number(everyAnchor.slice(8, 10)) }) : tr('newtask.editor.everyStartHint')}
+          </Txt>
+          {nextDays.length ? (
+            <Txt variant="small" weight="700" style={{ marginTop: 8 }}>
+              {tr('newtask.editor.everyNext', { days: nextDays.map((d) => fmtDay(d, lang, 'short')).join(' · ') })}
+            </Txt>
+          ) : null}
+        </Card>
+      ) : null}
       {mode === 'days' ? (
         <View style={{ marginTop: 12 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

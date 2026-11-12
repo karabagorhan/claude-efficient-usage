@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 import { uuid } from '../../lib/id';
 import type { SmokeLog, SmokePlan, SmokePricing, SmokeResist, SmokeTrigger } from '../../features/life/types';
@@ -107,7 +107,8 @@ export const useSmoke = create<SmokeState>()(
     {
       name: 'all2me-smoke-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({
         plan: s.plan,
         pricing: s.pricing,

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { addDays, dayKeyOf, weekStartKey, weekdayOf, periodRange } from '../src/engine/dates';
+import { addDays, dayKeyOf, diffDays, diffMonths, eachDay, weekStartKey, weekdayOf, periodRange } from '../src/engine/dates';
 import { levelFromXp, xpForLevel } from '../src/engine/levels';
-import { currentStreak, scoreCompletion, deriveBonusEvents, multiplierForStreak } from '../src/engine/points';
+import { currentStreak, scoreCompletion, deriveBonusEvents, multiplierForStreak, isPlannedOn, nextPlannedDays, validEvery, computeDayBonuses } from '../src/engine/points';
+import { evaluateBadges } from '../src/engine/badges';
+import { dayStats } from '../src/engine/leaderboard';
 import { standings } from '../src/engine/leaderboard';
 import { activeDaySet, dayStreakFrom } from '../src/engine/streak';
 import type { Completion, Habit, PointEvent } from '../src/engine/types';
@@ -101,5 +103,80 @@ assert.equal(dayStreakFrom(dd, '2026-11-13'), 2); // 12, 11 (bugün 13 henüz yo
 assert.equal(dayStreakFrom(dd, '2026-11-12'), 2);
 assert.equal(dayStreakFrom(dd, '2026-11-14'), 0); // dün (13) yok
 assert.equal(dayStreakFrom(new Set(['2026-11-13']), '2026-11-13'), 1);
+
+// ---------------------------------------------------------------- Esnek tekrar (schedule.every)
+assert.equal(diffDays('2026-01-30', '2026-03-01'), 30);
+assert.equal(diffDays('2026-03-28', '2026-03-30'), 2); // yaz saati geçişi (29 Mart) gün farkını bozmaz
+assert.equal(diffMonths('2026-11-30', '2027-02-01'), 3);
+const planned = (hb: Habit, from: string, to: string) => eachDay(from, to).filter((d) => isPlannedOn(hb, d));
+
+// her 3 günde bir, çapa 2026-11-02 (çapadan önce planlı değil)
+const e3 = mk('e3', { schedule: { days: [], every: { unit: 'day', n: 3, anchor: '2026-11-02' } } });
+assert.deepEqual(planned(e3, '2026-10-30', '2026-11-12'), ['2026-11-02', '2026-11-05', '2026-11-08', '2026-11-11']);
+// ay/yıl geçişi: 30 Aralık çapalı her 2 gün → 1 Ocak
+const e2 = mk('e2', { schedule: { days: [], every: { unit: 'day', n: 2, anchor: '2026-12-30' } } });
+assert.deepEqual(planned(e2, '2026-12-29', '2027-01-04'), ['2026-12-30', '2027-01-01', '2027-01-03']);
+
+// her 2 haftada bir: çapanın haftanın günü (Çar 2026-11-04) → 04, 18, 2 Ara
+const w2 = mk('w2', { schedule: { days: [], every: { unit: 'week', n: 2, anchor: '2026-11-04' } } });
+assert.deepEqual(planned(w2, '2026-11-01', '2026-12-06'), ['2026-11-04', '2026-11-18', '2026-12-02']);
+// her 2 haftada bir Pzt+Cum (günler seçili): çapa haftası (2-8 Kasım) ve iki hafta sonrası; çapa (Çar 4) öncesindeki Pzt 2 sayılmaz
+const w2d = mk('w2d', { schedule: { days: [0, 4], every: { unit: 'week', n: 2, anchor: '2026-11-04' } } });
+assert.deepEqual(planned(w2d, '2026-11-01', '2026-11-22'), ['2026-11-06', '2026-11-16', '2026-11-20']);
+
+// her ay 31'inde: kısa aylarda ayın son günü (Şubat 28, artık yılda 29; Nisan 30)
+const m31 = mk('m31', { schedule: { days: [], every: { unit: 'month', n: 1, anchor: '2026-01-31' } } });
+assert.deepEqual(planned(m31, '2026-01-01', '2026-05-31'), ['2026-01-31', '2026-02-28', '2026-03-31', '2026-04-30', '2026-05-31']);
+const m31leap = mk('m31l', { schedule: { days: [], every: { unit: 'month', n: 1, anchor: '2027-12-31' } } });
+assert.ok(isPlannedOn(m31leap, '2028-02-29') && !isPlannedOn(m31leap, '2028-02-28'), 'artık yıl: 29 Şubat');
+// 3 ayda bir, 15'inde (çeyrek)
+const q3 = mk('q3', { schedule: { days: [], every: { unit: 'month', n: 3, anchor: '2026-01-15' } } });
+assert.deepEqual(planned(q3, '2026-01-01', '2026-12-31'), ['2026-01-15', '2026-04-15', '2026-07-15', '2026-10-15']);
+assert.deepEqual(nextPlannedDays(q3, '2026-05-01', 2), ['2026-07-15', '2026-10-15']);
+
+// 03:00 gün sınırı: 1 Şubat 02:30'daki iş 31 Ocak'a yazılır → "her ay 31'inde" görev o gün planlı
+assert.equal(dayKeyOf(new Date(2026, 1, 1, 2, 30)), '2026-01-31');
+assert.ok(isPlannedOn(m31, dayKeyOf(new Date(2026, 1, 1, 2, 30))));
+assert.ok(!isPlannedOn(m31, dayKeyOf(new Date(2026, 1, 1, 3, 0))), '03:00 ve sonrası yeni gün (1 Şubat) planlı değil');
+// her 2 gün, çapa 10 Kasım: 12 Kasım 01:00 hâlâ 11 Kasım (planlı değil), 12 Kasım 03:00 planlı
+const b2 = mk('b2', { schedule: { days: [], every: { unit: 'day', n: 2, anchor: '2026-11-10' } } });
+assert.ok(!isPlannedOn(b2, dayKeyOf(new Date(2026, 10, 12, 1, 0))));
+assert.ok(isPlannedOn(b2, dayKeyOf(new Date(2026, 10, 12, 3, 0))));
+
+// bozuk esnek tekrar yok sayılır (her gün gibi davranır), kota varsa kota öncelikli
+assert.equal(validEvery({ unit: 'day', n: 0, anchor: '2026-11-01' }), false);
+assert.equal(validEvery({ unit: 'year' as any, n: 1, anchor: '2026-11-01' }), false);
+assert.ok(isPlannedOn(mk('bad', { schedule: { days: [], every: { unit: 'day', n: 2, anchor: 'x' } } }), '2026-11-03'));
+assert.ok(!isPlannedOn(mk('qq', { schedule: { days: [], weeklyQuota: 2, every: { unit: 'day', n: 2, anchor: '2026-11-01' } } }), '2026-11-03'));
+
+// seri: planlı olmayan günler nötr (her 3 günde bir, 3 oluşum art arda → seri 3; biri kaçarsa kırılır)
+assert.equal(currentStreak(e3, [comp('e3', '2026-11-05'), comp('e3', '2026-11-08'), comp('e3', '2026-11-11')], '2026-11-12'), 3);
+assert.equal(currentStreak(e3, [comp('e3', '2026-11-02'), comp('e3', '2026-11-08'), comp('e3', '2026-11-11')], '2026-11-12'), 2);
+// aylık 31: Şubat 28 yapıldıysa seri sürer
+assert.equal(currentStreak(m31, [comp('m31', '2026-01-31'), comp('m31', '2026-02-28'), comp('m31', '2026-03-31')], '2026-04-10'), 3);
+// rozet: esnek tekrarlı görevin serisi rozetleri besler (3 oluşum → streak3)
+const badgeCtx = { userId: 'A', today: '2026-11-12', events: [], moodDays: 0, journalCount: 0, focusSessions: 0, breathSessions: 0, dayStreak: 0, wheelTasks: 0, nudgesSent: 0, cheersSent: 0, paired: false, wins: { day: 0, week: 0, month: 0 }, comeback: false };
+assert.ok(evaluateBadges({ ...badgeCtx, habits: [e3], completions: [comp('e3', '2026-11-05'), comp('e3', '2026-11-08'), comp('e3', '2026-11-11')] }).includes('streak3'));
+
+// ---------------------------------------------------------------- Önceden işaretle (completion.advance)
+// Kural: puan 0; görev serisinde o gün NÖTR (ne artırır ne bozar); gün serisine, liderliğe, rozete ve
+// mükemmel gün bonusuna SAYILMAZ.
+const adv = (hb: string, day: string): Completion => ({ ...comp(hb, day, 'A', 0), base: 0, advance: true });
+const daily = mk('d1');
+// 10 ve 12 normal, 11 önceden işaretli → 11 nötr: seri 2 (kırılmaz ama 11 sayılmaz)
+assert.equal(currentStreak(daily, [comp('d1', '2026-11-10'), adv('d1', '2026-11-11'), comp('d1', '2026-11-12')], '2026-11-12'), 2);
+// gün serisi: yalnız önceden işaretlenen gün aktif gün sayılmaz
+const advDays = activeDaySet([comp('a', '2026-11-12'), adv('a', '2026-11-11'), comp('a', '2026-11-10')], 'A');
+assert.ok(!advDays.has('2026-11-11'));
+assert.equal(dayStreakFrom(advDays, '2026-11-12'), 1);
+// liderlik gün istatistiği: görev sayısına girmez
+assert.equal(dayStats('A', [], [adv('a', '2026-11-12'), adv('b', '2026-11-12')], '2026-11-12', '2026-11-12')['2026-11-12'].tasks, 0);
+// mükemmel gün: önceden işaretli görev plandan düşer (3 planlıdan biri önceden → kalan 2 < minTasks: bonus yok)
+const ph = [mk('p1'), mk('p2'), mk('p3')];
+const bon = computeDayBonuses(ph, [adv('p1', '2026-11-12'), comp('p2', '2026-11-12'), comp('p3', '2026-11-12')], 'A', '2026-11-12');
+assert.equal(bon.plannedCount, 2);
+assert.equal(bon.perfect, 0);
+// rozet: yalnız önceden işaretli tamamlama "ilk adım" rozetini vermez
+assert.ok(!evaluateBadges({ ...badgeCtx, habits: [daily], completions: [adv('d1', '2026-11-12')] }).includes('first'));
 
 console.log('✅ motor testleri geçti');

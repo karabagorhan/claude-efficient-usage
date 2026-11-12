@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { seedChores } from '../../data/chores';
 import { addDays, dayKeyOf } from '../../engine/dates';
 import { uuid } from '../../lib/id';
@@ -108,7 +108,8 @@ export const useChores = create<ChoresState>()(
     {
       name: 'all2me-chores-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({
         seeded: s.seeded,
         chores: s.chores,

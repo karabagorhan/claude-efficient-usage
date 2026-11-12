@@ -1,6 +1,6 @@
 import { CONFIG } from './config';
 import { eachDay, periodRange } from './dates';
-import { isScoreEvent, type Completion, type Period, type PointEvent } from './types';
+import { countsForScore, isScoreEvent, type Completion, type Period, type PointEvent } from './types';
 
 export interface DayStat {
   dayKey: string;
@@ -41,7 +41,7 @@ export function dayStats(
     out[e.dayKey].points += e.points;
   }
   for (const c of completions) {
-    if (c.userId !== userId || c.undone || c.dayKey < from || c.dayKey > to) continue;
+    if (c.userId !== userId || !countsForScore(c) || c.dayKey < from || c.dayKey > to) continue;
     out[c.dayKey].tasks += 1;
   }
   return out;

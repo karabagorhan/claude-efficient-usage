@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 interface MotivationState {
   hydrated: boolean;
@@ -22,7 +22,8 @@ export const useMotivation = create<MotivationState>()(
     {
       name: 'all2me-motivation-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ favorites: s.favorites }),
       onRehydrateStorage: () => () => {
         useMotivation.setState({ hydrated: true });

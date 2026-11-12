@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 
 /** Kayıt, uyanılan günün anahtarıyla saklanır (dün gece → bugünün anahtarı). */
@@ -64,7 +64,8 @@ export const useSleep = create<SleepState>()(
     {
       name: 'all2me-sleep-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ entries: s.entries, goalHours: s.goalHours, bedReminder: s.bedReminder }),
       onRehydrateStorage: () => () => {
         useSleep.setState({ hydrated: true });

@@ -1,7 +1,7 @@
 /** İlham sekmesi dilimi: favori şablonlar, son aramalar, test sonuçları (yalnız cihazda). */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 export interface QuizRecord {
   resultId: string;
@@ -47,7 +47,8 @@ export const useFavorites = create<FavoritesState>()(
     {
       name: 'all2me-favorites-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ favorites: s.favorites, recent: s.recent, quizResults: s.quizResults }),
       onRehydrateStorage: () => () => {
         useFavorites.setState({ hydrated: true });

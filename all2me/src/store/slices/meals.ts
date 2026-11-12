@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 import { uuid } from '../../lib/id';
 import type { Currency, MealEntry, MealKind, MealSlot } from '../../features/life/types';
@@ -102,7 +102,8 @@ export const useMeals = create<MealsState>()(
     {
       name: 'all2me-meals-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({
         entries: s.entries,
         goal: s.goal,

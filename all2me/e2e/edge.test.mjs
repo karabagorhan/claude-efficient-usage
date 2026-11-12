@@ -53,13 +53,19 @@ export default [
     run: async (s) => {
       await s.goto('/', 800);
       await s.btn(s.t('routine.addTask'));
+      // web'de expo-router ekranı çizip URL'yi (history.pushState) bir sonraki karede yazar; yük altında geri tuşu
+      // URL yazılmadan basılırsa bir önceki girdiye (/) dönülüyordu. Her adımda URL'nin oturmasını bekle.
+      await s.page.waitForURL(/\/new-task/, { timeout: 5000 });
+      await s.expectText(s.t('newtask.suggested'));
       await s.tap(s.t('newtask.rename'));
       await s.expectText(s.t('newtask.editor.titleNew'));
+      await s.page.waitForURL(/\/task\/new/, { timeout: 5000 });
       await s.page.goBack();
-      await s.page.waitForTimeout(500);
+      await s.page.waitForURL((u) => /\/new-task/.test(u.pathname), { timeout: 5000 });
       await s.expectText(s.t('newtask.suggested'));
       await s.page.goBack();
-      await s.page.waitForTimeout(500);
+      await s.page.waitForURL((u) => u.pathname === '/', { timeout: 5000 });
+      await s.expectText(s.t('routine.progress.title'));
       assert.equal(s.path().split('?')[0], '/');
     },
   },

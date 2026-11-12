@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 
 export interface MoodEntry {
@@ -42,7 +42,8 @@ export const useMood = create<MoodState>()(
     {
       name: 'all2me-mood-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ entries: s.entries }),
       onRehydrateStorage: () => () => {
         useMood.setState({ hydrated: true });

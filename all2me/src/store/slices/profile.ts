@@ -2,9 +2,9 @@
  * Kişiselleştirme tercihleri (onboarding + "Rutin tipin" testi). Yalnızca cihazda.
  * Anahtar 'all2me-profile-v1'. Kullanıcıya görünen metin saklanmaz; kimlikler saklanır.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 export type EnergyPeak = 'morning' | 'noon' | 'evening';
 export type FocusArea = 'home' | 'health' | 'smoke' | 'nutrition' | 'school' | 'career' | 'selfcare' | 'relationship';
@@ -50,7 +50,8 @@ export const useProfile = create<ProfileState>()(
     {
       name: 'all2me-profile-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({
         wake: s.wake,
         sleep: s.sleep,

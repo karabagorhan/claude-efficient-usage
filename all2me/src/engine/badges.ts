@@ -1,7 +1,7 @@
 import { BADGES, type BadgeDef } from '../data/badges';
 import { levelFromXp } from './levels';
 import { currentStreak } from './points';
-import { isScoreEvent, type Completion, type Habit, type PointEvent } from './types';
+import { countsForScore, isScoreEvent, type Completion, type Habit, type PointEvent } from './types';
 
 export interface BadgeContext {
   userId: string;
@@ -46,7 +46,7 @@ export function userTotals(events: PointEvent[]) {
 }
 
 export function evaluateBadges(c: BadgeContext): string[] {
-  const live = c.completions.filter((x) => !x.undone);
+  const live = c.completions.filter(countsForScore);
   const { sp, xp } = userTotals(c.events);
   const level = levelFromXp(xp).level;
   const maxStreak = c.habits.reduce((m, h) => Math.max(m, currentStreak(h, live, c.today)), 0);

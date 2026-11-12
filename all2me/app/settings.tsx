@@ -1,8 +1,9 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Switch, View } from 'react-native';
+import { Switch, TextInput, View } from 'react-native';
 import { Card, Header, PillButton, Row, Screen, Segmented, Txt } from '../src/components/ui';
+import { buildDiagnostics, shareText } from '../src/lib/diagnostics';
 import { calendarSupported, removeAllFromCalendar, syncAllToCalendar } from '../src/lib/calendar';
 import { useCalendar } from '../src/store/slices/calendar';
 import { fmtTime, tErr, useLang, useT } from '../src/i18n';
@@ -10,8 +11,8 @@ import { syncNow, useSyncStatus } from '../src/lib/sync';
 import { routes } from '../src/lib/routes';
 import { useCore } from '../src/store/core';
 import { resetAllData } from '../src/store/resetAll';
-import { useSettings, type ThemePref, type Units } from '../src/store/settings';
-import { useTheme } from '../src/theme';
+import { useSettings, type TaskOrder, type ThemePref, type Units } from '../src/store/settings';
+import { radius, useTheme } from '../src/theme';
 import type { Lang } from '../src/i18n';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -63,6 +64,12 @@ export default function SettingsScreen() {
   };
 
   const version = Constants.expoConfig?.version ?? '1.0.0';
+  const [note, setNote] = useState('');
+  const sendFeedback = async () => {
+    const r = await shareText(buildDiagnostics({ note }), tr('settings.feedback.shareTitle'));
+    if (r === 'copied') useCore.getState().pushToast({ key: 'settings.feedback.copied', emoji: '📋' });
+    else if (r === 'failed') useCore.getState().pushToast({ key: 'settings.feedback.failed', emoji: '⚠️' });
+  };
 
   const resetAll = async () => {
     setBusy(true);
@@ -129,6 +136,33 @@ export default function SettingsScreen() {
             <Switch value={s.notifications} onValueChange={s.setNotifications} trackColor={{ true: t.success, false: t.borderInput }} accessibilityLabel={tr('settings.reminders.label')} />
           </Row>
         </Card>
+        <Card onPress={() => router.push(routes.settingsReminders())} style={{ marginTop: 10 }}>
+          <Row between gap={12}>
+            <View style={{ flex: 1 }}>
+              <Txt variant="bodyBold">🩺 {tr('settings.health.open')}</Txt>
+              <Txt variant="small" dim>
+                {tr('settings.health.openHint')}
+              </Txt>
+            </View>
+            <Txt variant="h3" dim>
+              ›
+            </Txt>
+          </Row>
+        </Card>
+      </Section>
+
+      <Section title={tr('settings.order.title')}>
+        <Segmented<TaskOrder>
+          value={s.taskOrder}
+          onChange={(v) => s.setTaskOrder(v)}
+          options={[
+            { id: 'auto', label: tr('settings.order.auto') },
+            { id: 'manual', label: tr('settings.order.manual') },
+          ]}
+        />
+        <Txt variant="small" dim style={{ marginTop: 8, marginHorizontal: 4 }}>
+          {tr('settings.order.hint')}
+        </Txt>
       </Section>
 
       <Section title={tr('settings.calendar.title')}>
@@ -227,10 +261,60 @@ export default function SettingsScreen() {
         )}
       </Section>
 
+      <Section title={tr('settings.support.title')}>
+        <Card bg={t.pastel.mint}>
+          <Txt color={t.onPastel}>{tr('settings.support.intro')}</Txt>
+          {(['talk', 'pro', 'small'] as const).map((k, i) => (
+            <Row key={k} gap={8} style={{ marginTop: 10, alignItems: 'flex-start' }}>
+              <Txt color={t.onPastel}>{['💬', '🩺', '🌱'][i]}</Txt>
+              <Txt variant="small" color={t.onPastel} style={{ flex: 1 }}>
+                {tr(`settings.support.tips.${k}`)}
+              </Txt>
+            </Row>
+          ))}
+          <View style={{ marginTop: 12 }}>
+            <PillButton small kind="outline" icon="leaf-outline" label={tr('settings.support.tips.breathe')} onPress={() => router.push(routes.tool('meditate'))} />
+          </View>
+          <View style={{ marginTop: 12, padding: 12, borderRadius: radius.md, backgroundColor: t.card }}>
+            <Txt variant="small" weight="700">
+              🚨 {tr('settings.support.emergency')}
+            </Txt>
+          </View>
+          <Txt variant="caption" color={t.onPastel} style={{ marginTop: 10 }}>
+            {tr('settings.support.note')} {tr('common.medicalNote')}
+          </Txt>
+        </Card>
+      </Section>
+
+      <Section title={tr('settings.feedback.title')}>
+        <Card>
+          <Txt variant="small" dim>
+            {tr('settings.feedback.hint')}
+          </Txt>
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            placeholder={tr('settings.feedback.placeholder')}
+            placeholderTextColor={t.textFaint}
+            multiline
+            maxLength={1000}
+            accessibilityLabel={tr('settings.feedback.title')}
+            style={{ marginTop: 10, minHeight: 72, borderRadius: radius.md, borderWidth: 1, borderColor: t.borderInput, backgroundColor: t.card, color: t.text, padding: 12, fontSize: 15, textAlignVertical: 'top' }}
+          />
+          <View style={{ marginTop: 10 }}>
+            <PillButton small icon="share-outline" label={tr('settings.feedback.share')} onPress={() => void sendFeedback()} />
+          </View>
+        </Card>
+      </Section>
+
       <Section title={tr('settings.about.title')}>
         <Card>
           <Txt variant="bodyBold">
             {tr('common.appName')} · {tr('settings.about.version', { v: version })}
+          </Txt>
+          <Txt style={{ marginTop: 8 }}>💚 {tr('settings.about.free')}</Txt>
+          <Txt variant="small" dim style={{ marginTop: 6 }}>
+            📱 {tr('settings.about.local')}
           </Txt>
           <Txt variant="small" dim style={{ marginTop: 6 }}>
             {tr('common.medicalNote')}

@@ -76,4 +76,20 @@ assert.equal(calKey.item('a'), 'item:a');
 assert.equal(calKey.course('b'), 'course:b');
 assert.equal(calKey.habit('c'), 'habit:c');
 
+
+// esnek tekrar: her 2 haftada bir Pzt+Cum → gün başına haftalık (interval 2) olay; aylık → monthly
+{
+  const from = new Date(2026, 10, 12, 10, 0);
+  const w = habitEventSpecs({ title: 'X', time: '08:00', days: [0, 4], every: { unit: 'week', n: 2, anchor: '2026-11-04' } }, from);
+  assert.equal(w.length, 2);
+  assert.ok(w.every((e) => e.recurrence?.frequency === 'weekly' && e.recurrence.interval === 2));
+  assert.deepEqual(w.map((e) => e.startDate.getDate()).sort((a, b) => a - b), [6, 16], 'Cum 6 (çapa haftası), Pzt 16 (Pzt 2 çapadan önce)');
+  const m = habitEventSpecs({ title: 'Y', time: '09:30', days: [], every: { unit: 'month', n: 3, anchor: '2026-01-15' } }, from);
+  assert.equal(m.length, 1);
+  assert.equal(m[0].recurrence?.frequency, 'monthly');
+  assert.equal(m[0].recurrence?.interval, 3);
+  assert.equal(m[0].startDate.getHours(), 9);
+  assert.ok(habitEventSpecs({ title: 'Z', time: '09:30', days: [], every: { unit: 'day', n: 2, anchor: 'kötü' } }, from).length === 0);
+}
+
 console.log('calendar.test.ts OK');

@@ -4,6 +4,7 @@
  * (idempotent: aynı anahtar tekrar yazılınca olaylar güncellenir, çoğalmaz). Web'de her şey no-op ('unsupported').
  * Saf kısım (olay alanları, tarih/saat, tekrar): ./calendarSpec.ts (tests/calendar.test.ts).
  */
+import { validEvery } from '../engine/points';
 import { Platform } from 'react-native';
 import { useCalendar } from '../store/slices/calendar';
 import { useCore, myHabits } from '../store/core';
@@ -83,7 +84,7 @@ function toDetails(C: Cal, s: EventSpec) {
     timeZone: tz(),
     alarms: s.alarmOffsets.map((m) => ({ relativeOffset: m })),
     recurrenceRule: s.recurrence
-      ? { frequency: s.recurrence.frequency === 'daily' ? C.Frequency.DAILY : C.Frequency.WEEKLY, interval: s.recurrence.interval, endDate: s.recurrence.endDate }
+      ? { frequency: s.recurrence.frequency === 'daily' ? C.Frequency.DAILY : s.recurrence.frequency === 'monthly' ? C.Frequency.MONTHLY : C.Frequency.WEEKLY, interval: s.recurrence.interval, endDate: s.recurrence.endDate }
       : null,
   };
 }
@@ -200,6 +201,7 @@ export function habitSpecs(id: string): EventSpec[] {
     time: h.reminderTime,
     days: h.schedule.days ?? [],
     weeklyQuota: Boolean(h.schedule.weeklyQuota),
+    every: validEvery(h.schedule.every) ? h.schedule.every : undefined,
     notes: translate('task.reminderBody'),
   });
 }

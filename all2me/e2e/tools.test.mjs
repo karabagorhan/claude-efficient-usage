@@ -57,7 +57,9 @@ export default [
       assert.ok(/\d+ tasks? ·/.test(a) && /\d+ tasks? ·/.test(b), 'iki planda da görev olmalı');
       await s.btn(s.t('planner.editAnswers'));
       await s.expectText(s.t('planner.q.wake'));
-      assert.ok(!/AI|artificial intelligence|yapay zek/i.test(a), '"yapay zekâ" iddiası olmamalı');
+      // \bAI\b büyük harf + kelime sınırı: rastgele plandaki "email", "stairs", "Air" gibi kelimeler eşleşmesin
+      // (eski /AI/i deseni plan tohumuna göre ara sıra yanlış alarm veriyordu)
+      for (const txt of [a, b]) assert.ok(!/\bAI\b/.test(txt) && !/artificial intelligence|yapay zek/i.test(txt), '"yapay zekâ" iddiası olmamalı');
     },
   },
   {

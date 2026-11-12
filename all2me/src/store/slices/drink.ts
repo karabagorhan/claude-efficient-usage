@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf } from '../../engine/dates';
 import { uuid } from '../../lib/id';
 
@@ -71,7 +71,8 @@ export const useDrink = create<DrinkState>()(
     {
       name: 'all2me-drink-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ entries: s.entries, goalMl: s.goalMl, reminder: s.reminder, activityDay: s.activityDay }),
       onRehydrateStorage: () => () => {
         useDrink.setState({ hydrated: true });

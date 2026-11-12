@@ -3,9 +3,9 @@
  * 3 önemli işin tamamı / hedef adımı → completeLinked('growth') + günde bir logActivity('growth').
  * Hedef tamamlandı, öğrenme bitti, haftalık değerlendirme → awardBonus(group:'growth').
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { dayKeyOf, weekStartKey } from '../../engine/dates';
 import { uuid } from '../../lib/id';
 import { applyCarry, goalProgress, isGoalComplete, TOP_MAX, top3Done } from '../../features/growth/calc';
@@ -220,7 +220,7 @@ export const useGrowth = create<GrowthState>()(
     {
       name: 'all2me-growth-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
       partialize: (s) => ({
         tops: s.tops,
         goals: s.goals,
@@ -230,7 +230,7 @@ export const useGrowth = create<GrowthState>()(
         activityDay: s.activityDay,
       }),
       merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<GrowthState>;
+        const p = safeMerge(persisted, current) as Partial<GrowthState>;
         return { ...current, ...p, settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) } };
       },
       onRehydrateStorage: () => () => {

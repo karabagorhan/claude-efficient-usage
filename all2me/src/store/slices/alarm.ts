@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeJSONStorage, safeMerge } from '../safeStorage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import type { Weekday } from '../../engine/types';
 
 export interface AlarmItem {
@@ -47,7 +47,8 @@ export const useAlarm = create<AlarmState>()(
     {
       name: 'all2me-alarm-v1',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: safeJSONStorage(),
+      merge: safeMerge,
       partialize: (s) => ({ alarms: s.alarms }),
       onRehydrateStorage: () => () => {
         useAlarm.setState({ hydrated: true });
