@@ -13,6 +13,42 @@ Amaç:
 - `prompts/` : Hazır prompt şablonları
 - `examples/` : Excel, Word, PowerPoint ve kodlama örnekleri
 - `checklists/` : Kullanım öncesi ve sonrası kontroller
+- `docs/arac-secim-rehberi.md` : Hangi araç hangi işte açılır, maliyete etkisi nedir
+- `sablonlar/` : Yeni projelere kopyalanan Claude Code ayarları (`ofis-projesi`, `uygulama-projesi`)
+- `kurulum/yeni-proje.sh` : Şablonu tek komutla yeni bir projeye kopyalar
+
+## Yardımcı Araçlar (Skill, Plugin, MCP)
+
+Bu repo dört aracı **projeye göre** açacak şekilde kurgulandı. Her şey her yerde açık tutulmuyor, çünkü açık olan her araç her mesajda ek token harcatır.
+
+| Araç | Ne işe yarar | Hangi şablonda açık |
+|---|---|---|
+| [anthropics/skills](https://github.com/anthropics/skills) (`xlsx`, `docx`, `pptx`, `pdf`) | Ofis dosyası okuma, üretme ve düzenleme | `ofis-projesi` |
+| [Context7](https://github.com/upstash/context7) | Güncel kütüphane dokümantasyonu | `uygulama-projesi` |
+| [Superpowers](https://github.com/obra/superpowers) | Planlı ve test odaklı geliştirme yöntemi | `uygulama-projesi` |
+| [Playwright](https://github.com/microsoft/playwright-cli) (CLI + skill) | Tarayıcı otomasyonu ve web testi | `uygulama-projesi` (gerektiğinde) |
+
+Ayrıntılar için: [docs/arac-secim-rehberi.md](docs/arac-secim-rehberi.md)
+
+### Yeni projede kullanım
+
+macOS, Linux veya Windows'ta Git Bash ile:
+
+```bash
+kurulum/yeni-proje.sh uygulama ~/projeler/yeni-uygulama
+```
+
+```bash
+kurulum/yeni-proje.sh ofis ~/belgeler/butce-2027
+```
+
+Windows'ta elle yapmak isterseniz: seçtiğiniz `sablonlar/<tür>/` klasöründeki `CLAUDE.md` dosyasını ve `.claude` klasörünü proje klasörüne kopyalayın.
+
+Ardından proje klasöründe Claude Code'u açın. Klasöre güvendiğinizde şablondaki plugin'lerin kurulumu önerilir. `uygulama-projesi` şablonu Superpowers ve Context7'yi Anthropic'in resmî eklenti mağazası `claude-plugins-official` üzerinden açar. Bu mağaza listenizde yoksa önce şu komutu çalıştırın:
+
+```bash
+/plugin marketplace add anthropics/claude-plugins-official
+```
 
 ## Temel İlkeler
 
